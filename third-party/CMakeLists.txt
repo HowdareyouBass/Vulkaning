@@ -1,0 +1,8 @@
+add_library(third-party INTERFACE)
+
+find_package(Vulkan REQUIRED)
+
+add_subdirectory(SDL)
+
+target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3)
+target_precompile_headers(third-party INTERFACE <vulkan/vulkan.hpp>)
