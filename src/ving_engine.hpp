@@ -18,9 +18,15 @@ class Engine
 
     std::vector<const char *> required_layers{};
     std::vector<const char *> required_instance_extensions{};
-    std::vector<const char *> required_device_extensions{"VK_KHR_dynamic_rendering"};
+    std::vector<const char *> required_device_extensions{VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+                                                         VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+
+  public:
+    void run();
 
   private:
+    void draw();
+
     void init_window();
     void init_vulkan();
 
@@ -33,5 +39,10 @@ class Engine
     vk::UniqueSurfaceKHR m_surface;
     vk::PhysicalDevice m_physical_device;
     vk::UniqueDevice m_device;
+
+    vk::Queue m_graphics_queue;
+    vk::Queue m_present_queue;
+
+    vk::UniqueSwapchainKHR m_swapchain;
 };
 } // namespace ving

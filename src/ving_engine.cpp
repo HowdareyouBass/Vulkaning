@@ -1,6 +1,7 @@
 #include "ving_engine.hpp"
 
 #include <SDL3/SDL.h>
+#include <iostream>
 
 #include "ving_utils.hpp"
 
@@ -18,6 +19,26 @@ Engine::Engine()
     init_vulkan();
 }
 
+void Engine::run()
+{
+    SDL_Event event;
+    bool running = true;
+
+    while (running)
+    {
+        while (SDL_PollEvent(&event))
+        {
+            if (event.type == SDL_EVENT_QUIT)
+                running = false;
+
+            // TODO: Stop rendering on window minimized
+        }
+    }
+}
+
+void Engine::draw()
+{
+}
 void Engine::init_window()
 {
     if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
@@ -82,6 +103,12 @@ void Engine::init_vulkan()
     }
 
     m_device = utils::create_device(m_physical_device, queue_infos, required_device_extensions);
-}
 
+    // WARN: Could actually be the same queue
+    m_graphics_queue = m_device->getQueue(graphics_family_index, 0);
+    m_present_queue = m_device->getQueue(present_family_index, 0);
+
+    m_swapchain = utils::create_swapchain(m_physical_device, *m_device, *m_surface, m_window_extent,
+                                          graphics_family_index == present_family_index ? 1 : 2);
+}
 } // namespace ving

@@ -7,6 +7,8 @@ int main()
     try
     {
         ving::Engine engine{};
+
+        engine.run();
     }
     catch (vk::SystemError &e)
     {

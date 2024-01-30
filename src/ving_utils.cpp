@@ -82,5 +82,39 @@ vk::UniqueDevice create_device(vk::PhysicalDevice device, std::span<vk::DeviceQu
 
     return device.createDeviceUnique(info);
 }
+vk::UniqueSwapchainKHR create_swapchain(vk::PhysicalDevice physical_device, vk::Device device, vk::SurfaceKHR surface,
+                                        vk::Extent2D extent, uint32_t queue_family_count)
+{
+    std::vector<vk::SurfaceFormatKHR> formats = physical_device.getSurfaceFormatsKHR(surface);
+    assert(!formats.empty());
+
+    vk::Format format = (formats[0].format == vk::Format::eUndefined) ? vk::Format::eB8G8R8A8Unorm : formats[0].format;
+
+    vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
+
+    // HARD: Other present modes
+    vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;
+
+    uint32_t image_count = surface_capabilities.minImageCount + 1;
+
+    auto info =
+        vk::SwapchainCreateInfoKHR{}
+            .setSurface(surface)
+            .setMinImageCount(image_count)
+            .setImageFormat(format)
+            .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
+            .setImageExtent(extent)
+            .setImageArrayLayers(1)
+            .setImageUsage(vk::ImageUsageFlagBits::eTransferDst)
+            .setQueueFamilyIndexCount(queue_family_count)
+            .setPreTransform(surface_capabilities.currentTransform)
+            .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+            .setPresentMode(present_mode)
+            .setImageSharingMode(queue_family_count > 1 ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive);
+
+    //.setImageSharingMode(sharing);
+
+    return device.createSwapchainKHRUnique(info);
+}
 } // namespace utils
 } // namespace ving

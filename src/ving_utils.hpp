@@ -18,6 +18,8 @@ uint32_t find_present_queue(std::span<vk::QueueFamilyProperties> queue_families,
                             vk::SurfaceKHR surface);
 vk::UniqueDevice create_device(vk::PhysicalDevice device, std::span<vk::DeviceQueueCreateInfo> queue_infos,
                                std::span<const char *> extensions);
+vk::UniqueSwapchainKHR create_swapchain(vk::PhysicalDevice physical_device, vk::Device device, vk::SurfaceKHR surface,
+                                        vk::Extent2D extent, uint32_t queue_family_count);
 
 } // namespace utils
 } // namespace ving
