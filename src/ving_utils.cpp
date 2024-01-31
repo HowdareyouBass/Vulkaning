@@ -44,7 +44,7 @@ vk::PhysicalDevice pick_physical_device(std::span<vk::PhysicalDevice> devices)
 
         const vk::PhysicalDeviceVulkan13Features &features13 = features2.get<vk::PhysicalDeviceVulkan13Features>();
 
-        if (features13.dynamicRendering)
+        if (features13.dynamicRendering && features13.synchronization2)
         {
             return d;
         }
@@ -76,14 +76,18 @@ uint32_t find_present_queue(std::span<vk::QueueFamilyProperties> queue_families,
     return qsize;
 }
 vk::UniqueDevice create_device(vk::PhysicalDevice device, std::span<vk::DeviceQueueCreateInfo> queue_infos,
-                               std::span<const char *> extensions)
+                               std::span<const char *> extensions, vk::PhysicalDeviceFeatures2 features2)
 {
-    auto info = vk::DeviceCreateInfo{}.setPEnabledExtensionNames(extensions).setQueueCreateInfos(queue_infos);
+    auto info = vk::DeviceCreateInfo{}
+                    .setPEnabledExtensionNames(extensions)
+                    .setQueueCreateInfos(queue_infos)
+                    .setPNext(&features2);
 
     return device.createDeviceUnique(info);
 }
-vk::UniqueSwapchainKHR create_swapchain(vk::PhysicalDevice physical_device, vk::Device device, vk::SurfaceKHR surface,
-                                        vk::Extent2D extent, uint32_t queue_family_count)
+std::pair<vk::UniqueSwapchainKHR, vk::Format> create_swapchain(vk::PhysicalDevice physical_device, vk::Device device,
+                                                               vk::SurfaceKHR surface, vk::Extent2D extent,
+                                                               uint32_t queue_family_count, uint32_t image_count)
 {
     std::vector<vk::SurfaceFormatKHR> formats = physical_device.getSurfaceFormatsKHR(surface);
     assert(!formats.empty());
@@ -95,7 +99,10 @@ vk::UniqueSwapchainKHR create_swapchain(vk::PhysicalDevice physical_device, vk::
     // HARD: Other present modes
     vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;
 
-    uint32_t image_count = surface_capabilities.minImageCount + 1;
+    if (image_count > surface_capabilities.maxImageCount || image_count < surface_capabilities.minImageCount)
+    {
+        throw std::runtime_error("Failed to create swapchain with required image count");
+    }
 
     auto info =
         vk::SwapchainCreateInfoKHR{}
@@ -114,7 +121,7 @@ vk::UniqueSwapchainKHR create_swapchain(vk::PhysicalDevice physical_device, vk::
 
     //.setImageSharingMode(sharing);
 
-    return device.createSwapchainKHRUnique(info);
+    return std::make_pair(device.createSwapchainKHRUnique(info), format);
 }
 vk::UniqueCommandPool create_command_pool(vk::Device device, uint32_t queue_family, vk::CommandPoolCreateFlags flags)
 {
@@ -143,6 +150,32 @@ vk::UniqueSemaphore create_semaphore(vk::Device device)
     auto info = vk::SemaphoreCreateInfo{};
 
     return device.createSemaphoreUnique(info);
+}
+void transition_image(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout current_layout,
+                      vk::ImageLayout new_layout)
+{
+    vk::ImageAspectFlags aspect_mask = (new_layout == vk::ImageLayout::eDepthAttachmentOptimal)
+                                           ? vk::ImageAspectFlagBits::eDepth
+                                           : vk::ImageAspectFlagBits::eColor;
+
+    auto image_barrier = vk::ImageMemoryBarrier2{}
+                             .setSrcStageMask(vk::PipelineStageFlagBits2::eAllCommands)
+                             .setSrcAccessMask(vk::AccessFlagBits2::eMemoryWrite)
+                             .setDstStageMask(vk::PipelineStageFlagBits2::eAllCommands)
+                             .setDstAccessMask(vk::AccessFlagBits2::eMemoryWrite | vk::AccessFlagBits2::eMemoryRead)
+                             .setOldLayout(current_layout)
+                             .setNewLayout(new_layout)
+                             .setSubresourceRange(vk::ImageSubresourceRange{}
+                                                      .setAspectMask(aspect_mask)
+                                                      .setBaseMipLevel(0)
+                                                      .setLevelCount(vk::RemainingMipLevels)
+                                                      .setBaseArrayLayer(0)
+                                                      .setLayerCount(vk::RemainingArrayLayers))
+                             .setImage(image);
+
+    auto dep_info = vk::DependencyInfo{}.setImageMemoryBarriers(image_barrier);
+
+    cmd.pipelineBarrier2(dep_info);
 }
 } // namespace utils
 } // namespace ving

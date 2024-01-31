@@ -17,13 +17,16 @@ uint32_t find_queue_family(std::span<vk::QueueFamilyProperties> queue_families, 
 uint32_t find_present_queue(std::span<vk::QueueFamilyProperties> queue_families, vk::PhysicalDevice physical_device,
                             vk::SurfaceKHR surface);
 vk::UniqueDevice create_device(vk::PhysicalDevice device, std::span<vk::DeviceQueueCreateInfo> queue_infos,
-                               std::span<const char *> extensions);
-vk::UniqueSwapchainKHR create_swapchain(vk::PhysicalDevice physical_device, vk::Device device, vk::SurfaceKHR surface,
-                                        vk::Extent2D extent, uint32_t queue_family_count);
+                               std::span<const char *> extensions, vk::PhysicalDeviceFeatures2 features2);
+std::pair<vk::UniqueSwapchainKHR, vk::Format> create_swapchain(vk::PhysicalDevice physical_device, vk::Device device,
+                                                               vk::SurfaceKHR surface, vk::Extent2D extent,
+                                                               uint32_t queue_family_count, uint32_t image_count);
 
 vk::UniqueCommandPool create_command_pool(vk::Device device, uint32_t queue_family, vk::CommandPoolCreateFlags flags);
 std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(vk::Device device, vk::CommandPool pool, uint32_t count);
 vk::UniqueFence create_fence(vk::Device device, vk::FenceCreateFlags flags);
 vk::UniqueSemaphore create_semaphore(vk::Device device);
+void transition_image(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout current_layout,
+                      vk::ImageLayout new_layout);
 } // namespace utils
 } // namespace ving

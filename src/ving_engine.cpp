@@ -1,8 +1,10 @@
 #include "ving_engine.hpp"
 
 #include <SDL3/SDL.h>
+#include <cmath>
 #include <iostream>
 
+#include "ving_defaults.hpp"
 #include "ving_utils.hpp"
 
 namespace ving
@@ -17,6 +19,7 @@ Engine::Engine()
 
     init_window();
     init_vulkan();
+    init_frames();
 }
 
 void Engine::run()
@@ -33,11 +36,71 @@ void Engine::run()
 
             // TODO: Stop rendering on window minimized
         }
+        draw();
     }
 }
 
 void Engine::draw()
 {
+    // NOTE: Idk why but wait for fences is nodiscard however it checks result value in the function
+    vk::Result result = m_device->waitForFences(*get_current_frame().render_fence, true, 1000000000);
+    m_device->resetFences(*get_current_frame().render_fence);
+
+    auto acqurie_image_res = m_device->acquireNextImageKHR(*m_swapchain, std::numeric_limits<uint64_t>::max(),
+                                                           *get_current_frame().swapchain_semaphore);
+
+    vk::resultCheck(acqurie_image_res.result, "Failed to acquire swapchain image");
+
+    uint32_t swapchain_image_index = acqurie_image_res.value;
+
+    vk::CommandBuffer cmd = *get_current_frame().command_buffer;
+
+    cmd.reset();
+
+    auto begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    vk::resultCheck(cmd.begin(&begin_info), "Command buffer begin failed");
+
+    utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eUndefined,
+                            vk::ImageLayout::eGeneral);
+
+    float flash = std::abs(std::sin(m_frame_number / 120.0f));
+    auto clear_value = vk::ClearColorValue{}.setFloat32({0.0f, 0.0f, flash, 1.0f});
+    auto clear_range = def::image_subresource_range_no_mip_no_levels(vk::ImageAspectFlagBits::eColor);
+
+    cmd.clearColorImage(m_swapchain_images[swapchain_image_index], vk::ImageLayout::eGeneral, clear_value, clear_range);
+
+    utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eGeneral,
+                            vk::ImageLayout::ePresentSrcKHR);
+
+    cmd.end();
+
+    auto cmd_info = vk::CommandBufferSubmitInfo{}.setCommandBuffer(cmd);
+
+    auto wait_info = vk::SemaphoreSubmitInfo{}
+                         .setSemaphore(*get_current_frame().swapchain_semaphore)
+                         .setStageMask(vk::PipelineStageFlagBits2::eAllCommands)
+                         .setValue(1);
+
+    auto signal_info = vk::SemaphoreSubmitInfo{}
+                           .setSemaphore(*get_current_frame().render_semaphore)
+                           .setStageMask(vk::PipelineStageFlagBits2::eAllCommands)
+                           .setValue(1);
+
+    auto submit = vk::SubmitInfo2{}
+                      .setWaitSemaphoreInfos(wait_info)
+                      .setSignalSemaphoreInfos(signal_info)
+                      .setCommandBufferInfos(cmd_info);
+
+    m_graphics_queue.submit2(submit, *get_current_frame().render_fence);
+
+    auto present_info = vk::PresentInfoKHR{}
+                            .setSwapchains(*m_swapchain)
+                            .setWaitSemaphores(*get_current_frame().render_semaphore)
+                            .setImageIndices(swapchain_image_index);
+
+    vk::Result present_res = m_present_queue.presentKHR(&present_info);
+
+    m_frame_number++;
 }
 void Engine::init_window()
 {
@@ -105,14 +168,37 @@ void Engine::init_vulkan()
                                   .setQueueFamilyIndex(present_family_index));
     }
 
-    m_device = utils::create_device(m_physical_device, queue_infos, required_device_extensions);
+    auto features2 = m_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features,
+                                                    vk::PhysicalDeviceVulkan12Features>();
+    m_device = utils::create_device(m_physical_device, queue_infos, required_device_extensions,
+                                    features2.get<vk::PhysicalDeviceFeatures2>());
 
     // WARN: Could actually be the same queue
     m_graphics_queue = m_device->getQueue(graphics_family_index, 0);
     m_present_queue = m_device->getQueue(present_family_index, 0);
 
-    m_swapchain = utils::create_swapchain(m_physical_device, *m_device, *m_surface, m_window_extent,
-                                          graphics_family_index == present_family_index ? 1 : 2);
+    {
+        auto swapchain =
+            utils::create_swapchain(m_physical_device, *m_device, *m_surface, m_window_extent,
+                                    graphics_family_index == present_family_index ? 1 : 2, frames_in_flight);
+        m_swapchain = std::move(swapchain.first);
+        m_swapchain_image_format = std::move(swapchain.second);
+
+        m_swapchain_images = m_device->getSwapchainImagesKHR(*m_swapchain);
+#if 0
+        m_swapchain_image_views.reserve(m_swapchain_images.size());
+        auto image_view_info =
+            vk::ImageViewCreateInfo{}
+                .setViewType(vk::ImageViewType::e2D)
+                .setFormat(m_swapchain_image_format)
+                .setSubresourceRange(def::image_subresource_range_no_mip_no_levels(vk::ImageAspectFlagBits::eColor));
+        for (auto &&image : m_swapchain_images)
+        {
+            image_view_info.image = image;
+            m_swapchain_image_views.push_back(m_device->createImageViewUnique(image_view_info));
+        }
+#endif
+    }
 }
 void Engine::init_frames()
 {

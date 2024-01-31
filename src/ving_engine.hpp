@@ -40,6 +40,8 @@ class Engine
   public:
     void run();
 
+    FrameData &get_current_frame() { return m_frames[m_frame_number % frames_in_flight]; }
+
   private:
     void draw();
 
@@ -62,7 +64,11 @@ class Engine
     vk::Queue m_present_queue;
 
     vk::UniqueSwapchainKHR m_swapchain;
+    vk::Format m_swapchain_image_format;
+    std::vector<vk::Image> m_swapchain_images;
+    std::vector<vk::UniqueImageView> m_swapchain_image_views;
 
+    uint32_t m_frame_number{0};
     std::array<FrameData, frames_in_flight> m_frames;
 };
 } // namespace ving
