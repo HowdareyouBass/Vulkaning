@@ -59,33 +59,37 @@ void Engine::draw()
     m_device->resetFences(*get_current_frame().render_fence);
 
     // HACK: Using uint64_t limit to wait for image because 1sec wasn't enought for first image acquisition
-    auto acqurie_image_res = m_device->acquireNextImageKHR(*m_swapchain, std::numeric_limits<uint64_t>::max(),
+    auto acquire_image_res = m_device->acquireNextImageKHR(*m_swapchain, std::numeric_limits<uint64_t>::max(),
                                                            *get_current_frame().swapchain_semaphore);
 
-    vk::resultCheck(acqurie_image_res.result, "Failed to acquire swapchain image");
-
-    uint32_t swapchain_image_index = acqurie_image_res.value;
+    vk::resultCheck(acquire_image_res.result, "Failed to acquire swapchain image");
+    uint32_t swapchain_image_index = acquire_image_res.value;
 
     vk::CommandBuffer cmd = *get_current_frame().command_buffer;
 
     cmd.reset();
-
+    // Command Buffer Begin
     auto begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     vk::resultCheck(cmd.begin(&begin_info), "Command buffer begin failed");
 
-    utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eUndefined,
-                            vk::ImageLayout::eGeneral);
+    m_draw_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
 
     float flash = std::abs(std::sin(m_frame_number / 120.0f));
     auto clear_value = vk::ClearColorValue{}.setFloat32({0.0f, 0.0f, flash, 1.0f});
     auto clear_range = def::image_subresource_range_no_mip_no_levels(vk::ImageAspectFlagBits::eColor);
 
-    cmd.clearColorImage(m_swapchain_images[swapchain_image_index], vk::ImageLayout::eGeneral, clear_value, clear_range);
+    cmd.clearColorImage(m_draw_image.image(), vk::ImageLayout::eGeneral, clear_value, clear_range);
 
-    utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eGeneral,
+    utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eUndefined,
+                            vk::ImageLayout::eTransferDstOptimal);
+    m_draw_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
+
+    utils::copy_image_to_image(cmd, m_draw_image.image(), m_swapchain_images[swapchain_image_index],
+                               m_draw_image.extent(), m_swapchain_extent);
+    utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eTransferDstOptimal,
                             vk::ImageLayout::ePresentSrcKHR);
-
     cmd.end();
+    // Command buffer end
 
     auto cmd_info = vk::CommandBufferSubmitInfo{}.setCommandBuffer(cmd);
 
@@ -198,7 +202,7 @@ void Engine::init_vulkan()
                                     graphics_family_index == present_family_index ? 1 : 2, frames_in_flight);
         m_swapchain = std::move(swapchain.first);
         m_swapchain_image_format = std::move(swapchain.second);
-
+        m_swapchain_extent = m_window_extent;
         m_swapchain_images = m_device->getSwapchainImagesKHR(*m_swapchain);
 #if 0
         m_swapchain_image_views.reserve(m_swapchain_images.size());

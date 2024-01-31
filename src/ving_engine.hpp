@@ -78,6 +78,7 @@ class Engine
 
     vk::UniqueSwapchainKHR m_swapchain;
     vk::Format m_swapchain_image_format;
+    vk::Extent2D m_swapchain_extent;
     std::vector<vk::Image> m_swapchain_images;
     std::vector<vk::UniqueImageView> m_swapchain_image_views;
 

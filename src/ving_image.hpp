@@ -11,6 +11,9 @@ class Image2D
 
     void transition_layout(vk::CommandBuffer cmd, vk::ImageLayout new_layout);
 
+    [[nodiscard]] vk::Image image() const noexcept { return *m_image; }
+    [[nodiscard]] vk::Extent2D extent() const noexcept { return {m_extent.width, m_extent.height}; }
+
   private:
     vk::UniqueImage m_image;
     vk::UniqueImageView m_view;

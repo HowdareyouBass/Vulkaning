@@ -209,8 +209,7 @@ void copy_image_to_image(vk::CommandBuffer cmd, vk::Image source, vk::Image dst,
     auto blit_region = vk::ImageBlit2{}
                            .setSrcOffsets({vk::Offset3D{}, vk::Offset3D{static_cast<int32_t>(src_size.width),
                                                                         static_cast<int32_t>(src_size.height), 1}})
-                           .setDstOffsets({vk::Offset3D{}, vk::Offset3D{static_cast<int32_t>(dst_size.width),
-                                                                        static_cast<int32_t>(dst_size.height), 1}})
+                           .setDstOffsets({dst_size.width, dst_size.height})
                            .setSrcSubresource(vk::ImageSubresourceLayers{}
                                                   .setAspectMask(vk::ImageAspectFlagBits::eColor)
                                                   .setBaseArrayLayer(0)
