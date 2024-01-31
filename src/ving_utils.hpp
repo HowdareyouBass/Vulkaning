@@ -21,5 +21,9 @@ vk::UniqueDevice create_device(vk::PhysicalDevice device, std::span<vk::DeviceQu
 vk::UniqueSwapchainKHR create_swapchain(vk::PhysicalDevice physical_device, vk::Device device, vk::SurfaceKHR surface,
                                         vk::Extent2D extent, uint32_t queue_family_count);
 
+vk::UniqueCommandPool create_command_pool(vk::Device device, uint32_t queue_family, vk::CommandPoolCreateFlags flags);
+std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(vk::Device device, vk::CommandPool pool, uint32_t count);
+vk::UniqueFence create_fence(vk::Device device, vk::FenceCreateFlags flags);
+vk::UniqueSemaphore create_semaphore(vk::Device device);
 } // namespace utils
 } // namespace ving

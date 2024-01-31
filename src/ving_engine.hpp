@@ -9,8 +9,24 @@ namespace ving
 class Engine
 {
   public:
+    struct FrameData
+    {
+        vk::UniqueCommandPool command_pool;
+        vk::UniqueCommandBuffer command_buffer;
+
+        vk::UniqueSemaphore swapchain_semaphore, render_semaphore;
+        vk::UniqueFence render_fence;
+    };
+    struct QueueFamilyInfo
+    {
+        uint32_t graphics_family;
+        uint32_t present_family;
+    };
+
     Engine();
 
+    // HARD: More frames in flight (tripple buffering)
+    static constexpr int frames_in_flight = 2;
     static constexpr bool enable_validation_layers = true;
 
     static constexpr int start_window_width = 800;
@@ -29,6 +45,7 @@ class Engine
 
     void init_window();
     void init_vulkan();
+    void init_frames();
 
   private:
     vk::Extent2D m_window_extent{start_window_width, start_window_height};
@@ -39,10 +56,13 @@ class Engine
     vk::UniqueSurfaceKHR m_surface;
     vk::PhysicalDevice m_physical_device;
     vk::UniqueDevice m_device;
+    QueueFamilyInfo m_queue_family_info;
 
     vk::Queue m_graphics_queue;
     vk::Queue m_present_queue;
 
     vk::UniqueSwapchainKHR m_swapchain;
+
+    std::array<FrameData, frames_in_flight> m_frames;
 };
 } // namespace ving

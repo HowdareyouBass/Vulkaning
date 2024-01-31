@@ -84,6 +84,9 @@ void Engine::init_vulkan()
         throw std::runtime_error("Failed to find present queue on current device");
     }
 
+    m_queue_family_info.present_family = present_family_index;
+    m_queue_family_info.graphics_family = graphics_family_index;
+
     // HARD: Hardcoded
     float queue_priority = 1.0f;
 
@@ -110,5 +113,20 @@ void Engine::init_vulkan()
 
     m_swapchain = utils::create_swapchain(m_physical_device, *m_device, *m_surface, m_window_extent,
                                           graphics_family_index == present_family_index ? 1 : 2);
+}
+void Engine::init_frames()
+{
+    for (auto &&frame : m_frames)
+    {
+        frame.command_pool = utils::create_command_pool(*m_device, m_queue_family_info.graphics_family,
+                                                        vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+        std::vector<vk::UniqueCommandBuffer> buffers =
+            utils::allocate_command_buffers(*m_device, *frame.command_pool, 1);
+
+        frame.command_buffer = std::move(buffers[0]);
+        frame.render_fence = utils::create_fence(*m_device, vk::FenceCreateFlagBits::eSignaled);
+        frame.swapchain_semaphore = utils::create_semaphore(*m_device);
+        frame.render_semaphore = utils::create_semaphore(*m_device);
+    }
 }
 } // namespace ving

@@ -116,5 +116,33 @@ vk::UniqueSwapchainKHR create_swapchain(vk::PhysicalDevice physical_device, vk::
 
     return device.createSwapchainKHRUnique(info);
 }
+vk::UniqueCommandPool create_command_pool(vk::Device device, uint32_t queue_family, vk::CommandPoolCreateFlags flags)
+{
+    auto info = vk::CommandPoolCreateInfo{}.setQueueFamilyIndex(queue_family).setFlags(flags);
+
+    return device.createCommandPoolUnique(info);
+}
+std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(vk::Device device, vk::CommandPool pool, uint32_t count)
+{
+    // HARD: Secondary command buffers
+    auto info = vk::CommandBufferAllocateInfo{}
+                    .setLevel(vk::CommandBufferLevel::ePrimary)
+                    .setCommandPool(pool)
+                    .setCommandBufferCount(count);
+
+    return device.allocateCommandBuffersUnique(info);
+}
+vk::UniqueFence create_fence(vk::Device device, vk::FenceCreateFlags flags)
+{
+    auto info = vk::FenceCreateInfo{}.setFlags(flags);
+
+    return device.createFenceUnique(info);
+}
+vk::UniqueSemaphore create_semaphore(vk::Device device)
+{
+    auto info = vk::SemaphoreCreateInfo{};
+
+    return device.createSemaphoreUnique(info);
+}
 } // namespace utils
 } // namespace ving
