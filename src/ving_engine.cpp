@@ -1,8 +1,9 @@
 #include "ving_engine.hpp"
 
-#include <SDL3/SDL.h>
 #include <cmath>
 #include <iostream>
+
+#include <SDL3/SDL.h>
 
 #include "ving_defaults.hpp"
 #include "ving_utils.hpp"
@@ -20,6 +21,17 @@ Engine::Engine()
     init_window();
     init_vulkan();
     init_frames();
+
+    m_draw_extent = m_window_extent;
+
+    m_draw_image =
+        Image2D{*m_device, memory_properties, vk::Extent3D{m_draw_extent, 1}, vk::Format::eR16G16B16A16Sfloat,
+                vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst |
+                    vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment};
+}
+Engine::~Engine()
+{
+    m_device->waitIdle();
 }
 
 void Engine::run()
@@ -46,6 +58,7 @@ void Engine::draw()
     vk::Result result = m_device->waitForFences(*get_current_frame().render_fence, true, 1000000000);
     m_device->resetFences(*get_current_frame().render_fence);
 
+    // HACK: Using uint64_t limit to wait for image because 1sec wasn't enought for first image acquisition
     auto acqurie_image_res = m_device->acquireNextImageKHR(*m_swapchain, std::numeric_limits<uint64_t>::max(),
                                                            *get_current_frame().swapchain_semaphore);
 
@@ -134,6 +147,8 @@ void Engine::init_vulkan()
 
     std::vector<vk::PhysicalDevice> available_devices = m_instance->enumeratePhysicalDevices();
     m_physical_device = utils::pick_physical_device(available_devices);
+
+    memory_properties = m_physical_device.getMemoryProperties();
 
     std::vector<vk::QueueFamilyProperties> queue_families = m_physical_device.getQueueFamilyProperties();
     uint32_t graphics_family_index = utils::find_queue_family(queue_families, vk::QueueFlagBits::eGraphics);

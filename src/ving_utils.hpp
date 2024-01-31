@@ -28,5 +28,8 @@ vk::UniqueFence create_fence(vk::Device device, vk::FenceCreateFlags flags);
 vk::UniqueSemaphore create_semaphore(vk::Device device);
 void transition_image(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout current_layout,
                       vk::ImageLayout new_layout);
+uint32_t find_memory_type(vk::PhysicalDeviceMemoryProperties mem_properties, uint32_t type_filter,
+                          vk::MemoryPropertyFlags prop_flags);
+int get_format_size(vk::Format format);
 } // namespace utils
 } // namespace ving

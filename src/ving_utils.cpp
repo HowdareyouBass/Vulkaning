@@ -177,5 +177,31 @@ void transition_image(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout cu
 
     cmd.pipelineBarrier2(dep_info);
 }
+uint32_t find_memory_type(vk::PhysicalDeviceMemoryProperties mem_properties, uint32_t type_filter,
+                          vk::MemoryPropertyFlags prop_flags)
+{
+    for (uint32_t i = 0; i < mem_properties.memoryTypeCount; ++i)
+    {
+        if (type_filter & (1 << i) && (mem_properties.memoryTypes[i].propertyFlags & prop_flags) == prop_flags)
+        {
+            return i;
+        }
+    }
+
+    throw std::runtime_error("Failed to find suitable memory type");
+}
+int get_format_size(vk::Format format)
+{
+    switch (format)
+    {
+    case vk::Format::eR8G8B8A8Unorm:
+    case vk::Format::eD32Sfloat:
+        return 4;
+    case vk::Format::eR16G16B16A16Sfloat:
+        return 8;
+    default:
+        return 0;
+    }
+}
 } // namespace utils
 } // namespace ving
