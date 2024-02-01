@@ -56,10 +56,16 @@ class Engine
 
   private:
     void draw();
+    void draw_slime();
 
     void init_window();
     void init_vulkan();
     void init_frames();
+    void init_descriptors();
+    void init_pipelines();
+
+    void init_slime_descriptors();
+    void init_slime_pipeline();
 
   private:
     vk::Extent2D m_window_extent{start_window_width, start_window_height};
@@ -87,5 +93,11 @@ class Engine
 
     Image2D m_draw_image;
     vk::Extent2D m_draw_extent;
+
+    vk::UniqueDescriptorSetLayout m_slime_descriptor_layout;
+    vk::UniqueDescriptorPool m_slime_descriptor_pool;
+    vk::DescriptorSet m_slime_descriptor;
+    vk::UniquePipelineLayout m_slime_layout;
+    vk::UniquePipeline m_slime_pipeline;
 };
 } // namespace ving

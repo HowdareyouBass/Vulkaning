@@ -24,10 +24,16 @@ Engine::Engine()
 
     m_draw_extent = m_window_extent;
 
-    m_draw_image =
-        Image2D{*m_device, memory_properties, vk::Extent3D{m_draw_extent, 1}, vk::Format::eR16G16B16A16Sfloat,
-                vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst |
-                    vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment};
+    m_draw_image = Image2D{*m_device,
+                           memory_properties,
+                           vk::Extent3D{m_draw_extent, 1},
+                           vk::Format::eR16G16B16A16Sfloat,
+                           vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst |
+                               vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment,
+                           vk::ImageLayout::eUndefined};
+
+    init_descriptors();
+    init_pipelines();
 }
 Engine::~Engine()
 {
@@ -74,11 +80,17 @@ void Engine::draw()
 
     m_draw_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
 
+// Clear
+#if 0
     float flash = std::abs(std::sin(m_frame_number / 120.0f));
     auto clear_value = vk::ClearColorValue{}.setFloat32({0.0f, 0.0f, flash, 1.0f});
     auto clear_range = def::image_subresource_range_no_mip_no_levels(vk::ImageAspectFlagBits::eColor);
 
     cmd.clearColorImage(m_draw_image.image(), vk::ImageLayout::eGeneral, clear_value, clear_range);
+#endif
+    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *m_slime_pipeline);
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *m_slime_layout, 0, m_slime_descriptor, nullptr);
+    cmd.dispatch(std::ceil(m_draw_image.extent().width / 16.0), std::ceil(m_draw_image.extent().height), 1);
 
     utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eUndefined,
                             vk::ImageLayout::eTransferDstOptimal);
@@ -119,6 +131,10 @@ void Engine::draw()
 
     m_frame_number++;
 }
+void Engine::draw_slime()
+{
+}
+
 void Engine::init_window()
 {
     if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
@@ -233,5 +249,66 @@ void Engine::init_frames()
         frame.swapchain_semaphore = utils::create_semaphore(*m_device);
         frame.render_semaphore = utils::create_semaphore(*m_device);
     }
+}
+void Engine::init_descriptors()
+{
+    init_slime_descriptors();
+}
+void Engine::init_pipelines()
+{
+    init_slime_pipeline();
+}
+void Engine::init_slime_descriptors()
+{
+    auto binding = vk::DescriptorSetLayoutBinding{}
+                       .setBinding(0)
+                       .setStageFlags(vk::ShaderStageFlagBits::eCompute)
+                       .setDescriptorType(vk::DescriptorType::eStorageImage)
+                       .setDescriptorCount(1);
+
+    auto layout_info = vk::DescriptorSetLayoutCreateInfo{}.setBindings(binding);
+
+    m_slime_descriptor_layout = m_device->createDescriptorSetLayoutUnique(layout_info);
+
+    auto pool_sizes = vk::DescriptorPoolSize{}.setDescriptorCount(1).setType(vk::DescriptorType::eStorageImage);
+    auto pool_info = vk::DescriptorPoolCreateInfo{}.setMaxSets(3).setPoolSizes(pool_sizes);
+
+    m_slime_descriptor_pool = m_device->createDescriptorPoolUnique(pool_info);
+
+    auto alloc_info = vk::DescriptorSetAllocateInfo{}
+                          .setSetLayouts(*m_slime_descriptor_layout)
+                          .setDescriptorPool(*m_slime_descriptor_pool);
+
+    std::vector<vk::DescriptorSet> sets = m_device->allocateDescriptorSets(alloc_info);
+
+    m_slime_descriptor = std::move(sets[0]);
+
+    auto draw_image_info =
+        vk::DescriptorImageInfo{}.setImageLayout(vk::ImageLayout::eGeneral).setImageView(m_draw_image.view());
+
+    auto draw_image_write = vk::WriteDescriptorSet{}
+                                .setDstBinding(0)
+                                .setDstSet(m_slime_descriptor)
+                                .setDescriptorCount(1)
+                                .setDescriptorType(vk::DescriptorType::eStorageImage)
+                                .setImageInfo(draw_image_info);
+
+    m_device->updateDescriptorSets(draw_image_write, nullptr);
+}
+void Engine::init_slime_pipeline()
+{
+    auto layout_info = vk::PipelineLayoutCreateInfo{}.setSetLayouts(*m_slime_descriptor_layout);
+    m_slime_layout = m_device->createPipelineLayoutUnique(layout_info);
+
+    auto slime_shader = utils::create_shader_module(*m_device, "shaders/simple_color.comp.spv");
+
+    auto stage_info = vk::PipelineShaderStageCreateInfo{}
+                          .setPName("main")
+                          .setStage(vk::ShaderStageFlagBits::eCompute)
+                          .setModule(*slime_shader);
+
+    auto info = vk::ComputePipelineCreateInfo{}.setStage(stage_info).setLayout(*m_slime_layout);
+
+    m_slime_pipeline = m_device->createComputePipelineUnique({}, info).value;
 }
 } // namespace ving

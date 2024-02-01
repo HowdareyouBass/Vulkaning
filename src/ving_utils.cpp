@@ -1,6 +1,9 @@
 #include "ving_utils.hpp"
 
+#include <fstream>
+
 #include <SDL3/SDL_vulkan.h>
+#include <iostream>
 
 namespace ving
 {
@@ -151,6 +154,14 @@ vk::UniqueSemaphore create_semaphore(vk::Device device)
 
     return device.createSemaphoreUnique(info);
 }
+vk::UniqueShaderModule create_shader_module(vk::Device device, std::string_view shader_path)
+{
+    std::vector<uint32_t> shader_code = read_shader_file(shader_path);
+
+    auto info = vk::ShaderModuleCreateInfo{}.setCode(shader_code);
+
+    return device.createShaderModuleUnique(info);
+}
 void transition_image(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout current_layout,
                       vk::ImageLayout new_layout)
 {
@@ -202,6 +213,29 @@ int get_format_size(vk::Format format)
     default:
         return 0;
     }
+}
+std::vector<uint32_t> read_shader_file(std::filesystem::path path)
+{
+    std::ifstream file{path, std::ios::ate | std::ios::binary};
+
+    // TODO: Proper error or excepiton handling
+    if (!file.is_open())
+    {
+        std::cerr << "Failed to open the file: " << path;
+        return {};
+    }
+
+    size_t file_size = file.tellg();
+
+    std::vector<uint32_t> buffer(file_size / sizeof(uint32_t));
+
+    file.seekg(0);
+
+    file.read(reinterpret_cast<char *>(buffer.data()), file_size);
+
+    file.close();
+
+    return buffer;
 }
 void copy_image_to_image(vk::CommandBuffer cmd, vk::Image source, vk::Image dst, vk::Extent2D src_size,
                          vk::Extent2D dst_size)

@@ -1,5 +1,7 @@
 #pragma once
 
+#include <filesystem>
+
 #include <SDL3/SDL_video.h>
 
 namespace ving
@@ -15,6 +17,7 @@ uint32_t find_present_queue(std::span<vk::QueueFamilyProperties> queue_families,
 uint32_t find_memory_type(vk::PhysicalDeviceMemoryProperties mem_properties, uint32_t type_filter,
                           vk::MemoryPropertyFlags prop_flags);
 int get_format_size(vk::Format format);
+std::vector<uint32_t> read_shader_file(std::filesystem::path path);
 
 // Create
 vk::UniqueInstance create_instance(std::string_view app_name, uint32_t app_version, std::string_view engine_name,
@@ -30,6 +33,7 @@ vk::UniqueCommandPool create_command_pool(vk::Device device, uint32_t queue_fami
 std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(vk::Device device, vk::CommandPool pool, uint32_t count);
 vk::UniqueFence create_fence(vk::Device device, vk::FenceCreateFlags flags);
 vk::UniqueSemaphore create_semaphore(vk::Device device);
+vk::UniqueShaderModule create_shader_module(vk::Device device, std::string_view shader_path);
 
 // Images
 void transition_image(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout current_layout,

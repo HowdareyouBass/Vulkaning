@@ -6,7 +6,7 @@
 namespace ving
 {
 Image2D::Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_mem_props, vk::Extent3D extent,
-                 vk::Format format, vk::ImageUsageFlags usage)
+                 vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout layout)
 {
     // Image
     auto info = vk::ImageCreateInfo{}
@@ -15,13 +15,12 @@ Image2D::Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_me
                     .setExtent(extent)
                     .setMipLevels(1)
                     .setArrayLayers(1)
-                    .setUsage(usage);
-    VkImageCreateInfo cinfo = static_cast<VkImageCreateInfo>(info);
-
-    uint32_t bytes_per_pixel = utils::get_format_size(format);
+                    .setUsage(usage)
+                    .setInitialLayout(layout);
 
     m_image = device.createImageUnique(info);
     // Memory
+    uint32_t bytes_per_pixel = utils::get_format_size(format);
     auto image_memory_requirements = device.getImageMemoryRequirements(*m_image);
     auto alloc_info =
         vk::MemoryAllocateInfo{}
@@ -46,7 +45,7 @@ Image2D::Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_me
                          .setSubresourceRange(def::image_subresource_range_no_mip_no_levels(aspect_flags));
 
     m_view = device.createImageViewUnique(view_info);
-    m_layout = vk::ImageLayout::eUndefined;
+    m_layout = layout;
     m_format = format;
     m_extent = extent;
 }
