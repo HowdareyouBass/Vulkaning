@@ -6,6 +6,7 @@
 #include <SDL3/SDL.h>
 
 #include "ving_defaults.hpp"
+#include "ving_descriptors.hpp"
 #include "ving_utils.hpp"
 
 namespace ving
@@ -54,6 +55,7 @@ void Engine::run()
 
             // TODO: Stop rendering on window minimized
         }
+
         draw();
     }
 }
@@ -90,6 +92,11 @@ void Engine::draw()
 #endif
     cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *m_slime_pipeline);
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *m_slime_layout, 0, m_slime_descriptor, nullptr);
+
+    SlimePushConstants push_constants;
+    push_constants.delta_time = m_delta_time;
+    cmd.pushConstants<SlimePushConstants>(*m_slime_layout, vk::ShaderStageFlagBits::eCompute, 0, push_constants);
+
     cmd.dispatch(std::ceil(m_draw_image.extent().width / 16.0), std::ceil(m_draw_image.extent().height), 1);
 
     utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eUndefined,
@@ -260,28 +267,17 @@ void Engine::init_pipelines()
 }
 void Engine::init_slime_descriptors()
 {
-    auto binding = vk::DescriptorSetLayoutBinding{}
-                       .setBinding(0)
-                       .setStageFlags(vk::ShaderStageFlagBits::eCompute)
-                       .setDescriptorType(vk::DescriptorType::eStorageImage)
-                       .setDescriptorCount(1);
 
-    auto layout_info = vk::DescriptorSetLayoutCreateInfo{}.setBindings(binding);
+    m_slime_descriptor_layout = DescriptorLayoutBuilder{}
+                                    .add_binding(0, vk::DescriptorType::eStorageImage)
+                                    .build(*m_device, vk::ShaderStageFlagBits::eCompute);
 
-    m_slime_descriptor_layout = m_device->createDescriptorSetLayoutUnique(layout_info);
+    auto sizes = std::vector<DescriptorAllocator::PoolSizeRatio>{
+        {vk::DescriptorType::eStorageImage, 1},
+    };
+    m_slime_descriptor_allocator = DescriptorAllocator{*m_device, 10, sizes};
 
-    auto pool_sizes = vk::DescriptorPoolSize{}.setDescriptorCount(1).setType(vk::DescriptorType::eStorageImage);
-    auto pool_info = vk::DescriptorPoolCreateInfo{}.setMaxSets(3).setPoolSizes(pool_sizes);
-
-    m_slime_descriptor_pool = m_device->createDescriptorPoolUnique(pool_info);
-
-    auto alloc_info = vk::DescriptorSetAllocateInfo{}
-                          .setSetLayouts(*m_slime_descriptor_layout)
-                          .setDescriptorPool(*m_slime_descriptor_pool);
-
-    std::vector<vk::DescriptorSet> sets = m_device->allocateDescriptorSets(alloc_info);
-
-    m_slime_descriptor = std::move(sets[0]);
+    m_slime_descriptor = m_slime_descriptor_allocator.allocate(*m_device, *m_slime_descriptor_layout);
 
     auto draw_image_info =
         vk::DescriptorImageInfo{}.setImageLayout(vk::ImageLayout::eGeneral).setImageView(m_draw_image.view());
@@ -297,10 +293,13 @@ void Engine::init_slime_descriptors()
 }
 void Engine::init_slime_pipeline()
 {
-    auto layout_info = vk::PipelineLayoutCreateInfo{}.setSetLayouts(*m_slime_descriptor_layout);
+    auto push_range =
+        vk::PushConstantRange{}.setSize(sizeof(SlimePushConstants)).setStageFlags(vk::ShaderStageFlagBits::eCompute);
+    auto layout_info =
+        vk::PipelineLayoutCreateInfo{}.setSetLayouts(*m_slime_descriptor_layout).setPushConstantRanges(push_range);
     m_slime_layout = m_device->createPipelineLayoutUnique(layout_info);
 
-    auto slime_shader = utils::create_shader_module(*m_device, "shaders/simple_color.comp.spv");
+    auto slime_shader = utils::create_shader_module(*m_device, "shaders/slime.comp.spv");
 
     auto stage_info = vk::PipelineShaderStageCreateInfo{}
                           .setPName("main")

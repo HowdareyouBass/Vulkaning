@@ -5,10 +5,16 @@
 
 #include <SDL3/SDL_vulkan.h>
 
+#include "ving_descriptors.hpp"
 #include "ving_image.hpp"
 
 namespace ving
 {
+struct SlimePushConstants
+{
+    float delta_time;
+};
+
 class Engine
 {
   public:
@@ -68,6 +74,8 @@ class Engine
     void init_slime_pipeline();
 
   private:
+    float m_delta_time{0};
+
     vk::Extent2D m_window_extent{start_window_width, start_window_height};
 
     SDL_Window *m_window;
@@ -95,7 +103,7 @@ class Engine
     vk::Extent2D m_draw_extent;
 
     vk::UniqueDescriptorSetLayout m_slime_descriptor_layout;
-    vk::UniqueDescriptorPool m_slime_descriptor_pool;
+    DescriptorAllocator m_slime_descriptor_allocator;
     vk::DescriptorSet m_slime_descriptor;
     vk::UniquePipelineLayout m_slime_layout;
     vk::UniquePipeline m_slime_pipeline;

@@ -52,6 +52,9 @@ Image2D::Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_me
 
 void Image2D::transition_layout(vk::CommandBuffer cmd, vk::ImageLayout new_layout)
 {
+    if (new_layout == m_layout)
+        return;
+
     utils::transition_image(cmd, *m_image, m_layout, new_layout);
 
     m_layout = new_layout;
