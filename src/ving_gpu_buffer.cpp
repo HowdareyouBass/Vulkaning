@@ -5,11 +5,11 @@
 namespace ving
 {
 
-GPUBuffer::GPUBuffer(vk::Device device, vk::PhysicalDeviceMemoryProperties device_mem_props, uint32_t size,
+GPUBuffer::GPUBuffer(vk::Device device, vk::PhysicalDeviceMemoryProperties device_mem_props, uint32_t alloc_size,
                      vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memory_flags)
 {
-    // TODO: Abstract memory properties into device class
-    auto buf_info = vk::BufferCreateInfo{}.setSize(size).setUsage(usage).setSharingMode(vk::SharingMode::eExclusive);
+    auto buf_info =
+        vk::BufferCreateInfo{}.setSize(alloc_size).setUsage(usage).setSharingMode(vk::SharingMode::eExclusive);
 
     m_buffer = device.createBufferUnique(buf_info);
 
@@ -24,5 +24,11 @@ GPUBuffer::GPUBuffer(vk::Device device, vk::PhysicalDeviceMemoryProperties devic
     m_memory = device.allocateMemoryUnique(alloc_info);
 
     device.bindBufferMemory(*m_buffer, *m_memory, 0);
+
+    m_size = alloc_size;
+}
+void *GPUBuffer::get_mapped_memory(vk::Device device)
+{
+    return device.mapMemory(*m_memory, 0, m_size);
 }
 } // namespace ving

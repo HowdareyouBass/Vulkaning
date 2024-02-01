@@ -115,7 +115,7 @@ std::pair<vk::UniqueSwapchainKHR, vk::Format> create_swapchain(vk::PhysicalDevic
             .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
             .setImageExtent(extent)
             .setImageArrayLayers(1)
-            .setImageUsage(vk::ImageUsageFlagBits::eTransferDst)
+            .setImageUsage(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment)
             .setQueueFamilyIndexCount(queue_family_count)
             .setPreTransform(surface_capabilities.currentTransform)
             .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)

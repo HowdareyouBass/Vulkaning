@@ -5,6 +5,11 @@
 
 #include <SDL3/SDL.h>
 
+#include <imgui.h>
+
+#include <backends/imgui_impl_sdl3.h>
+#include <backends/imgui_impl_vulkan.h>
+
 #include "ving_defaults.hpp"
 #include "ving_descriptors.hpp"
 #include "ving_utils.hpp"
@@ -35,10 +40,11 @@ Engine::Engine()
 
     init_descriptors();
     init_pipelines();
+    init_imgui();
 }
 Engine::~Engine()
 {
-    m_device->waitIdle();
+    ImGui_ImplVulkan_Shutdown();
 }
 
 void Engine::run()
@@ -53,11 +59,22 @@ void Engine::run()
             if (event.type == SDL_EVENT_QUIT)
                 running = false;
 
+            ImGui_ImplSDL3_ProcessEvent(&event);
+
             // TODO: Stop rendering on window minimized
         }
 
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
+        ImGui::NewFrame();
+
+        ImGui::ShowDemoWindow();
+
+        ImGui::Render();
+
         draw();
     }
+    m_device->waitIdle();
 }
 
 void Engine::draw()
@@ -66,7 +83,7 @@ void Engine::draw()
     vk::Result result = m_device->waitForFences(*get_current_frame().render_fence, true, 1000000000);
     m_device->resetFences(*get_current_frame().render_fence);
 
-    // HACK: Using uint64_t limit to wait for image because 1sec wasn't enought for first image acquisition
+    // HACK: Using uint64_t limit to wait for image because 1sec wasn't enough for first image acquisition
     auto acquire_image_res = m_device->acquireNextImageKHR(*m_swapchain, std::numeric_limits<uint64_t>::max(),
                                                            *get_current_frame().swapchain_semaphore);
 
@@ -82,14 +99,6 @@ void Engine::draw()
 
     m_draw_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
 
-// Clear
-#if 0
-    float flash = std::abs(std::sin(m_frame_number / 120.0f));
-    auto clear_value = vk::ClearColorValue{}.setFloat32({0.0f, 0.0f, flash, 1.0f});
-    auto clear_range = def::image_subresource_range_no_mip_no_levels(vk::ImageAspectFlagBits::eColor);
-
-    cmd.clearColorImage(m_draw_image.image(), vk::ImageLayout::eGeneral, clear_value, clear_range);
-#endif
     cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *m_slime_pipeline);
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *m_slime_layout, 0, m_slime_descriptor, nullptr);
 
@@ -106,6 +115,11 @@ void Engine::draw()
     utils::copy_image_to_image(cmd, m_draw_image.image(), m_swapchain_images[swapchain_image_index],
                                m_draw_image.extent(), m_swapchain_extent);
     utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eTransferDstOptimal,
+                            vk::ImageLayout::eColorAttachmentOptimal);
+
+    draw_imgui(cmd, *m_swapchain_image_views[swapchain_image_index]);
+
+    utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eColorAttachmentOptimal,
                             vk::ImageLayout::ePresentSrcKHR);
     cmd.end();
     // Command buffer end
@@ -137,6 +151,29 @@ void Engine::draw()
     vk::Result present_res = m_present_queue.presentKHR(&present_info);
 
     m_frame_number++;
+}
+void Engine::draw_imgui(vk::CommandBuffer cmd, vk::ImageView target_image_view)
+{
+    // auto color_attachment = def::color_attachment_render_info(target_image_view);
+    //
+    // auto render_info = def::rendering_info(m_swapchain_extent, color_attachment);
+    //
+    auto color_attachment = vk::RenderingAttachmentInfo{}
+                                .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
+                                .setStoreOp(vk::AttachmentStoreOp::eStore)
+                                .setLoadOp(vk::AttachmentLoadOp::eLoad)
+                                .setImageView(target_image_view);
+
+    auto render_info = vk::RenderingInfo{}
+                           .setColorAttachments(color_attachment)
+                           .setLayerCount(1)
+                           .setRenderArea(vk::Rect2D{vk::Offset2D{0, 0}, m_swapchain_extent});
+
+    cmd.beginRendering(render_info);
+
+    ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
+
+    cmd.endRendering();
 }
 void Engine::draw_slime()
 {
@@ -227,7 +264,7 @@ void Engine::init_vulkan()
         m_swapchain_image_format = std::move(swapchain.second);
         m_swapchain_extent = m_window_extent;
         m_swapchain_images = m_device->getSwapchainImagesKHR(*m_swapchain);
-#if 0
+
         m_swapchain_image_views.reserve(m_swapchain_images.size());
         auto image_view_info =
             vk::ImageViewCreateInfo{}
@@ -239,7 +276,6 @@ void Engine::init_vulkan()
             image_view_info.image = image;
             m_swapchain_image_views.push_back(m_device->createImageViewUnique(image_view_info));
         }
-#endif
     }
 }
 void Engine::init_frames()
@@ -256,6 +292,10 @@ void Engine::init_frames()
         frame.swapchain_semaphore = utils::create_semaphore(*m_device);
         frame.render_semaphore = utils::create_semaphore(*m_device);
     }
+    m_imm_pool = utils::create_command_pool(*m_device, m_queue_family_info.graphics_family,
+                                            vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+    m_imm_commands = std::move(utils::allocate_command_buffers(*m_device, *m_imm_pool, 1).back());
+    m_imm_fence = utils::create_fence(*m_device, vk::FenceCreateFlagBits::eSignaled);
 }
 void Engine::init_descriptors()
 {
@@ -264,6 +304,47 @@ void Engine::init_descriptors()
 void Engine::init_pipelines()
 {
     init_slime_pipeline();
+}
+// TODO: Abstract this into a class
+void Engine::init_imgui()
+{
+    vk::DescriptorPoolSize pool_sizes[] = {
+        {vk::DescriptorType::eCombinedImageSampler, 1000}, {vk::DescriptorType::eSampledImage, 1000},
+        {vk::DescriptorType::eStorageImage, 1000},         {vk::DescriptorType::eUniformTexelBuffer, 1000},
+        {vk::DescriptorType::eStorageTexelBuffer, 1000},   {vk::DescriptorType::eUniformBuffer, 1000},
+        {vk::DescriptorType::eStorageBuffer, 1000},        {vk::DescriptorType::eUniformBufferDynamic, 1000},
+        {vk::DescriptorType::eStorageBufferDynamic, 1000}, {vk::DescriptorType::eInputAttachment, 1000},
+    };
+
+    auto pool_info = vk::DescriptorPoolCreateInfo{}
+                         .setMaxSets(1000)
+                         .setPoolSizes(pool_sizes)
+                         .setFlags(vk::DescriptorPoolCreateFlagBits::eFreeDescriptorSet);
+    m_imgui_pool = m_device->createDescriptorPoolUnique(pool_info);
+
+    ImGui::CreateContext();
+
+    // this initializes imgui for SDL
+    ImGui_ImplSDL3_InitForVulkan(m_window);
+
+    // this initializes imgui for Vulkan
+    ImGui_ImplVulkan_InitInfo init_info = {};
+    init_info.Instance = *m_instance;
+    init_info.PhysicalDevice = m_physical_device;
+    init_info.Device = *m_device;
+    init_info.Queue = m_graphics_queue;
+    init_info.DescriptorPool = *m_imgui_pool;
+    init_info.MinImageCount = 3;
+    init_info.ImageCount = 3;
+    init_info.UseDynamicRendering = true;
+    init_info.ColorAttachmentFormat = static_cast<VkFormat>(m_swapchain_image_format);
+
+    init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+    ImGui_ImplVulkan_Init(&init_info, VK_NULL_HANDLE);
+
+    ImGui_ImplVulkan_CreateFontsTexture();
+    ImGui_ImplVulkan_DestroyFontsTexture();
 }
 void Engine::init_slime_descriptors()
 {
@@ -309,5 +390,28 @@ void Engine::init_slime_pipeline()
     auto info = vk::ComputePipelineCreateInfo{}.setStage(stage_info).setLayout(*m_slime_layout);
 
     m_slime_pipeline = m_device->createComputePipelineUnique({}, info).value;
+}
+void Engine::immediate_submit(std::function<void(vk::CommandBuffer cmd)> &&function)
+{
+    m_device->resetFences(*m_imm_fence);
+    m_imm_commands->reset();
+
+    vk::CommandBuffer cmd = *m_imm_commands;
+
+    auto cmd_begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+
+    cmd.begin(cmd_begin_info);
+
+    function(cmd);
+
+    cmd.end();
+
+    auto cmd_info = vk::CommandBufferSubmitInfo{}.setCommandBuffer(cmd);
+
+    auto submit = vk::SubmitInfo2{}.setCommandBufferInfos(cmd_info);
+
+    m_graphics_queue.submit2(submit, *m_imm_fence);
+
+    vk::Result res = m_device->waitForFences(*m_imm_fence, true, std::numeric_limits<uint64_t>::max());
 }
 } // namespace ving

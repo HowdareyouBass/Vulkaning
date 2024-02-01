@@ -1,5 +1,7 @@
 #pragma once
 
+#include <functional>
+
 #define VULKAN_HPP_NO_TO_STRING
 #include <vulkan/vulkan.hpp>
 
@@ -44,8 +46,8 @@ class Engine
     static constexpr int frames_in_flight = 2;
     static constexpr bool enable_validation_layers = true;
 
-    static constexpr int start_window_width = 800;
-    static constexpr int start_window_height = 600;
+    static constexpr int start_window_width = 1280;
+    static constexpr int start_window_height = 720;
 
     // TODO: Maybe abstract this into device class
     vk::PhysicalDeviceMemoryProperties memory_properties;
@@ -62,6 +64,7 @@ class Engine
 
   private:
     void draw();
+    void draw_imgui(vk::CommandBuffer cmd, vk::ImageView target_image_view);
     void draw_slime();
 
     void init_window();
@@ -69,9 +72,12 @@ class Engine
     void init_frames();
     void init_descriptors();
     void init_pipelines();
-
+    void init_imgui();
     void init_slime_descriptors();
     void init_slime_pipeline();
+
+    // HACK: Could use another queue to submit
+    void immediate_submit(std::function<void(vk::CommandBuffer cmd)> &&function);
 
   private:
     float m_delta_time{0};
@@ -102,10 +108,19 @@ class Engine
     Image2D m_draw_image;
     vk::Extent2D m_draw_extent;
 
+    // Immidiate submit structures
+    vk::UniqueFence m_imm_fence;
+    vk::UniqueCommandPool m_imm_pool;
+    vk::UniqueCommandBuffer m_imm_commands;
+
+    // Slime Project
     vk::UniqueDescriptorSetLayout m_slime_descriptor_layout;
     DescriptorAllocator m_slime_descriptor_allocator;
     vk::DescriptorSet m_slime_descriptor;
     vk::UniquePipelineLayout m_slime_layout;
     vk::UniquePipeline m_slime_pipeline;
+
+    // Imgui stuff
+    vk::UniqueDescriptorPool m_imgui_pool;
 };
 } // namespace ving
