@@ -6,8 +6,10 @@
 #include <vulkan/vulkan.hpp>
 
 #include <SDL3/SDL_vulkan.h>
+#include <glm/vec2.hpp>
 
 #include "ving_descriptors.hpp"
+#include "ving_gpu_buffer.hpp"
 #include "ving_image.hpp"
 
 namespace ving
@@ -15,6 +17,14 @@ namespace ving
 struct SlimePushConstants
 {
     float delta_time;
+    int agents_count;
+};
+
+struct Agent
+{
+    glm::vec2 position;
+    float angle;
+    float dummy;
 };
 
 class Engine
@@ -49,6 +59,9 @@ class Engine
     static constexpr int start_window_width = 1280;
     static constexpr int start_window_height = 720;
 
+    // Slime
+    static constexpr int agent_count = 500;
+
     // TODO: Maybe abstract this into device class
     vk::PhysicalDeviceMemoryProperties memory_properties;
 
@@ -70,6 +83,7 @@ class Engine
     void init_window();
     void init_vulkan();
     void init_frames();
+    void init_resources();
     void init_descriptors();
     void init_pipelines();
     void init_imgui();
@@ -114,11 +128,14 @@ class Engine
     vk::UniqueCommandBuffer m_imm_commands;
 
     // Slime Project
-    vk::UniqueDescriptorSetLayout m_slime_descriptor_layout;
-    DescriptorAllocator m_slime_descriptor_allocator;
-    vk::DescriptorSet m_slime_descriptor;
-    vk::UniquePipelineLayout m_slime_layout;
-    vk::UniquePipeline m_slime_pipeline;
+    vk::UniqueDescriptorSetLayout m_background_descriptor_layout;
+    DescriptorAllocator m_background_descriptor_allocator;
+    std::vector<vk::DescriptorSet> m_background_descriptors;
+    vk::UniquePipelineLayout m_background_layout;
+    vk::UniquePipeline m_background_pipeline;
+
+    std::array<Agent, agent_count> m_agents;
+    GPUBuffer m_agents_buffer;
 
     // Imgui stuff
     vk::UniqueDescriptorPool m_imgui_pool;

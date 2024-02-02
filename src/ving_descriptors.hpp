@@ -1,5 +1,6 @@
 #pragma once
 
+#include <deque>
 namespace ving
 {
 class DescriptorLayoutBuilder
@@ -24,10 +25,24 @@ class DescriptorAllocator
     DescriptorAllocator() = default;
     DescriptorAllocator(vk::Device device, uint32_t max_sets, std::span<PoolSizeRatio> pool_ratios);
 
-    vk::DescriptorSet allocate(vk::Device device, vk::DescriptorSetLayout layout);
+    std::vector<vk::DescriptorSet> allocate(vk::Device device, vk::DescriptorSetLayout layout);
     void clear_descriptors(vk::Device device);
 
   private:
     vk::UniqueDescriptorPool m_descriptor_pool;
+};
+
+class DescriptorWriter
+{
+  public:
+    void write_image(int binding, vk::ImageView image, vk::Sampler sampler, vk::ImageLayout layout,
+                     vk::DescriptorType type);
+    void write_buffer(int binding, vk::Buffer buffer, size_t size, size_t offset, vk::DescriptorType type);
+    void update_set(vk::Device device, vk::DescriptorSet set);
+
+  private:
+    std::deque<vk::DescriptorImageInfo> m_image_infos;
+    std::deque<vk::DescriptorBufferInfo> m_buffer_infos;
+    std::vector<vk::WriteDescriptorSet> m_writes;
 };
 } // namespace ving

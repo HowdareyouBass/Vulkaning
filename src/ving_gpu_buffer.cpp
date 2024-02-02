@@ -5,7 +5,7 @@
 namespace ving
 {
 
-GPUBuffer::GPUBuffer(vk::Device device, vk::PhysicalDeviceMemoryProperties device_mem_props, uint32_t alloc_size,
+GPUBuffer::GPUBuffer(vk::Device device, vk::PhysicalDeviceMemoryProperties device_mem_props, vk::DeviceSize alloc_size,
                      vk::BufferUsageFlags usage, vk::MemoryPropertyFlags memory_flags)
 {
     auto buf_info =
@@ -27,8 +27,34 @@ GPUBuffer::GPUBuffer(vk::Device device, vk::PhysicalDeviceMemoryProperties devic
 
     m_size = alloc_size;
 }
-void *GPUBuffer::get_mapped_memory(vk::Device device)
+void GPUBuffer::set_memory(vk::Device device, void *data, vk::DeviceSize size)
 {
-    return device.mapMemory(*m_memory, 0, m_size);
+    void *buffer_data = device.mapMemory(*m_memory, 0, size);
+    memcpy(buffer_data, data, size);
+    device.unmapMemory(*m_memory);
 }
+void GPUBuffer::copy_to(vk::Device device, vk::Queue transfer_queue, vk::CommandPool pool, const GPUBuffer &buffer)
+{
+    auto alloc_info = vk::CommandBufferAllocateInfo{}.setCommandPool(pool).setCommandBufferCount(1);
+
+    vk::UniqueCommandBuffer cmd;
+
+    cmd = std::move(device.allocateCommandBuffersUnique(alloc_info).back());
+
+    auto begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    cmd->begin(begin_info);
+
+    auto copy_region = vk::BufferCopy{}.setSize(m_size);
+
+    cmd->copyBuffer(*m_buffer, buffer.buffer(), copy_region);
+
+    cmd->end();
+
+    auto submit = vk::SubmitInfo{}.setCommandBuffers(*cmd);
+
+    transfer_queue.submit(submit);
+
+    transfer_queue.waitIdle();
+}
+
 } // namespace ving

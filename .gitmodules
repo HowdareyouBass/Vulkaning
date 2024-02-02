@@ -7,3 +7,6 @@
 [submodule "third-party/imgui"]
 	path = third-party/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "third-party/glm"]
+	path = third-party/glm
+	url = https://github.com/icaven/glm.git

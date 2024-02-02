@@ -1,0 +1,21 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 1) in;
+
+struct Agent
+{
+    vec2 position;
+    vec2 direction;
+};
+
+layout (std430, set = 0, binding = 0) buffer agent_layout
+{
+    Agent agents[];
+} AgentsBuffer;
+
+void main()
+{
+    // int index = gl_GlobalInvocationID.x;
+
+     
+}

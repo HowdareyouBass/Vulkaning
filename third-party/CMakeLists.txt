@@ -4,6 +4,7 @@ find_package(Vulkan REQUIRED)
 
 add_subdirectory(SDL)
 add_subdirectory(VulkanMemoryAllocator)
+add_subdirectory(glm)
 
 add_library(imgui STATIC)
 
@@ -21,5 +22,5 @@ target_sources(imgui PRIVATE
 )
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 
-target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui)
+target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui glm)
 target_precompile_headers(third-party INTERFACE <vulkan/vulkan.hpp>)

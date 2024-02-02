@@ -2,6 +2,7 @@
 
 #include <cmath>
 #include <iostream>
+#include <random>
 
 #include <SDL3/SDL.h>
 
@@ -37,7 +38,7 @@ Engine::Engine()
                            vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst |
                                vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment,
                            vk::ImageLayout::eUndefined};
-
+    init_resources();
     init_descriptors();
     init_pipelines();
     init_imgui();
@@ -54,6 +55,7 @@ void Engine::run()
 
     while (running)
     {
+        auto start = std::chrono::high_resolution_clock::now();
         while (SDL_PollEvent(&event))
         {
             if (event.type == SDL_EVENT_QUIT)
@@ -68,11 +70,16 @@ void Engine::run()
         ImGui_ImplSDL3_NewFrame();
         ImGui::NewFrame();
 
-        ImGui::ShowDemoWindow();
+        ImGui::Text("FPS: %.0f", (1.0f / m_delta_time) * 100.0f);
+        ImGui::Text("Latency: %.2f ms", m_delta_time);
 
         ImGui::Render();
 
         draw();
+        auto end = std::chrono::high_resolution_clock::now();
+
+        std::chrono::duration<float> delta = end - start;
+        m_delta_time = delta.count() * 100.0f;
     }
     m_device->waitIdle();
 }
@@ -99,12 +106,13 @@ void Engine::draw()
 
     m_draw_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
 
-    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *m_slime_pipeline);
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *m_slime_layout, 0, m_slime_descriptor, nullptr);
+    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *m_background_pipeline);
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *m_background_layout, 0, m_background_descriptors, nullptr);
 
     SlimePushConstants push_constants;
     push_constants.delta_time = m_delta_time;
-    cmd.pushConstants<SlimePushConstants>(*m_slime_layout, vk::ShaderStageFlagBits::eCompute, 0, push_constants);
+    push_constants.agents_count = agent_count;
+    cmd.pushConstants<SlimePushConstants>(*m_background_layout, vk::ShaderStageFlagBits::eCompute, 0, push_constants);
 
     cmd.dispatch(std::ceil(m_draw_image.extent().width / 16.0), std::ceil(m_draw_image.extent().height), 1);
 
@@ -297,6 +305,27 @@ void Engine::init_frames()
     m_imm_commands = std::move(utils::allocate_command_buffers(*m_device, *m_imm_pool, 1).back());
     m_imm_fence = utils::create_fence(*m_device, vk::FenceCreateFlagBits::eSignaled);
 }
+void Engine::init_resources()
+{
+    std::default_random_engine gen;
+    std::uniform_real_distribution<float> dist(0.0f, 1.0f);
+    std::uniform_int_distribution dist_pos(0, static_cast<int>(m_draw_extent.height));
+
+    for (auto &&agent : m_agents)
+    {
+        agent.position = {dist_pos(gen), dist_pos(gen)};
+        agent.angle = dist(gen);
+    }
+
+    m_agents_buffer = GPUBuffer{*m_device, memory_properties, m_agents.size() * sizeof(Agent),
+                                vk::BufferUsageFlagBits::eStorageBuffer | vk::BufferUsageFlagBits::eTransferDst,
+                                vk::MemoryPropertyFlagBits::eDeviceLocal};
+    GPUBuffer staging_buffer{*m_device, memory_properties, m_agents.size() * sizeof(Agent),
+                             vk::BufferUsageFlagBits::eTransferSrc,
+                             vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent};
+    staging_buffer.set_memory(*m_device, m_agents.data(), m_agents.size() * sizeof(Agent));
+    staging_buffer.copy_to(*m_device, m_graphics_queue, *m_imm_pool, m_agents_buffer);
+}
 void Engine::init_descriptors()
 {
     init_slime_descriptors();
@@ -349,47 +378,47 @@ void Engine::init_imgui()
 void Engine::init_slime_descriptors()
 {
 
-    m_slime_descriptor_layout = DescriptorLayoutBuilder{}
-                                    .add_binding(0, vk::DescriptorType::eStorageImage)
-                                    .build(*m_device, vk::ShaderStageFlagBits::eCompute);
+    m_background_descriptor_layout = DescriptorLayoutBuilder{}
+                                         .add_binding(0, vk::DescriptorType::eStorageImage)
+                                         .add_binding(1, vk::DescriptorType::eStorageBuffer)
+                                         .build(*m_device, vk::ShaderStageFlagBits::eCompute);
 
     auto sizes = std::vector<DescriptorAllocator::PoolSizeRatio>{
         {vk::DescriptorType::eStorageImage, 1},
+        {vk::DescriptorType::eStorageBuffer, 1},
     };
-    m_slime_descriptor_allocator = DescriptorAllocator{*m_device, 10, sizes};
+    m_background_descriptor_allocator = DescriptorAllocator{*m_device, 10, sizes};
 
-    m_slime_descriptor = m_slime_descriptor_allocator.allocate(*m_device, *m_slime_descriptor_layout);
+    m_background_descriptors = m_background_descriptor_allocator.allocate(*m_device, *m_background_descriptor_layout);
 
-    auto draw_image_info =
-        vk::DescriptorImageInfo{}.setImageLayout(vk::ImageLayout::eGeneral).setImageView(m_draw_image.view());
+    DescriptorWriter writer{};
 
-    auto draw_image_write = vk::WriteDescriptorSet{}
-                                .setDstBinding(0)
-                                .setDstSet(m_slime_descriptor)
-                                .setDescriptorCount(1)
-                                .setDescriptorType(vk::DescriptorType::eStorageImage)
-                                .setImageInfo(draw_image_info);
+    writer.write_image(0, m_draw_image.view(), nullptr, vk::ImageLayout::eGeneral, vk::DescriptorType::eStorageImage);
+    writer.write_buffer(1, m_agents_buffer.buffer(), m_agents_buffer.size(), 0, vk::DescriptorType::eStorageBuffer);
 
-    m_device->updateDescriptorSets(draw_image_write, nullptr);
+    for (auto &&descriptor : m_background_descriptors)
+    {
+        writer.update_set(*m_device, descriptor);
+    }
 }
 void Engine::init_slime_pipeline()
 {
     auto push_range =
         vk::PushConstantRange{}.setSize(sizeof(SlimePushConstants)).setStageFlags(vk::ShaderStageFlagBits::eCompute);
     auto layout_info =
-        vk::PipelineLayoutCreateInfo{}.setSetLayouts(*m_slime_descriptor_layout).setPushConstantRanges(push_range);
-    m_slime_layout = m_device->createPipelineLayoutUnique(layout_info);
+        vk::PipelineLayoutCreateInfo{}.setSetLayouts(*m_background_descriptor_layout).setPushConstantRanges(push_range);
+    m_background_layout = m_device->createPipelineLayoutUnique(layout_info);
 
-    auto slime_shader = utils::create_shader_module(*m_device, "shaders/slime.comp.spv");
+    auto slime_shader = utils::create_shader_module(*m_device, "shaders/draw_slime.comp.spv");
 
     auto stage_info = vk::PipelineShaderStageCreateInfo{}
                           .setPName("main")
                           .setStage(vk::ShaderStageFlagBits::eCompute)
                           .setModule(*slime_shader);
 
-    auto info = vk::ComputePipelineCreateInfo{}.setStage(stage_info).setLayout(*m_slime_layout);
+    auto info = vk::ComputePipelineCreateInfo{}.setStage(stage_info).setLayout(*m_background_layout);
 
-    m_slime_pipeline = m_device->createComputePipelineUnique({}, info).value;
+    m_background_pipeline = m_device->createComputePipelineUnique({}, info).value;
 }
 void Engine::immediate_submit(std::function<void(vk::CommandBuffer cmd)> &&function)
 {

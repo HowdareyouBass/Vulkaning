@@ -1,0 +1,98 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout (rgba16f, set = 0, binding = 0) uniform image2D image;
+
+struct Agent
+{
+    vec2 position;
+    float angle;
+    float dummy;
+};
+
+layout (std140, set = 0, binding = 1) buffer AgentsBuffer
+{
+    Agent agents[];
+};
+
+layout (push_constant) uniform constants
+{
+    float delta_time;
+    int agents_count;
+} PushConstants;
+
+
+uint Hash(uint s)
+{
+    s ^= 2747636419u;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    s ^= s >> 16;
+    s *= 2654435769u;
+    return s;
+}
+
+float Random(uint seed)
+{
+    return float(Hash(seed)) / 4294967295.0; // 2^32-1
+}
+
+const vec4 agent_color = vec4(1.0, 1.0, 1.0, 1.0);
+const float move_speed = 0.4;
+const float evaporation_speed = 0.0005;
+const float diffuse_speed = 0.1;
+const float c_pi = 3.14159265359;
+
+void main()
+{
+    ivec2 texel_coord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 size = imageSize(image);
+    int pixel_index = texel_coord.y * size.x + texel_coord.x;
+
+
+    if (texel_coord.x < size.x && texel_coord.y < size.y)
+    { 
+        vec4 orig_color = imageLoad(image, texel_coord);
+        // Diffuse first
+        vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
+        for (int offset_x = -1; offset_x <= 1; offset_x++)
+        {
+            for (int offset_y = -1; offset_y <= 1; offset_y++)
+            {
+                int sample_x = texel_coord.x + offset_x;
+                int sample_y = texel_coord.y + offset_y;
+
+                if (sample_x >= 0 && sample_x < size.x && sample_y >= 0 && sample_y < size.y)
+                {
+                    sum += imageLoad(image, ivec2(sample_x, sample_y));
+                }
+            }
+        }
+        vec4 blur_res = sum/9;
+
+        vec4 diffuse_val = mix(orig_color, blur_res, diffuse_speed * PushConstants.delta_time);
+
+        vec4 diffuse_and_evaporated_col = 
+            vec4(max(0.0, diffuse_val.x - evaporation_speed * PushConstants.delta_time).xxx, 1.0);
+        imageStore(image, texel_coord, diffuse_and_evaporated_col);
+    }
+
+    if (pixel_index >= PushConstants.agents_count) return;
+
+    vec2 direction = vec2(cos(agents[pixel_index].angle), sin(agents[pixel_index].angle));
+    vec2 new_pos = agents[pixel_index].position + direction * move_speed * PushConstants.delta_time;
+
+    if (new_pos.x < 0 || new_pos.x > size.x || new_pos.y < 0 || new_pos.y > size.y)
+    {
+        new_pos.x = clamp(new_pos.x, 1, size.x - 1);
+        new_pos.y = clamp(new_pos.y, 1, size.y - 1);
+        agents[pixel_index].angle = Random(pixel_index) * 2 * c_pi;
+    }
+    agents[pixel_index].position = new_pos;
+   
+    imageStore(image, ivec2(agents[pixel_index].position), agent_color);
+
+
+}
