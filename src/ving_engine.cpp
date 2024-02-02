@@ -80,6 +80,7 @@ void Engine::run()
 
         std::chrono::duration<float> delta = end - start;
         m_delta_time = delta.count() * 100.0f;
+        m_time += m_delta_time;
     }
     m_device->waitIdle();
 }
@@ -111,6 +112,8 @@ void Engine::draw()
 
     SlimePushConstants push_constants;
     push_constants.delta_time = m_delta_time;
+    push_constants.time = m_time;
+    push_constants.dummy = 0;
     push_constants.agents_count = agent_count;
     cmd.pushConstants<SlimePushConstants>(*m_background_layout, vk::ShaderStageFlagBits::eCompute, 0, push_constants);
 

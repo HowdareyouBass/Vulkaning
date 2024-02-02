@@ -19,6 +19,8 @@ layout (std140, set = 0, binding = 1) buffer AgentsBuffer
 layout (push_constant) uniform constants
 {
     float delta_time;
+    float time;
+    float dummy;
     int agents_count;
 } PushConstants;
 
@@ -86,9 +88,9 @@ void main()
 
     if (new_pos.x < 0 || new_pos.x > size.x || new_pos.y < 0 || new_pos.y > size.y)
     {
-        new_pos.x = clamp(new_pos.x, 1, size.x - 1);
-        new_pos.y = clamp(new_pos.y, 1, size.y - 1);
-        agents[pixel_index].angle = Random(pixel_index) * 2 * c_pi;
+        new_pos.x = clamp(new_pos.x, 2, size.x - 2);
+        new_pos.y = clamp(new_pos.y, 2, size.y - 2);
+        agents[pixel_index].angle = Random(pixel_index * int(PushConstants.time)) * 2 * c_pi;
     }
     agents[pixel_index].position = new_pos;
    

@@ -17,6 +17,8 @@ namespace ving
 struct SlimePushConstants
 {
     float delta_time;
+    float time;
+    float dummy;
     int agents_count;
 };
 
@@ -95,6 +97,7 @@ class Engine
 
   private:
     float m_delta_time{0};
+    float m_time{0};
 
     vk::Extent2D m_window_extent{start_window_width, start_window_height};
 
