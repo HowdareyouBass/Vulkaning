@@ -44,15 +44,16 @@ float Random(uint seed)
     return float(Hash(seed)) / 4294967295.0; // 2^32-1
 }
 
+// Settings
 const vec4 agent_color = vec4(1.0, 1.0, 1.0, 1.0);
 const float move_speed = 0.7;
 const float evaporation_speed = 0.014;
-const float diffuse_speed = 0.1;
+const float diffuse_speed = 0.07;
 const float c_pi = 3.14159265359;
 
 // Sensor stuff
-const int sensor_size = 3;
-const int sensor_distance = 5;
+const int sensor_size = 5;
+const int sensor_distance = 10;
 const float sensor_angle_spacing = 0.25 * c_pi;
 const float turn_speed = 0.2;
 

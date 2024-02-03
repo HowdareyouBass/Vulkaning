@@ -29,7 +29,7 @@ struct Agent
     float dummy;
 };
 
-class Engine
+class [[deprecated]] Engine
 {
   public:
     struct FrameData
@@ -62,7 +62,8 @@ class Engine
     static constexpr int start_window_height = 720;
 
     // Slime
-    static constexpr int agent_count = 100000;
+    // FIXME: This gives 14fps at 500000 guys :(
+    static constexpr int agent_count = 300000;
 
     // TODO: Maybe abstract this into device class
     vk::PhysicalDeviceMemoryProperties memory_properties;
@@ -80,7 +81,7 @@ class Engine
   private:
     void draw();
     void draw_imgui(vk::CommandBuffer cmd, vk::ImageView target_image_view);
-    void draw_slime();
+    void draw_slime(vk::CommandBuffer cmd);
 
     void init_window();
     void init_vulkan();

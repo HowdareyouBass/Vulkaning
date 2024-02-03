@@ -5,6 +5,8 @@
 #include <SDL3/SDL_vulkan.h>
 #include <iostream>
 
+#include "ving_defaults.hpp"
+
 namespace ving
 {
 namespace utils
@@ -88,9 +90,10 @@ vk::UniqueDevice create_device(vk::PhysicalDevice device, std::span<vk::DeviceQu
 
     return device.createDeviceUnique(info);
 }
-std::pair<vk::UniqueSwapchainKHR, vk::Format> create_swapchain(vk::PhysicalDevice physical_device, vk::Device device,
-                                                               vk::SurfaceKHR surface, vk::Extent2D extent,
-                                                               uint32_t queue_family_count, uint32_t image_count)
+std::pair<vk::UniqueSwapchainKHR, vk::Format> create_swapchain_old(vk::PhysicalDevice physical_device,
+                                                                   vk::Device device, vk::SurfaceKHR surface,
+                                                                   vk::Extent2D extent, uint32_t queue_family_count,
+                                                                   uint32_t image_count)
 {
     std::vector<vk::SurfaceFormatKHR> formats = physical_device.getSurfaceFormatsKHR(surface);
     assert(!formats.empty());
@@ -125,6 +128,68 @@ std::pair<vk::UniqueSwapchainKHR, vk::Format> create_swapchain(vk::PhysicalDevic
     //.setImageSharingMode(sharing);
 
     return std::make_pair(device.createSwapchainKHRUnique(info), format);
+}
+vktypes::Swapchain create_swapchain(vk::PhysicalDevice physical_device, vk::Device device, vk::SurfaceKHR surface,
+                                    vk::Extent2D extent, uint32_t queue_family_count, uint32_t image_count)
+{
+    vktypes::Swapchain new_swapchain;
+
+    std::vector<vk::SurfaceFormatKHR> formats = physical_device.getSurfaceFormatsKHR(surface);
+    assert(!formats.empty());
+
+    new_swapchain.image_format =
+        (formats[0].format == vk::Format::eUndefined) ? vk::Format::eB8G8R8A8Unorm : formats[0].format;
+
+    vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
+
+    // HARD: Other present modes
+    vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;
+
+    if (image_count > surface_capabilities.maxImageCount || image_count < surface_capabilities.minImageCount)
+    {
+        throw std::runtime_error("Failed to create swapchain with required image count");
+    }
+
+    auto info =
+        vk::SwapchainCreateInfoKHR{}
+            .setSurface(surface)
+            .setMinImageCount(image_count)
+            .setImageFormat(new_swapchain.image_format)
+            .setImageColorSpace(vk::ColorSpaceKHR::eSrgbNonlinear)
+            .setImageExtent(extent)
+            .setImageArrayLayers(1)
+            .setImageUsage(vk::ImageUsageFlagBits::eTransferDst | vk::ImageUsageFlagBits::eColorAttachment)
+            .setQueueFamilyIndexCount(queue_family_count)
+            .setPreTransform(surface_capabilities.currentTransform)
+            .setCompositeAlpha(vk::CompositeAlphaFlagBitsKHR::eOpaque)
+            .setPresentMode(present_mode)
+            .setImageSharingMode(queue_family_count > 1 ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive);
+
+    new_swapchain.swapchain = device.createSwapchainKHRUnique(info);
+    new_swapchain.images = device.getSwapchainImagesKHR(*new_swapchain.swapchain);
+    new_swapchain.image_extent = extent;
+    new_swapchain.image_views = utils::create_image_views(device, new_swapchain.images, new_swapchain.image_format);
+
+    return new_swapchain;
+}
+std::vector<vk::UniqueImageView> create_image_views(vk::Device device, std::span<vk::Image> images, vk::Format format)
+{
+    std::vector<vk::UniqueImageView> image_views{};
+    image_views.reserve(images.size());
+
+    auto info =
+        vk::ImageViewCreateInfo{}
+            .setViewType(vk::ImageViewType::e2D)
+            .setFormat(format)
+            .setSubresourceRange(def::image_subresource_range_no_mip_no_levels(vk::ImageAspectFlagBits::eColor));
+
+    for (auto &&image : images)
+    {
+        info.image = image;
+        image_views.push_back(device.createImageViewUnique(info));
+    }
+
+    return image_views;
 }
 vk::UniqueCommandPool create_command_pool(vk::Device device, uint32_t queue_family, vk::CommandPoolCreateFlags flags)
 {

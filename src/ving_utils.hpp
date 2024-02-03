@@ -1,5 +1,7 @@
 #pragma once
 
+#include "vk_types.hpp"
+
 #include <filesystem>
 
 #include <SDL3/SDL_video.h>
@@ -26,9 +28,15 @@ vk::UniqueInstance create_instance(std::string_view app_name, uint32_t app_versi
 vk::UniqueSurfaceKHR create_SDL_window_surface(SDL_Window *window, vk::Instance instance);
 vk::UniqueDevice create_device(vk::PhysicalDevice device, std::span<vk::DeviceQueueCreateInfo> queue_infos,
                                std::span<const char *> extensions, vk::PhysicalDeviceFeatures2 features2);
-std::pair<vk::UniqueSwapchainKHR, vk::Format> create_swapchain(vk::PhysicalDevice physical_device, vk::Device device,
-                                                               vk::SurfaceKHR surface, vk::Extent2D extent,
-                                                               uint32_t queue_family_count, uint32_t image_count);
+
+[[deprecated]] std::pair<vk::UniqueSwapchainKHR, vk::Format> create_swapchain_old(
+    vk::PhysicalDevice physical_device, vk::Device device, vk::SurfaceKHR surface, vk::Extent2D extent,
+    uint32_t queue_family_count, uint32_t image_count);
+
+vktypes::Swapchain create_swapchain(vk::PhysicalDevice physical_device, vk::Device device, vk::SurfaceKHR surface,
+                                    vk::Extent2D extent, uint32_t queue_family_count, uint32_t image_count);
+std::vector<vk::UniqueImageView> create_image_views(vk::Device device, std::span<vk::Image> images, vk::Format format);
+
 vk::UniqueCommandPool create_command_pool(vk::Device device, uint32_t queue_family, vk::CommandPoolCreateFlags flags);
 std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(vk::Device device, vk::CommandPool pool, uint32_t count);
 vk::UniqueFence create_fence(vk::Device device, vk::FenceCreateFlags flags);

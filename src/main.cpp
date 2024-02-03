@@ -1,16 +1,31 @@
-#include "ving_engine.hpp"
-
-#include <backends/imgui_impl_vulkan.h>
-#include <imgui.h>
 #include <iostream>
+
+#include <SDL3/SDL.h>
+
+#include "ving_render_context.hpp"
 
 int main()
 {
     try
     {
-        ving::Engine engine{};
+        // ving::Engine engine{};
+        //
+        // engine.run();
+        if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
+        {
+            throw std::runtime_error(std::format("Couldn't initialize SDL: {}", SDL_GetError()));
+        }
 
-        engine.run();
+        SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1280, 720, SDL_WINDOW_VULKAN);
+
+        if (!window)
+        {
+            throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
+        }
+
+        ving::RenderContext render_context{window};
+
+
     }
     catch (vk::SystemError &e)
     {

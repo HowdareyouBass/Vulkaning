@@ -107,17 +107,7 @@ void Engine::draw()
 
     m_draw_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
 
-    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *m_background_pipeline);
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *m_background_layout, 0, m_background_descriptors, nullptr);
-
-    SlimePushConstants push_constants;
-    push_constants.delta_time = m_delta_time;
-    push_constants.time = m_time;
-    push_constants.dummy = 0;
-    push_constants.agents_count = agent_count;
-    cmd.pushConstants<SlimePushConstants>(*m_background_layout, vk::ShaderStageFlagBits::eCompute, 0, push_constants);
-
-    cmd.dispatch(std::ceil(m_draw_image.extent().width / 16.0), std::ceil(m_draw_image.extent().height), 1);
+    draw_slime(cmd);
 
     utils::transition_image(cmd, m_swapchain_images[swapchain_image_index], vk::ImageLayout::eUndefined,
                             vk::ImageLayout::eTransferDstOptimal);
@@ -186,8 +176,20 @@ void Engine::draw_imgui(vk::CommandBuffer cmd, vk::ImageView target_image_view)
 
     cmd.endRendering();
 }
-void Engine::draw_slime()
+void Engine::draw_slime(vk::CommandBuffer cmd)
 {
+
+    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, *m_background_pipeline);
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, *m_background_layout, 0, m_background_descriptors, nullptr);
+
+    SlimePushConstants push_constants;
+    push_constants.delta_time = m_delta_time;
+    push_constants.time = m_time;
+    push_constants.dummy = 0;
+    push_constants.agents_count = agent_count;
+    cmd.pushConstants<SlimePushConstants>(*m_background_layout, vk::ShaderStageFlagBits::eCompute, 0, push_constants);
+
+    cmd.dispatch(std::ceil(m_draw_image.extent().width / 16.0), std::ceil(m_draw_image.extent().height), 1);
 }
 
 void Engine::init_window()
@@ -269,7 +271,7 @@ void Engine::init_vulkan()
 
     {
         auto swapchain =
-            utils::create_swapchain(m_physical_device, *m_device, *m_surface, m_window_extent,
+            utils::create_swapchain_old(m_physical_device, *m_device, *m_surface, m_window_extent,
                                     graphics_family_index == present_family_index ? 1 : 2, frames_in_flight);
         m_swapchain = std::move(swapchain.first);
         m_swapchain_image_format = std::move(swapchain.second);
