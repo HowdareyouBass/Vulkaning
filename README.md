@@ -2,6 +2,7 @@
 
 Some projects that i wanted to implement fully from scratch with vulkan hpp and sdl3. Those projects include:
 1. Slime simulation
+![Slimey](https://github.com/HowdareyouBass/Vulkaning/assets/62214754/122f75d4-00ae-4310-87d2-92d8d0075826)
 
 ## How to build:
 
