@@ -1,5 +1,8 @@
 #version 450
 
+// TODO: Redo this for any color
+// Only Black/White works now
+
 layout (local_size_x = 16, local_size_y = 16) in;
 
 layout (rgba16f, set = 0, binding = 0) uniform image2D image;
@@ -42,19 +45,50 @@ float Random(uint seed)
 }
 
 const vec4 agent_color = vec4(1.0, 1.0, 1.0, 1.0);
-const float move_speed = 0.4;
-const float evaporation_speed = 0.0005;
+const float move_speed = 0.7;
+const float evaporation_speed = 0.014;
 const float diffuse_speed = 0.1;
 const float c_pi = 3.14159265359;
+
+// Sensor stuff
+const int sensor_size = 3;
+const int sensor_distance = 5;
+const float sensor_angle_spacing = 0.25 * c_pi;
+const float turn_speed = 0.2;
+
+ivec2 img_size;
+
+// TODO: Could try to implement it like a half circle
+// NOTE: For now it's just a square sensor
+float get_pheromone_strength(Agent agent, float sensor_angle_offset)
+{
+    vec2 sensor_direction = vec2(cos(agent.angle + sensor_angle_offset), sin(agent.angle + sensor_angle_offset));
+    ivec2 sensor_pos = ivec2(agent.position + sensor_direction * sensor_distance);
+    float sum = 0;
+    
+    for (int offset_x = -sensor_size; offset_x <= sensor_size; offset_x++)
+    {
+        for (int offset_y = -sensor_size; offset_y <= sensor_size; offset_y++)
+        {
+            if (sensor_pos.x + offset_x < img_size.x && sensor_pos.y + offset_y < img_size.y &&
+                sensor_pos.x + offset_x >= 0 && sensor_pos.y + offset_y >= 0)
+            {
+                sum += imageLoad(image, ivec2(sensor_pos.x + offset_x, sensor_pos.y + offset_y)).x;
+            }
+        }
+    }
+
+    return sum;
+}
 
 void main()
 {
     ivec2 texel_coord = ivec2(gl_GlobalInvocationID.xy);
-    ivec2 size = imageSize(image);
-    int pixel_index = texel_coord.y * size.x + texel_coord.x;
+    img_size = imageSize(image);
+    int pixel_index = texel_coord.y * img_size.x + texel_coord.x;
 
 
-    if (texel_coord.x < size.x && texel_coord.y < size.y)
+    if (texel_coord.x < img_size.x && texel_coord.y < img_size.y)
     { 
         vec4 orig_color = imageLoad(image, texel_coord);
         // Diffuse first
@@ -66,7 +100,7 @@ void main()
                 int sample_x = texel_coord.x + offset_x;
                 int sample_y = texel_coord.y + offset_y;
 
-                if (sample_x >= 0 && sample_x < size.x && sample_y >= 0 && sample_y < size.y)
+                if (sample_x >= 0 && sample_x < img_size.x && sample_y >= 0 && sample_y < img_size.y)
                 {
                     sum += imageLoad(image, ivec2(sample_x, sample_y));
                 }
@@ -75,26 +109,51 @@ void main()
         vec4 blur_res = sum/9;
 
         vec4 diffuse_val = mix(orig_color, blur_res, diffuse_speed * PushConstants.delta_time);
-
+        // Evaporate
         vec4 diffuse_and_evaporated_col = 
             vec4(max(0.0, diffuse_val.x - evaporation_speed * PushConstants.delta_time).xxx, 1.0);
         imageStore(image, texel_coord, diffuse_and_evaporated_col);
     }
-
+    
     if (pixel_index >= PushConstants.agents_count) return;
 
+    // Pheromones
+    float forward = get_pheromone_strength(agents[pixel_index], 0.0);
+    float left = get_pheromone_strength(agents[pixel_index], sensor_angle_spacing);
+    float right = get_pheromone_strength(agents[pixel_index], -sensor_angle_spacing);
+
+    float random_rotate = Random(uint(PushConstants.time * Random(pixel_index)));
+    
+    if (forward > left && forward > right)
+    {
+        agents[pixel_index].angle += 0;
+    }
+    if (forward < left && forward < right)
+    {
+        agents[pixel_index].angle += (random_rotate - 0.5) * 2 * turn_speed * PushConstants.delta_time;
+    }
+    else if(right > left)
+    {
+        agents[pixel_index].angle -= random_rotate * turn_speed * PushConstants.delta_time;
+    }
+    else if(left > right)
+    {
+        agents[pixel_index].angle += random_rotate * turn_speed * PushConstants.delta_time;
+    }
+    
+    // Calc new position
     vec2 direction = vec2(cos(agents[pixel_index].angle), sin(agents[pixel_index].angle));
     vec2 new_pos = agents[pixel_index].position + direction * move_speed * PushConstants.delta_time;
-
-    if (new_pos.x < 0 || new_pos.x > size.x || new_pos.y < 0 || new_pos.y > size.y)
+    
+    // Clamp pos to 0 to size
+    if (new_pos.x < 0 || new_pos.x > img_size.x || new_pos.y < 0 || new_pos.y > img_size.y)
     {
-        new_pos.x = clamp(new_pos.x, 2, size.x - 2);
-        new_pos.y = clamp(new_pos.y, 2, size.y - 2);
+        new_pos.x = clamp(new_pos.x, 2, img_size.x - 2);
+        new_pos.y = clamp(new_pos.y, 2, img_size.y - 2);
         agents[pixel_index].angle = Random(pixel_index * int(PushConstants.time)) * 2 * c_pi;
     }
     agents[pixel_index].position = new_pos;
-   
+    
+    // Draw agents
     imageStore(image, ivec2(agents[pixel_index].position), agent_color);
-
-
 }

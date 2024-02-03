@@ -62,7 +62,7 @@ class Engine
     static constexpr int start_window_height = 720;
 
     // Slime
-    static constexpr int agent_count = 500;
+    static constexpr int agent_count = 100000;
 
     // TODO: Maybe abstract this into device class
     vk::PhysicalDeviceMemoryProperties memory_properties;
