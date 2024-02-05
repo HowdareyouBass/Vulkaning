@@ -4,6 +4,12 @@ namespace ving
 {
 RenderFrames::RenderFrames(const Core &core) : r_core{core}, m_present_queue{core, frames_in_flight}
 {
+    m_draw_image =
+        core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eR16G16B16A16Sfloat,
+                            vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst |
+                                vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eColorAttachment,
+                            vk::ImageLayout::eUndefined);
+
     for (auto &&frame : m_frames)
     {
         frame.commands = std::move(core.allocate_command_buffers(1)[0]);
@@ -30,14 +36,18 @@ RenderFrames::FrameInfo RenderFrames::begin_frame()
     auto begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     vk::resultCheck(cmd.begin(&begin_info), "Command buffer begin failed");
 
-    return FrameInfo{cmd};
+    return FrameInfo{cmd, m_draw_image, m_frame_number};
 }
 void RenderFrames::end_frame()
 {
     FrameResources &cur_frame = m_frames[m_frame_number % frames_in_flight];
     vk::CommandBuffer &cmd = cur_frame.commands.get();
 
-    m_present_queue.transition_swapchain_to_present(cmd, m_frame_number % frames_in_flight);
+    m_draw_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
+
+    m_present_queue.copy_image_to_swapchain(cmd, m_draw_image.image(), m_draw_image.extent(), m_frame_number);
+
+    m_present_queue.transition_swapchain_image_to_present(cmd, m_frame_number);
 
     cmd.end();
 
@@ -58,7 +68,7 @@ void RenderFrames::end_frame()
 
     r_core.get_graphics_queue().submit2(submit, cur_frame.render_fence.get());
 
-    m_present_queue.present_image(cur_frame.render_finished_semaphore.get(), m_frame_number % frames_in_flight);
+    m_present_queue.present_image(cur_frame.render_finished_semaphore.get(), m_frame_number);
 
     ++m_frame_number;
 }

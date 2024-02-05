@@ -63,7 +63,7 @@ class [[deprecated]] Engine
 
     // Slime
     // FIXME: This gives 14fps at 500000 guys :(
-    static constexpr int agent_count = 300000;
+    static constexpr int agent_count = 100000;
 
     // TODO: Maybe abstract this into device class
     vk::PhysicalDeviceMemoryProperties memory_properties;

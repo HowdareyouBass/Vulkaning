@@ -1,21 +1,30 @@
 #pragma once
 
-#include "ving_image.hpp"
-#include "ving_render_context.hpp"
+#include "ving_core.hpp"
+#include <glm/vec2.hpp>
+
+#include "ving_render_frames.hpp"
 
 namespace ving
 {
 class SlimeRenderer
 {
-  public:
-    struct FrameInfo
+    struct Agent
     {
-        Image2D draw_image;
+        glm::vec2 position;
+        float angle;
+        float dummy;
     };
 
-    SlimeRenderer(RenderContext ctx);
+  public:
+    SlimeRenderer(const Core &core);
 
-    FrameInfo begin_frame();
-    void end_frame();
+    void render(const RenderFrames::FrameInfo &frame);
+
+  private:
+    static constexpr size_t agent_count = 100000;
+
+    GPUBuffer m_agents_buffer;
+    std::array<Agent, agent_count> m_agents;
 };
 } // namespace ving

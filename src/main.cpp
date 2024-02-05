@@ -7,7 +7,9 @@
 #include <imgui.h>
 
 #include "ving_core.hpp"
+#include "ving_engine.hpp"
 #include "ving_render_frames.hpp"
+#include "ving_slime_renderer.hpp"
 
 namespace ving
 {
@@ -34,6 +36,7 @@ void run_application()
 
     ving::Core core{window};
     ving::RenderFrames frames{core};
+    ving::SlimeRenderer renderer{core};
 
     bool running = true;
     SDL_Event event;
@@ -53,7 +56,7 @@ void run_application()
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame();
         {
-
+            renderer.render(frame);
             // ving::ImguiScopedFrame frame{};
         }
         frames.end_frame();
@@ -67,6 +70,8 @@ int main()
     try
     {
         run_application();
+        // ving::Engine engine{};
+        // engine.run();
     }
     catch (vk::SystemError &e)
     {

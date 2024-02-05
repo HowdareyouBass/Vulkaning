@@ -1,14 +1,17 @@
 #include "ving_core.hpp"
 
 #include <SDL3/SDL_vulkan.h>
-#include <iostream>
 
 #include "ving_utils.hpp"
 
 namespace ving
 {
-Core::Core(SDL_Window *window) : m_window{window}
+Core::Core(SDL_Window *window)
 {
+    int width = 0, height = 0;
+    SDL_GetWindowSize(window, &width, &height);
+    m_window_extent = vk::Extent2D{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
+
     if constexpr (enable_validation_layers)
     {
         m_required_instance_layers.push_back("VK_LAYER_KHRONOS_validation");
@@ -51,23 +54,27 @@ Core::Core(SDL_Window *window) : m_window{window}
             throw std::runtime_error("Failed to find present queue on current device");
     }
 
+    m_queue_info.transfer_family = utils::find_queue_family(queue_families, vk::QueueFlagBits::eTransfer);
+
+    if (m_queue_info.transfer_family == queue_families.size())
+        throw std::runtime_error("Failed to find transfer queue on current device");
+
     // HARD: Graphics should have more priority??
 
     float queue_priority = 1.0f;
 
-    std::vector<vk::DeviceQueueCreateInfo> device_queue_infos = {
-        vk::DeviceQueueCreateInfo{}
-            .setQueueCount(1)
-            .setQueuePriorities(queue_priority)
-            .setQueueFamilyIndex(m_queue_info.graphics_family),
-    };
+    std::vector<uint32_t> queue_families_set{m_queue_info.graphics_family, m_queue_info.present_family,
+                                             m_queue_info.transfer_family};
+    queue_families_set.erase(std::unique(queue_families_set.begin(), queue_families_set.end()),
+                             queue_families_set.end());
+    std::vector<vk::DeviceQueueCreateInfo> device_queue_infos{};
 
-    if (!m_queue_info.is_graphics_and_present_same())
+    for (auto &&queue_family : queue_families_set)
     {
         device_queue_infos.push_back(vk::DeviceQueueCreateInfo{}
                                          .setQueueCount(1)
                                          .setQueuePriorities(queue_priority)
-                                         .setQueueFamilyIndex(m_queue_info.present_family));
+                                         .setQueueFamilyIndex(queue_family));
     }
 
     auto features2 = m_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features,
@@ -78,19 +85,36 @@ Core::Core(SDL_Window *window) : m_window{window}
 
     m_command_pool = utils::create_command_pool(*m_device, m_queue_info.graphics_family,
                                                 vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+
+    m_transfer_queue = m_device->getQueue(m_queue_info.transfer_family, 0);
+
+    m_transfer_pool = utils::create_command_pool(*m_device, m_queue_info.transfer_family,
+                                                 vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+    m_transfer_commands = std::move(utils::allocate_command_buffers(*m_device, *m_transfer_pool, 1)[0]);
+    m_transfer_fence = utils::create_fence(*m_device, vk::FenceCreateFlagBits::eSignaled);
+}
+Image2D Core::create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
+                             vk::ImageLayout layout) const
+{
+    return Image2D{*m_device, memory_properties, size, format, usage, layout};
+}
+GPUBuffer Core::create_gpu_buffer(void *data, uint64_t size, vk::BufferUsageFlags usage) const
+{
+    GPUBuffer new_buffer{*m_device, memory_properties, size, usage | vk::BufferUsageFlagBits::eTransferDst,
+                         vk::MemoryPropertyFlagBits::eDeviceLocal};
+    GPUBuffer staging{*m_device, memory_properties, size, vk::BufferUsageFlagBits::eTransferSrc,
+                      vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent};
+    staging.set_memory(*m_device, data, size);
+    immediate_transfer([&](vk::CommandBuffer cmd) {
+        auto copy = vk::BufferCopy{}.setSize(size);
+        cmd.copyBuffer(staging.buffer(), new_buffer.buffer(), copy);
+    });
+
+    return new_buffer;
 }
 vktypes::Swapchain Core::create_swapchain(uint32_t image_count) const
 {
-    int width = 0, height = 0;
-    int res = SDL_GetWindowSize(m_window, &width, &height);
-    if (res != 0)
-    {
-        std::cout << SDL_GetError() << "\n";
-    }
-
-    vk::Extent2D window_extent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
-
-    return utils::create_swapchain(m_physical_device, *m_device, *m_surface, window_extent,
+    return utils::create_swapchain(m_physical_device, *m_device, *m_surface, m_window_extent,
                                    m_queue_info.is_graphics_and_present_same() ? 1 : 2, image_count);
 }
 vk::UniqueSemaphore Core::create_semaphore() const
@@ -109,5 +133,26 @@ vk::UniqueFence Core::create_fence(bool state) const
 std::vector<vk::UniqueCommandBuffer> Core::allocate_command_buffers(uint32_t count) const
 {
     return utils::allocate_command_buffers(*m_device, *m_command_pool, count);
+}
+void Core::immediate_transfer(std::function<void(vk::CommandBuffer)> &&function) const
+{
+    m_device->resetFences(*m_transfer_fence);
+    m_transfer_commands->reset();
+
+    const vk::CommandBuffer &cmd = *m_transfer_commands;
+
+    auto cmd_begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    cmd.begin(cmd_begin_info);
+    function(cmd);
+    cmd.end();
+
+    auto cmd_info = vk::CommandBufferSubmitInfo{}.setCommandBuffer(cmd);
+
+    auto submit = vk::SubmitInfo2{}.setCommandBufferInfos(cmd_info);
+
+    m_transfer_queue.submit2(submit, *m_transfer_fence);
+
+    vk::resultCheck(m_device->waitForFences(*m_transfer_fence, true, std::numeric_limits<uint64_t>::max()),
+                    "Failed to wait for immediate transfer");
 }
 } // namespace ving

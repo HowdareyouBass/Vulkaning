@@ -21,6 +21,8 @@ class RenderFrames
     struct FrameInfo
     {
         vk::CommandBuffer cmd;
+        Image2D &draw_image;
+        uint64_t frame_number;
     };
 
     // HARD: Let the user decide
@@ -42,6 +44,7 @@ class RenderFrames
     // Maybe later use shared or weak ptr???
     const Core &r_core;
 
+    Image2D m_draw_image;
     PresentQueue m_present_queue;
 
     std::array<FrameResources, frames_in_flight> m_frames;
