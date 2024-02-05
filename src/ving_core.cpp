@@ -1,12 +1,13 @@
-#include "ving_render_context.hpp"
+#include "ving_core.hpp"
 
 #include <SDL3/SDL_vulkan.h>
+#include <iostream>
 
 #include "ving_utils.hpp"
 
 namespace ving
 {
-RenderContext::RenderContext(SDL_Window *window)
+Core::Core(SDL_Window *window) : m_window{window}
 {
     if constexpr (enable_validation_layers)
     {
@@ -75,12 +76,38 @@ RenderContext::RenderContext(SDL_Window *window)
     m_device = utils::create_device(m_physical_device, device_queue_infos, m_required_device_extensions,
                                     features2.get<vk::PhysicalDeviceFeatures2>());
 
-    int width, height;
-    SDL_GetWindowSize(window, &width, &height);
+    m_command_pool = utils::create_command_pool(*m_device, m_queue_info.graphics_family,
+                                                vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
+}
+vktypes::Swapchain Core::create_swapchain(uint32_t image_count) const
+{
+    int width = 0, height = 0;
+    int res = SDL_GetWindowSize(m_window, &width, &height);
+    if (res != 0)
+    {
+        std::cout << SDL_GetError() << "\n";
+    }
+
     vk::Extent2D window_extent{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
-    m_swapchain = utils::create_swapchain(m_physical_device, *m_device, *m_surface, window_extent,
-                                          m_queue_info.is_graphics_and_present_same() ? 1 : 2, 2);
+    return utils::create_swapchain(m_physical_device, *m_device, *m_surface, window_extent,
+                                   m_queue_info.is_graphics_and_present_same() ? 1 : 2, image_count);
+}
+vk::UniqueSemaphore Core::create_semaphore() const
+{
+    return utils::create_semaphore(*m_device);
+}
+vk::UniqueFence Core::create_fence(bool state) const
+{
+    auto info = vk::FenceCreateInfo{};
 
-} // namespace ving
+    if (state)
+        info.setFlags(vk::FenceCreateFlagBits::eSignaled);
+
+    return m_device->createFenceUnique(info);
+}
+std::vector<vk::UniqueCommandBuffer> Core::allocate_command_buffers(uint32_t count) const
+{
+    return utils::allocate_command_buffers(*m_device, *m_command_pool, count);
+}
 } // namespace ving

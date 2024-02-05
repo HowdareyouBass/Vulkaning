@@ -166,8 +166,9 @@ vktypes::Swapchain create_swapchain(vk::PhysicalDevice physical_device, vk::Devi
             .setImageSharingMode(queue_family_count > 1 ? vk::SharingMode::eConcurrent : vk::SharingMode::eExclusive);
 
     new_swapchain.swapchain = device.createSwapchainKHRUnique(info);
-    new_swapchain.images = device.getSwapchainImagesKHR(*new_swapchain.swapchain);
     new_swapchain.image_extent = extent;
+    new_swapchain.image_layout = vk::ImageLayout::eUndefined;
+    new_swapchain.images = device.getSwapchainImagesKHR(*new_swapchain.swapchain);
     new_swapchain.image_views = utils::create_image_views(device, new_swapchain.images, new_swapchain.image_format);
 
     return new_swapchain;

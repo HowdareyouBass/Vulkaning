@@ -1,6 +1,9 @@
 #pragma once
 
 #include <deque>
+
+#include <vulkan/vulkan.hpp>
+
 namespace ving
 {
 class DescriptorLayoutBuilder

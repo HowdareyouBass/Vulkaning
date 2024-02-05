@@ -2,30 +2,71 @@
 
 #include <SDL3/SDL.h>
 
-#include "ving_render_context.hpp"
+#include "backends/imgui_impl_sdl3.h"
+#include "backends/imgui_impl_vulkan.h"
+#include <imgui.h>
+
+#include "ving_core.hpp"
+#include "ving_render_frames.hpp"
+
+namespace ving
+{
+struct ImguiScopedFrame
+{
+    ImguiScopedFrame()
+    {
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplSDL3_NewFrame();
+        ImGui::NewFrame();
+    }
+    ~ImguiScopedFrame() { ImGui::EndFrame(); }
+};
+} // namespace ving
+
+void run_application()
+{
+    if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
+        throw std::runtime_error(std::format("Couldn't initialize SDL: {}", SDL_GetError()));
+
+    SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1280, 720, SDL_WINDOW_VULKAN);
+    if (!window)
+        throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
+
+    ving::Core core{window};
+    ving::RenderFrames frames{core};
+
+    bool running = true;
+    SDL_Event event;
+
+    while (running)
+    {
+        while (SDL_PollEvent(&event))
+        {
+            switch (event.type)
+            {
+            case SDL_EVENT_QUIT: {
+                running = false;
+                break;
+            }
+            }
+        }
+
+        ving::RenderFrames::FrameInfo frame = frames.begin_frame();
+        {
+
+            // ving::ImguiScopedFrame frame{};
+        }
+        frames.end_frame();
+    }
+
+    core.wait_idle();
+}
 
 int main()
 {
     try
     {
-        // ving::Engine engine{};
-        //
-        // engine.run();
-        if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
-        {
-            throw std::runtime_error(std::format("Couldn't initialize SDL: {}", SDL_GetError()));
-        }
-
-        SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1280, 720, SDL_WINDOW_VULKAN);
-
-        if (!window)
-        {
-            throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
-        }
-
-        ving::RenderContext render_context{window};
-
-
+        run_application();
     }
     catch (vk::SystemError &e)
     {
