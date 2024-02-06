@@ -17,6 +17,11 @@ class BaseRenderer
         vk::UniqueDescriptorSetLayout layout;
         std::vector<vk::DescriptorSet> descriptors;
     };
+    struct Pipelines
+    {
+        vk::UniquePipeline pipeline;
+        vk::UniquePipelineLayout layout;
+    };
 
     struct RenderResourceCreateInfo
     {

@@ -8,6 +8,7 @@
 #include "ving_descriptors.hpp"
 #include "ving_gpu_buffer.hpp"
 #include "ving_image.hpp"
+#include "ving_utils.hpp"
 #include "vk_types.hpp"
 
 struct SDL_Window;
@@ -62,6 +63,29 @@ class Core
     vk::Extent2D get_window_extent() const noexcept { return m_window_extent; }
     vk::CommandPool get_command_pool() const noexcept { return *m_command_pool; }
     vk::Device device() const noexcept { return *m_device; }
+
+    // TODO: More descriptor layouts??
+    template <typename PushConstantsType>
+    BaseRenderer::Pipelines create_compute_render_pipelines(vk::DescriptorSetLayout descriptor_layout,
+                                                            std::string_view shader_path) const
+    {
+        auto push_range =
+            vk::PushConstantRange{}.setSize(sizeof(PushConstantsType)).setStageFlags(vk::ShaderStageFlagBits::eCompute);
+        auto layout_info =
+            vk::PipelineLayoutCreateInfo{}.setSetLayouts(descriptor_layout).setPushConstantRanges(push_range);
+        auto layout = m_device->createPipelineLayoutUnique(layout_info);
+
+        auto shader = utils::create_shader_module(*m_device, shader_path);
+
+        auto stage_info = vk::PipelineShaderStageCreateInfo{}
+                              .setPName("main")
+                              .setStage(vk::ShaderStageFlagBits::eCompute)
+                              .setModule(*shader);
+
+        auto info = vk::ComputePipelineCreateInfo{}.setStage(stage_info).setLayout(*layout);
+
+        return {m_device->createComputePipelineUnique({}, info).value, std::move(layout)};
+    }
 
   public:
     vk::PhysicalDeviceMemoryProperties memory_properties;

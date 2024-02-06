@@ -37,6 +37,9 @@ SlimeRenderer::SlimeRenderer(const Core &core, vk::ImageView render_target)
     {
         writer.update_set(core.device(), descriptor);
     }
+
+    m_pipelines =
+        core.create_compute_render_pipelines<PushConstants>(m_resources.layout.get(), "shaders/draw_slime.comp.spv");
 }
 void SlimeRenderer::render(const RenderFrames::FrameInfo &frame)
 {

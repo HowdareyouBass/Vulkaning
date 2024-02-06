@@ -17,6 +17,14 @@ class SlimeRenderer : public BaseRenderer
         float dummy;
     };
 
+    struct PushConstants
+    {
+        float delta_time;
+        float time;
+        float dummy;
+        int agents_count;
+    };
+
   public:
     // HARD: Temporary render_target
     SlimeRenderer(const Core &core, vk::ImageView render_traget);
@@ -31,6 +39,7 @@ class SlimeRenderer : public BaseRenderer
     std::vector<vk::DescriptorSet> m_descriptors;
 
     RenderResources m_resources;
+    Pipelines m_pipelines;
 
     GPUBuffer m_agents_buffer;
     std::array<Agent, agent_count> m_agents;
