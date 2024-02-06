@@ -36,7 +36,7 @@ void run_application()
 
     ving::Core core{window};
     ving::RenderFrames frames{core};
-    ving::SlimeRenderer renderer{core};
+    ving::SlimeRenderer renderer{core, frames.draw_image_view()};
 
     bool running = true;
     SDL_Event event;

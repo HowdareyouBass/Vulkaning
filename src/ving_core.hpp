@@ -4,6 +4,8 @@
 
 #include <vulkan/vulkan.hpp>
 
+#include "ving_base_renderer.hpp"
+#include "ving_descriptors.hpp"
 #include "ving_gpu_buffer.hpp"
 #include "ving_image.hpp"
 #include "vk_types.hpp"
@@ -24,6 +26,11 @@ class Core
     };
 
   public:
+    struct DescriptorBinding
+    {
+        uint32_t binding;
+        vk::DescriptorType type;
+    };
     // HARD: Let the user enable or disable layers
     static constexpr bool enable_validation_layers = true;
 
@@ -36,6 +43,8 @@ class Core
     vk::UniqueSemaphore create_semaphore() const;
     vk::UniqueFence create_fence(bool state) const;
     std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(uint32_t count) const;
+    BaseRenderer::RenderResources allocate_render_resources(std::span<BaseRenderer::RenderResourceCreateInfo> infos,
+                                                            vk::ShaderStageFlags stage) const;
 
     void wait_for_fence(vk::Fence fence) const
     {
@@ -52,6 +61,7 @@ class Core
     vk::Queue get_graphics_queue() const noexcept { return m_device->getQueue(m_queue_info.graphics_family, 0); }
     vk::Extent2D get_window_extent() const noexcept { return m_window_extent; }
     vk::CommandPool get_command_pool() const noexcept { return *m_command_pool; }
+    vk::Device device() const noexcept { return *m_device; }
 
   public:
     vk::PhysicalDeviceMemoryProperties memory_properties;

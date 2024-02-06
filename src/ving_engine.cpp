@@ -273,7 +273,7 @@ void Engine::init_vulkan()
     {
         auto swapchain =
             utils::create_swapchain_old(m_physical_device, *m_device, *m_surface, m_window_extent,
-                                    graphics_family_index == present_family_index ? 1 : 2, frames_in_flight);
+                                        graphics_family_index == present_family_index ? 1 : 2, frames_in_flight);
         m_swapchain = std::move(swapchain.first);
         m_swapchain_image_format = std::move(swapchain.second);
         m_swapchain_extent = m_window_extent;
@@ -406,6 +406,8 @@ void Engine::init_slime_descriptors()
     {
         writer.update_set(*m_device, descriptor);
     }
+
+    std::cout << m_background_descriptors.size() << "\n";
 }
 void Engine::init_slime_pipeline()
 {

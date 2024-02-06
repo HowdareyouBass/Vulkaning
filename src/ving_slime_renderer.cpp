@@ -7,7 +7,7 @@
 namespace ving
 {
 
-SlimeRenderer::SlimeRenderer(const Core &core)
+SlimeRenderer::SlimeRenderer(const Core &core, vk::ImageView render_target)
 {
     std::default_random_engine gen;
     std::uniform_real_distribution<float> dist(0.0f, 1.0f);
@@ -21,6 +21,22 @@ SlimeRenderer::SlimeRenderer(const Core &core)
 
     m_agents_buffer = core.create_gpu_buffer(m_agents.data(), sizeof(Agent) * m_agents.size(),
                                              vk::BufferUsageFlagBits::eStorageBuffer);
+
+    std::vector<RenderResourceCreateInfo> bindings{
+        {vk::DescriptorType::eStorageImage, 0},
+        {vk::DescriptorType::eStorageBuffer, 1},
+    };
+
+    m_resources = core.allocate_render_resources(bindings, vk::ShaderStageFlagBits::eCompute);
+
+    DescriptorWriter writer{};
+    writer.write_image(0, render_target, nullptr, vk::ImageLayout::eGeneral, vk::DescriptorType::eStorageImage);
+    writer.write_buffer(1, m_agents_buffer.buffer(), m_agents_buffer.size(), 0, vk::DescriptorType::eStorageBuffer);
+
+    for (auto &&descriptor : m_resources.descriptors)
+    {
+        writer.update_set(core.device(), descriptor);
+    }
 }
 void SlimeRenderer::render(const RenderFrames::FrameInfo &frame)
 {

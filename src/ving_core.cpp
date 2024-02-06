@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL_vulkan.h>
 
+#include "ving_descriptors.hpp"
 #include "ving_utils.hpp"
 
 namespace ving
@@ -133,6 +134,27 @@ vk::UniqueFence Core::create_fence(bool state) const
 std::vector<vk::UniqueCommandBuffer> Core::allocate_command_buffers(uint32_t count) const
 {
     return utils::allocate_command_buffers(*m_device, *m_command_pool, count);
+}
+
+BaseRenderer::RenderResources Core::allocate_render_resources(std::span<BaseRenderer::RenderResourceCreateInfo> infos,
+                                                              vk::ShaderStageFlags stage) const
+{
+    DescriptorLayoutBuilder builder{};
+    std::vector<DescriptorAllocator::PoolSizeRatio> sizes;
+
+    for (auto &&info : infos)
+    {
+        builder.add_binding(info.binding, info.type);
+        sizes.push_back(DescriptorAllocator::PoolSizeRatio{info.type, 1});
+    }
+    vk::UniqueDescriptorSetLayout layout = builder.build(*m_device, stage);
+
+    DescriptorAllocator allocator{*m_device, 10, sizes};
+
+    std::vector<vk::DescriptorSet> descriptors = allocator.allocate(*m_device, *layout);
+
+    // TODO: How this works exactly under the hood
+    return BaseRenderer::RenderResources{std::move(allocator), std::move(layout), std::move(descriptors)};
 }
 void Core::immediate_transfer(std::function<void(vk::CommandBuffer)> &&function) const
 {

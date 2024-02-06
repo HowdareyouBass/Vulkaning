@@ -39,6 +39,8 @@ class RenderFrames
     FrameInfo begin_frame();
     void end_frame();
 
+    vk::ImageView draw_image_view() { return m_draw_image.view(); }
+
   private:
     // HACK: I don't need this to be copyable or movable for now so i will stick to reference
     // Maybe later use shared or weak ptr???
