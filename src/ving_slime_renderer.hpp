@@ -34,9 +34,7 @@ class SlimeRenderer : public BaseRenderer
   private:
     static constexpr size_t agent_count = 100000;
 
-    DescriptorAllocator m_descriptor_allocator;
-    vk::UniqueDescriptorSetLayout m_descriptor_layout;
-    std::vector<vk::DescriptorSet> m_descriptors;
+    PushConstants m_constants{0.0f, 0.0f, 0.0f, agent_count};
 
     RenderResources m_resources;
     Pipelines m_pipelines;

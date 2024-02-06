@@ -22,6 +22,7 @@ RenderFrames::RenderFrames(const Core &core) : r_core{core}, m_present_queue{cor
 
 RenderFrames::FrameInfo RenderFrames::begin_frame()
 {
+    m_start_time = std::chrono::high_resolution_clock::now();
     FrameResources &cur_frame = m_frames[m_frame_number % frames_in_flight];
 
     r_core.wait_for_fence(cur_frame.render_fence.get());
@@ -36,7 +37,7 @@ RenderFrames::FrameInfo RenderFrames::begin_frame()
     auto begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     vk::resultCheck(cmd.begin(&begin_info), "Command buffer begin failed");
 
-    return FrameInfo{cmd, m_draw_image, m_frame_number};
+    return FrameInfo{cmd, m_draw_image, m_frame_number, m_delta_time, m_time};
 }
 void RenderFrames::end_frame()
 {
@@ -69,6 +70,12 @@ void RenderFrames::end_frame()
     r_core.get_graphics_queue().submit2(submit, cur_frame.render_fence.get());
 
     m_present_queue.present_image(cur_frame.render_finished_semaphore.get(), m_frame_number);
+
+    auto end_time = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<float> delta = end_time - m_start_time;
+    m_delta_time = delta.count() * 1000.0f;
+    m_time += m_delta_time;
+    m_start_time = end_time;
 
     ++m_frame_number;
 }

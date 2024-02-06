@@ -47,11 +47,24 @@ void SlimeRenderer::render(const RenderFrames::FrameInfo &frame)
     Image2D &draw_image = frame.draw_image;
 
     draw_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
-    vk::ClearColorValue clear;
-    float flash = std::abs(std::sin(frame.frame_number / 120.f));
-    clear = {0.0f, 0.0f, flash, 0.0f};
 
-    auto range = def::image_subresource_range_no_mip_no_levels(vk::ImageAspectFlagBits::eColor);
-    cmd.clearColorImage(draw_image.image(), draw_image.layout(), clear, range);
+    // NOTE: Clear color code
+    // vk::ClearColorValue clear;
+    // float flash = std::abs(std::sin(frame.frame_number / 120.f));
+    // clear = {0.0f, 0.0f, flash, 0.0f};
+    //
+    // auto range = def::image_subresource_range_no_mip_no_levels(vk::ImageAspectFlagBits::eColor);
+    // cmd.clearColorImage(draw_image.image(), draw_image.layout(), clear, range);
+
+    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_pipelines.pipeline.get());
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_pipelines.layout.get(), 0, m_resources.descriptors,
+                           nullptr);
+
+    m_constants.delta_time = frame.delta_time;
+    m_constants.time = frame.time;
+
+    cmd.pushConstants<PushConstants>(m_pipelines.layout.get(), vk::ShaderStageFlagBits::eCompute, 0, m_constants);
+
+    cmd.dispatch(std::ceil(draw_image.extent().width / 16.0), std::ceil(draw_image.extent().height / 16.0), 1);
 }
 } // namespace ving

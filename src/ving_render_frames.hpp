@@ -1,5 +1,7 @@
 #pragma once
 
+#include <chrono>
+
 #include "ving_core.hpp"
 
 #include "ving_present_queue.hpp"
@@ -23,6 +25,8 @@ class RenderFrames
         vk::CommandBuffer cmd;
         Image2D &draw_image;
         uint64_t frame_number;
+        float delta_time;
+        float time;
     };
 
     // HARD: Let the user decide
@@ -51,5 +55,9 @@ class RenderFrames
 
     std::array<FrameResources, frames_in_flight> m_frames;
     uint64_t m_frame_number{0};
+
+    std::chrono::time_point<std::chrono::high_resolution_clock> m_start_time;
+    float m_delta_time{};
+    float m_time{};
 };
 } // namespace ving

@@ -49,7 +49,7 @@ class Core
 
     void wait_for_fence(vk::Fence fence) const
     {
-        vk::resultCheck(m_device->waitForFences(fence, true, 1000000), "Wait for fences failed");
+        vk::resultCheck(m_device->waitForFences(fence, true, 1000000000), "Wait for fences failed");
     }
     void wait_idle() const { m_device->waitIdle(); }
     void reset_fence(vk::Fence fence) const { m_device->resetFences(fence); }
