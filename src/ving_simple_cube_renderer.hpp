@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/mat4x4.hpp>
+
 #include "ving_render_frames.hpp"
 #include "ving_scene_object.hpp"
 
@@ -9,6 +11,7 @@ class SimpleCubeRenderer : public BaseRenderer
 {
     struct PushConstants
     {
+        glm::mat4 render_mtx{1.0f};
         vk::DeviceAddress vertex_buffer_address;
     };
 
