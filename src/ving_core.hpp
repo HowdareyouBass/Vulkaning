@@ -12,6 +12,7 @@
 #include "vk_types.hpp"
 
 struct SDL_Window;
+struct ImGui_ImplVulkan_InitInfo;
 
 namespace ving
 {
@@ -36,6 +37,8 @@ class Core
     static constexpr bool enable_validation_layers = true;
 
     Core(SDL_Window *window);
+
+    ImGui_ImplVulkan_InitInfo create_imgui_init_info(vk::DescriptorPool pool, vk::Format color_attachment_format) const;
 
     Image2D create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
                            vk::ImageLayout layout) const;

@@ -7,3 +7,4 @@ target_compile_features(${PROJECT_NAME} PUBLIC cxx_std_20)
 target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 
 target_link_libraries(${PROJECT_NAME} third-party)
+

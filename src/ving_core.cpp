@@ -1,6 +1,7 @@
 #include "ving_core.hpp"
 
 #include <SDL3/SDL_vulkan.h>
+#include <backends/imgui_impl_vulkan.h>
 
 #include "ving_descriptors.hpp"
 #include "ving_utils.hpp"
@@ -93,6 +94,24 @@ Core::Core(SDL_Window *window)
                                                  vk::CommandPoolCreateFlagBits::eResetCommandBuffer);
     m_transfer_commands = std::move(utils::allocate_command_buffers(*m_device, *m_transfer_pool, 1)[0]);
     m_transfer_fence = utils::create_fence(*m_device, vk::FenceCreateFlagBits::eSignaled);
+}
+ImGui_ImplVulkan_InitInfo Core::create_imgui_init_info(vk::DescriptorPool pool,
+                                                       vk::Format color_attachment_format) const
+{
+    ImGui_ImplVulkan_InitInfo info{};
+    info.Instance = *m_instance;
+    info.PhysicalDevice = m_physical_device;
+    info.Device = *m_device;
+    info.Queue = get_graphics_queue();
+    info.DescriptorPool = pool;
+    info.MinImageCount = 3;
+    info.ImageCount = 3;
+    info.UseDynamicRendering = true;
+    info.ColorAttachmentFormat = static_cast<VkFormat>(color_attachment_format);
+
+    info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+
+    return info;
 }
 Image2D Core::create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
                              vk::ImageLayout layout) const
