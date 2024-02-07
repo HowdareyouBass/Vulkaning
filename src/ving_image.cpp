@@ -20,11 +20,11 @@ Image2D::Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_me
 
     m_image = device.createImageUnique(info);
     // Memory
-    uint32_t bytes_per_pixel = utils::get_format_size(format);
+    // uint32_t bytes_per_pixel = utils::get_format_size(format);
     auto image_memory_requirements = device.getImageMemoryRequirements(*m_image);
     auto alloc_info =
         vk::MemoryAllocateInfo{}
-            .setAllocationSize(extent.width * extent.height * extent.depth * bytes_per_pixel)
+            .setAllocationSize(image_memory_requirements.size)
             .setMemoryTypeIndex(utils::find_memory_type(device_mem_props, image_memory_requirements.memoryTypeBits,
                                                         vk::MemoryPropertyFlagBits::eDeviceLocal));
     m_memory = device.allocateMemoryUnique(alloc_info);

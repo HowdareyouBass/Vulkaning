@@ -46,7 +46,7 @@ void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame)
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
-    ImGui::Text("FPS: %.0f", (1.0f / frame.delta_time) * 100.0f);
+    ImGui::Text("FPS: %.0f", (1.0f / frame.delta_time) * 1000.0f);
     ImGui::Text("Latency: %.2f ms", frame.delta_time);
 
     ImGui::EndFrame();

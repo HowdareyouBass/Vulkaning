@@ -89,6 +89,99 @@ class Core
 
         return {m_device->createComputePipelineUnique({}, info).value, std::move(layout)};
     }
+    // HARD: Most of the settings are hardcoded
+    template <typename PushConstantsType>
+    BaseRenderer::Pipelines create_graphics_render_pipelines(std::string_view vertex_shader_path,
+                                                             std::string_view fragment_shader_path,
+                                                             vk::DescriptorSetLayout descriptor_layout,
+                                                             vk::Format color_attachment_format,
+                                                             vk::Format depth_attachment_format) const
+    {
+        auto fragment_shader = utils::create_shader_module(*m_device, fragment_shader_path);
+        auto vertex_shader = utils::create_shader_module(*m_device, vertex_shader_path);
+        // HARD: Shader stages should be defined by user
+        auto push_range = vk::PushConstantRange{}
+                              .setOffset(0)
+                              .setSize(sizeof(PushConstantsType))
+                              .setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+        auto layout_info =
+            vk::PipelineLayoutCreateInfo{}.setPushConstantRanges(push_range).setSetLayouts(descriptor_layout);
+
+        auto layout = m_device->createPipelineLayoutUnique(layout_info);
+
+        auto shader_stages = std::vector<vk::PipelineShaderStageCreateInfo>{
+            vk::PipelineShaderStageCreateInfo{}
+                .setStage(vk::ShaderStageFlagBits::eVertex)
+                .setModule(*vertex_shader)
+                .setPName("main"),
+
+            vk::PipelineShaderStageCreateInfo{}
+                .setStage(vk::ShaderStageFlagBits::eFragment)
+                .setModule(*fragment_shader)
+                .setPName("main"),
+        };
+
+        auto input_assembly =
+            vk::PipelineInputAssemblyStateCreateInfo{}.setTopology(vk::PrimitiveTopology::eTriangleList);
+        auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
+        auto viewport_state = vk::PipelineViewportStateCreateInfo{}.setViewportCount(1).setScissorCount(1);
+        auto rasterizer = vk::PipelineRasterizationStateCreateInfo{}
+                              .setPolygonMode(vk::PolygonMode::eFill)
+                              .setLineWidth(1.0f)
+                              .setCullMode(vk::CullModeFlagBits::eNone)
+                              .setFrontFace(vk::FrontFace::eClockwise);
+        auto multisampling = vk::PipelineMultisampleStateCreateInfo{}
+                                 .setSampleShadingEnable(vk::False)
+                                 .setRasterizationSamples(vk::SampleCountFlagBits::e1)
+                                 .setMinSampleShading(1.0f)
+                                 .setAlphaToCoverageEnable(vk::False)
+                                 .setAlphaToOneEnable(vk::False);
+        // HARD: Shouuld be controled
+        auto color_blend_attachment =
+            vk::PipelineColorBlendAttachmentState{}
+                .setColorWriteMask(vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                                   vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA)
+                .setBlendEnable(vk::False);
+
+        auto color_blend = vk::PipelineColorBlendStateCreateInfo{}
+                               .setLogicOpEnable(vk::False)
+                               .setLogicOp(vk::LogicOp::eCopy)
+                               .setAttachments(color_blend_attachment);
+
+        auto depthtest = vk::PipelineDepthStencilStateCreateInfo{}
+                             .setDepthTestEnable(vk::True)
+                             .setDepthWriteEnable(vk::True)
+                             .setDepthCompareOp(vk::CompareOp::eGreaterOrEqual)
+                             .setDepthBoundsTestEnable(vk::False)
+                             .setStencilTestEnable(vk::False)
+                             .setMinDepthBounds(0.0f)
+                             .setMaxDepthBounds(1.0f);
+
+        auto render_info = vk::PipelineRenderingCreateInfo{}
+                               .setColorAttachmentFormats(color_attachment_format)
+                               .setDepthAttachmentFormat(depth_attachment_format);
+
+        vk::DynamicState states[] = {vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+        auto dynamic_info = vk::PipelineDynamicStateCreateInfo{}.setDynamicStates(states);
+
+        auto pipeline_info = vk::GraphicsPipelineCreateInfo{}
+                                 .setStages(shader_stages)
+                                 .setPVertexInputState(&vertex_input)
+                                 .setPViewportState(&viewport_state)
+                                 .setPInputAssemblyState(&input_assembly)
+                                 .setPRasterizationState(&rasterizer)
+                                 .setPMultisampleState(&multisampling)
+                                 .setPColorBlendState(&color_blend)
+                                 .setPDepthStencilState(&depthtest)
+                                 .setPDynamicState(&dynamic_info)
+                                 .setLayout(*layout)
+                                 .setPNext(&render_info);
+
+        auto pipeline_res = m_device->createGraphicsPipelineUnique({}, pipeline_info);
+        vk::resultCheck(pipeline_res.result, "Failed to create graphics pipeline");
+
+        return BaseRenderer::Pipelines{std::move(pipeline_res.value), std::move(layout)};
+    }
 
   public:
     vk::PhysicalDeviceMemoryProperties memory_properties;

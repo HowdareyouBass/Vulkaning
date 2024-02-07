@@ -10,6 +10,7 @@
 #include "ving_engine.hpp"
 #include "ving_imgui_renderer.hpp"
 #include "ving_render_frames.hpp"
+#include "ving_simple_cube_renderer.hpp"
 #include "ving_slime_renderer.hpp"
 
 namespace ving
@@ -37,7 +38,8 @@ void run_application()
 
     ving::Core core{window};
     ving::RenderFrames frames{core};
-    ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
+    // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
+    ving::SimpleCubeRenderer cube_renderer{core};
     ving::ImGuiRenderer imgui_renderer{core, window};
 
     bool running = true;
@@ -59,8 +61,9 @@ void run_application()
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame();
         {
-            slime_renderer.render(frame);
-            imgui_renderer.render(frame);
+            // slime_renderer.render(frame);
+            cube_renderer.render(frame);
+            // imgui_renderer.render(frame);
             // ving::ImguiScopedFrame frame{};
         }
         frames.end_frame();

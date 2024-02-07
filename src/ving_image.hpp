@@ -17,6 +17,7 @@ class Image2D
     [[nodiscard]] vk::Extent2D extent() const noexcept { return {m_extent.width, m_extent.height}; }
     [[nodiscard]] vk::ImageLayout layout() const noexcept { return m_layout; }
     [[nodiscard]] vk::ImageView view() const noexcept { return *m_view; }
+    [[nodiscard]] vk::Format format() const noexcept { return m_format; }
 
   private:
     vk::UniqueImage m_image;
