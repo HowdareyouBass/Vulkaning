@@ -38,7 +38,7 @@ void run_application()
 
     ving::Core core{window};
     ving::RenderFrames frames{core};
-    // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
+    ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     ving::SimpleCubeRenderer cube_renderer{core};
     ving::ImGuiRenderer imgui_renderer{core, window};
 
@@ -63,7 +63,7 @@ void run_application()
         {
             // slime_renderer.render(frame);
             cube_renderer.render(frame);
-            // imgui_renderer.render(frame);
+            imgui_renderer.render(frame);
             // ving::ImguiScopedFrame frame{};
         }
         frames.end_frame();

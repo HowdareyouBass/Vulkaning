@@ -21,6 +21,13 @@ GPUBuffer::GPUBuffer(vk::Device device, vk::PhysicalDeviceMemoryProperties devic
             .setAllocationSize(mem_req.size)
             .setMemoryTypeIndex(utils::find_memory_type(device_mem_props, mem_req.memoryTypeBits, memory_flags));
 
+    // HACK: Special case with shader device address
+    auto flags_info = vk::MemoryAllocateFlagsInfo{}.setFlags(vk::MemoryAllocateFlagBits::eDeviceAddress);
+    if (usage & vk::BufferUsageFlagBits::eShaderDeviceAddress)
+    {
+        alloc_info.pNext = &flags_info;
+    }
+
     m_memory = device.allocateMemoryUnique(alloc_info);
 
     device.bindBufferMemory(*m_buffer, *m_memory, 0);

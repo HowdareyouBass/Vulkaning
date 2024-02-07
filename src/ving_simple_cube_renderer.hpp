@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ving_render_frames.hpp"
+#include "ving_scene_object.hpp"
 
 namespace ving
 {
@@ -8,7 +9,7 @@ class SimpleCubeRenderer : public BaseRenderer
 {
     struct PushConstants
     {
-        float dummy;
+        vk::DeviceAddress vertex_buffer_address;
     };
 
   public:
@@ -17,6 +18,10 @@ class SimpleCubeRenderer : public BaseRenderer
     void render(const RenderFrames::FrameInfo &frame);
 
   private:
+    PushConstants m_push_constants;
+
+    GPUMeshBuffers m_cube_mesh;
+    GPUMeshBuffers m_quad_mesh;
     Image2D m_depth_img;
     RenderResources m_resources;
     Pipelines m_pipelines;

@@ -4,6 +4,7 @@
 #include <backends/imgui_impl_vulkan.h>
 
 #include "ving_descriptors.hpp"
+#include "ving_scene_object.hpp"
 #include "ving_utils.hpp"
 
 namespace ving
@@ -118,6 +119,7 @@ Image2D Core::create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsag
 {
     return Image2D{*m_device, memory_properties, size, format, usage, layout};
 }
+// NOTE: Allocates only GPU Memory!!
 GPUBuffer Core::create_gpu_buffer(void *data, uint64_t size, vk::BufferUsageFlags usage) const
 {
     GPUBuffer new_buffer{*m_device, memory_properties, size, usage | vk::BufferUsageFlagBits::eTransferDst,
@@ -149,6 +151,21 @@ vk::UniqueFence Core::create_fence(bool state) const
         info.setFlags(vk::FenceCreateFlagBits::eSignaled);
 
     return m_device->createFenceUnique(info);
+}
+GPUMeshBuffers Core::allocate_mesh(std::span<uint32_t> indices, std::span<Vertex> vertices) const
+{
+    GPUBuffer index_buffer =
+        create_gpu_buffer(indices.data(), sizeof(uint32_t) * indices.size(), vk::BufferUsageFlagBits::eIndexBuffer);
+
+    // NOTE: Using Buffer usage shader device address bit so shader can access the buffer
+    GPUBuffer vertex_buffer =
+        create_gpu_buffer(vertices.data(), sizeof(Vertex) * vertices.size(),
+                          vk::BufferUsageFlagBits::eVertexBuffer | vk::BufferUsageFlagBits::eShaderDeviceAddress);
+    auto buffer_address_info = vk::BufferDeviceAddressInfo{}.setBuffer(vertex_buffer.buffer());
+
+    vk::DeviceAddress vertex_buffer_address = m_device->getBufferAddress(buffer_address_info);
+
+    return {std::move(index_buffer), std::move(vertex_buffer), vertex_buffer_address};
 }
 std::vector<vk::UniqueCommandBuffer> Core::allocate_command_buffers(uint32_t count) const
 {
