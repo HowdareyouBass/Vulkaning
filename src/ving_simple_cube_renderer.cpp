@@ -55,6 +55,7 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
     m_camera.fov = glm::radians(60.0f);
 
     m_camera.set_perspective_projection();
+    m_camera.set_view_direction(glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.5f, 0.0f, 1.0f});
 }
 
 void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame)
@@ -96,18 +97,19 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame)
     // glm::mat4 x_rot_mtx = glm::mat4{{1, 0, 0, 0}, {0, cp, sp, 0}, {0, -sp, cp, 0}, {0, 0, 0, 1}};
     // glm::mat4 translation = glm::mat4{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0.5f, 1}};
 
-    float n = 5.0f, f = -5.0f, r = 5.0f, l = -5.0f, t = 5.0f, b = -5.0f;
+    // float n = 5.0f, f = -5.0f, r = 5.0f, l = -5.0f, t = 5.0f, b = -5.0f;
     // NOTE: This one inverts y coordinate and i'm using inversed depth so near and far are swapped
-    glm::mat4 orthographics_projection = glm::mat4{
-        {2.0f / (r - l), 0.0f, 0.0f, 0.0f},
-        {0, 2.0f / (b - t), 0.0f, 0.0f},
-        {0.0f, 0.0f, 1.0f / (f - n), 0.0f},
-        {(-(r + l)) / (r - l), (-(b + t)) / (b - t), (-n) / (f - n), 1},
-    };
+    // glm::mat4 orthographics_projection = glm::mat4{
+    //     {2.0f / (r - l), 0.0f, 0.0f, 0.0f},
+    //     {0, 2.0f / (b - t), 0.0f, 0.0f},
+    //     {0.0f, 0.0f, 1.0f / (f - n), 0.0f},
+    //     {(-(r + l)) / (r - l), (-(b + t)) / (b - t), (-n) / (f - n), 1},
+    // };
     m_cube.transform.rotation.x = phi;
     m_cube.transform.rotation.y = phi / 2.0f;
     // m_push_constants.render_mtx = orthographics_projection * m_cube.transform.mat4();
-    m_push_constants.render_mtx = m_camera.projection() * m_cube.transform.mat4();
+    auto projection_view = m_camera.projection() * m_camera.view();
+    m_push_constants.render_mtx = projection_view * m_cube.transform.mat4();
 
     cmd.beginRendering(render_info);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
