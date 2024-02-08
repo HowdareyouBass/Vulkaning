@@ -35,9 +35,9 @@ struct Mesh
 
 struct Transform
 {
-    glm::vec3 rotation{};
+    glm::vec3 rotation{0.0f};
     glm::vec3 scale{1.0f};
-    glm::vec3 translation{};
+    glm::vec3 translation{0.0f};
 
     [[nodiscard]] glm::mat4 mat4() const noexcept
     {

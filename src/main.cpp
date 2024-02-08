@@ -6,6 +6,7 @@
 #include "backends/imgui_impl_vulkan.h"
 #include <imgui.h>
 
+#include "ving_camera.hpp"
 #include "ving_core.hpp"
 #include "ving_engine.hpp"
 #include "ving_imgui_renderer.hpp"
@@ -27,6 +28,10 @@ struct ImguiScopedFrame
 };
 } // namespace ving
 
+constexpr float camera_speed = 0.01f;
+
+const Uint8 *keys;
+
 void run_application()
 {
     if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
@@ -41,12 +46,23 @@ void run_application()
     ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     ving::SimpleCubeRenderer cube_renderer{core};
     ving::ImGuiRenderer imgui_renderer{core, window};
+    ving::Camera camera;
+    camera.aspect =
+        static_cast<float>(core.get_window_extent().width) / static_cast<float>(core.get_window_extent().height);
+    camera.far = 0.1f;
+    camera.near = 100.0f;
+    camera.fov = glm::radians(60.0f);
+    camera.set_perspective_projection();
+    camera.set_view_direction(glm::vec3{0.0f, 0.0f, 1.0f});
 
     bool running = true;
     SDL_Event event;
 
+    keys = SDL_GetKeyboardState(NULL);
+
     while (running)
     {
+        glm::vec3 camera_direction{0.0f, 0.0f, 0.0f};
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
@@ -55,14 +71,34 @@ void run_application()
                 running = false;
                 break;
             }
+            default:
+                break;
             }
             ImGui_ImplSDL3_ProcessEvent(&event);
         }
 
+        if (keys[SDL_SCANCODE_W])
+            camera_direction.z = 1;
+        if (keys[SDL_SCANCODE_S])
+            camera_direction.z = -1;
+        if (keys[SDL_SCANCODE_D])
+            camera_direction.x = 1;
+        if (keys[SDL_SCANCODE_A])
+            camera_direction.x = -1;
+        if (keys[SDL_SCANCODE_SPACE])
+            camera_direction.y = 1;
+        if (keys[SDL_SCANCODE_C])
+            camera_direction.y = -1;
+
         ving::RenderFrames::FrameInfo frame = frames.begin_frame();
         {
+            camera.position += camera.right() * camera_direction.x * frame.delta_time * camera_speed;
+            camera.position += camera.up() * camera_direction.y * frame.delta_time * camera_speed;
+            // camera.position += glm::vec3{0.0f, -1.0f, 0.0f} * camera_direction.y * frame.delta_time * camera_speed;
+            camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera_speed;
+            camera.set_view_direction(glm::vec3{0.0f, 0.0f, 1.0f});
             // slime_renderer.render(frame);
-            cube_renderer.render(frame);
+            cube_renderer.render(frame, camera);
             imgui_renderer.render(frame);
             // ving::ImguiScopedFrame frame{};
         }

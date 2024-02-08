@@ -1,6 +1,9 @@
 #include "ving_simple_cube_renderer.hpp"
+#include "ving_camera.hpp"
 
 #include <glm/gtc/constants.hpp>
+
+#include <glm/gtx/transform.hpp>
 
 namespace ving
 {
@@ -47,18 +50,9 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
         m_depth_img.format());
 
     m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};
-
-    m_camera.height = core.get_window_extent().height;
-    m_camera.width = core.get_window_extent().width;
-    m_camera.far = 0.1f;
-    m_camera.near = 100.0f;
-    m_camera.fov = glm::radians(60.0f);
-
-    m_camera.set_perspective_projection();
-    m_camera.set_view_direction(glm::vec3{0.0f, 0.0f, 0.0f}, glm::vec3{0.5f, 0.0f, 1.0f});
 }
 
-void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame)
+void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const Camera &camera)
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
@@ -91,25 +85,16 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame)
     static float phi = 0.0f;
     phi += glm::quarter_pi<float>() * frame.delta_time / 1000.0f;
 
-    // float sp = sin(phi);
-    // float cp = cos(phi);
-    // glm::mat4 z_rot_mtx = glm::mat4{{cp, sp, 0, 0}, {-sp, cp, 0, 0}, {0, 0, 1, 0}, {0, 0, 0, 1}};
-    // glm::mat4 x_rot_mtx = glm::mat4{{1, 0, 0, 0}, {0, cp, sp, 0}, {0, -sp, cp, 0}, {0, 0, 0, 1}};
-    // glm::mat4 translation = glm::mat4{{1, 0, 0, 0}, {0, 1, 0, 0}, {0, 0, 1, 0}, {0, 0, 0.5f, 1}};
+    // m_cube.transform.rotation.x = phi;
+    // m_cube.transform.rotation.y = phi / 2.0f;
 
-    // float n = 5.0f, f = -5.0f, r = 5.0f, l = -5.0f, t = 5.0f, b = -5.0f;
-    // NOTE: This one inverts y coordinate and i'm using inversed depth so near and far are swapped
-    // glm::mat4 orthographics_projection = glm::mat4{
-    //     {2.0f / (r - l), 0.0f, 0.0f, 0.0f},
-    //     {0, 2.0f / (b - t), 0.0f, 0.0f},
-    //     {0.0f, 0.0f, 1.0f / (f - n), 0.0f},
-    //     {(-(r + l)) / (r - l), (-(b + t)) / (b - t), (-n) / (f - n), 1},
-    // };
-    m_cube.transform.rotation.x = phi;
-    m_cube.transform.rotation.y = phi / 2.0f;
-    // m_push_constants.render_mtx = orthographics_projection * m_cube.transform.mat4();
-    auto projection_view = m_camera.projection() * m_camera.view();
+    auto projection_view = camera.projection() * camera.view();
     m_push_constants.render_mtx = projection_view * m_cube.transform.mat4();
+
+    // glm::mat4 view = glm::translate(glm::vec3{0, 0, -10});
+    // glm::mat4 projection = glm::perspective(glm::radians(70.0f), camera.aspect, 100.0f, 0.1f);
+    // projection[1][1] *= -1;
+    // m_push_constants.render_mtx = projection * view;
 
     cmd.beginRendering(render_info);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
@@ -126,10 +111,6 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame)
 
     cmd.bindIndexBuffer(m_cube.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(m_cube.mesh.indices_count, 1, 0, 0, 0);
-    // cmd.drawIndexed(12, 1, 0, 0, 0);
-
-    // cmd.bindIndexBuffer(m_quad_mesh.index_buffer.buffer(), 0, vk::IndexType::eUint32);
-    // cmd.drawIndexed(6, 1, 0, 0, 0);
 
     cmd.endRendering();
 }

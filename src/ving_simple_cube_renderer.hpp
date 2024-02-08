@@ -2,12 +2,12 @@
 
 #include <glm/mat4x4.hpp>
 
-#include "ving_camera.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_scene_object.hpp"
 
 namespace ving
 {
+struct Camera;
 class SimpleCubeRenderer : public BaseRenderer
 {
     struct PushConstants
@@ -19,12 +19,10 @@ class SimpleCubeRenderer : public BaseRenderer
   public:
     SimpleCubeRenderer(const Core &core);
 
-    void render(const RenderFrames::FrameInfo &frame);
+    void render(const RenderFrames::FrameInfo &frame, const Camera &camera);
 
   private:
     PushConstants m_push_constants;
-
-    Camera m_camera;
 
     SceneObject m_cube;
     Image2D m_depth_img;
