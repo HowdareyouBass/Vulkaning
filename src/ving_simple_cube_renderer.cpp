@@ -45,6 +45,16 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/mesh.vert.spv", "shaders/triangle.frag.spv", m_resources.layout.get(), vk::Format::eR16G16B16A16Sfloat,
         m_depth_img.format());
+
+    m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};
+
+    m_camera.height = core.get_window_extent().height;
+    m_camera.width = core.get_window_extent().width;
+    m_camera.far = 0.1f;
+    m_camera.near = 100.0f;
+    m_camera.fov = glm::radians(60.0f);
+
+    m_camera.set_perspective_projection();
 }
 
 void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame)
@@ -96,7 +106,8 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame)
     };
     m_cube.transform.rotation.x = phi;
     m_cube.transform.rotation.y = phi / 2.0f;
-    m_push_constants.render_mtx = orthographics_projection * m_cube.transform.mat4();
+    // m_push_constants.render_mtx = orthographics_projection * m_cube.transform.mat4();
+    m_push_constants.render_mtx = m_camera.projection() * m_cube.transform.mat4();
 
     cmd.beginRendering(render_info);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());

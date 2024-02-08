@@ -2,6 +2,7 @@
 
 #include <glm/mat4x4.hpp>
 
+#include "ving_camera.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_scene_object.hpp"
 
@@ -22,6 +23,8 @@ class SimpleCubeRenderer : public BaseRenderer
 
   private:
     PushConstants m_push_constants;
+
+    Camera m_camera;
 
     SceneObject m_cube;
     Image2D m_depth_img;
