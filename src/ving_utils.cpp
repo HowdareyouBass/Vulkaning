@@ -107,7 +107,9 @@ std::pair<vk::UniqueSwapchainKHR, vk::Format> create_swapchain_old(vk::PhysicalD
 
     if (image_count > surface_capabilities.maxImageCount || image_count < surface_capabilities.minImageCount)
     {
-        throw std::runtime_error("Failed to create swapchain with required image count");
+        throw std::runtime_error(
+            std::format("Failed to create swapchain with required image count. Max: {}\n. Min: {}\n. Req: {}\n",
+                        surface_capabilities.maxImageCount, surface_capabilities.minImageCount, image_count));
     }
 
     auto info =
