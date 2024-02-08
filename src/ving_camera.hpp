@@ -8,11 +8,13 @@ struct Camera
 {
     void set_perspective_projection();
     void set_view_direction(glm::vec3 direction, glm::vec3 up = glm::vec3{0.0f, -1.0f, 0.0f});
+    void set_view_YXZ();
 
     float aspect;
     float near;
     float far;
     glm::vec3 position{0.0f, 0.0f, 0.0f};
+    glm::vec3 rotation{0.0f, 0.0f, 0.0f};
     float fov;
 
     [[nodiscard]] glm::mat4 projection() const noexcept { return m_projection; }

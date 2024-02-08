@@ -29,6 +29,7 @@ struct ImguiScopedFrame
 } // namespace ving
 
 constexpr float camera_speed = 0.01f;
+constexpr float camera_look_speed = 0.002f;
 
 const Uint8 *keys;
 
@@ -63,6 +64,7 @@ void run_application()
     while (running)
     {
         glm::vec3 camera_direction{0.0f, 0.0f, 0.0f};
+        glm::vec3 camera_rotate_dir{0.0f, 0.0f, 0.0f};
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
@@ -90,13 +92,29 @@ void run_application()
         if (keys[SDL_SCANCODE_C])
             camera_direction.y = -1;
 
+        // HACK: Had to reverse the up and down keys idk why
+        // I really need deeper understaning of this
+        if (keys[SDL_SCANCODE_UP])
+            camera_rotate_dir.x -= 1.0f;
+        if (keys[SDL_SCANCODE_DOWN])
+            camera_rotate_dir.x += 1.0f;
+        if (keys[SDL_SCANCODE_RIGHT])
+            camera_rotate_dir.y += 1.0f;
+        if (keys[SDL_SCANCODE_LEFT])
+            camera_rotate_dir.y -= 1.0f;
+
         ving::RenderFrames::FrameInfo frame = frames.begin_frame();
         {
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera_speed;
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera_speed;
+            if (glm::dot(camera_rotate_dir, camera_rotate_dir) > std::numeric_limits<float>::epsilon())
+            {
+                camera.rotation += camera_rotate_dir * frame.delta_time * camera_look_speed;
+            }
             // camera.position += glm::vec3{0.0f, -1.0f, 0.0f} * camera_direction.y * frame.delta_time * camera_speed;
             camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera_speed;
-            camera.set_view_direction(glm::vec3{0.0f, 0.0f, 1.0f});
+            // camera.set_view_direction(glm::vec3{0.0f, 0.0f, 1.0f});
+            camera.set_view_YXZ();
             // slime_renderer.render(frame);
             cube_renderer.render(frame, camera);
             imgui_renderer.render(frame);
