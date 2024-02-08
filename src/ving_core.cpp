@@ -152,7 +152,7 @@ vk::UniqueFence Core::create_fence(bool state) const
 
     return m_device->createFenceUnique(info);
 }
-GPUMeshBuffers Core::allocate_mesh(std::span<uint32_t> indices, std::span<Vertex> vertices) const
+GPUMeshBuffers Core::allocate_gpu_mesh_buffers(std::span<uint32_t> indices, std::span<Vertex> vertices) const
 {
     GPUBuffer index_buffer =
         create_gpu_buffer(indices.data(), sizeof(uint32_t) * indices.size(), vk::BufferUsageFlagBits::eIndexBuffer);

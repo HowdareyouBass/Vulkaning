@@ -49,7 +49,7 @@ class Core
     vk::UniqueSemaphore create_semaphore() const;
     vk::UniqueFence create_fence(bool state) const;
 
-    GPUMeshBuffers allocate_mesh(std::span<uint32_t> indices, std::span<Vertex> vertices) const;
+    GPUMeshBuffers allocate_gpu_mesh_buffers(std::span<uint32_t> indices, std::span<Vertex> vertices) const;
     std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(uint32_t count) const;
     BaseRenderer::RenderResources allocate_render_resources(std::span<BaseRenderer::RenderResourceCreateInfo> infos,
                                                             vk::ShaderStageFlags stage) const;

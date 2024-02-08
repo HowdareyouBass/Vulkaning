@@ -23,8 +23,7 @@ class SimpleCubeRenderer : public BaseRenderer
   private:
     PushConstants m_push_constants;
 
-    GPUMeshBuffers m_cube_mesh;
-    GPUMeshBuffers m_quad_mesh;
+    SceneObject m_cube;
     Image2D m_depth_img;
     RenderResources m_resources;
     Pipelines m_pipelines;
