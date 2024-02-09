@@ -7,7 +7,7 @@
 
 namespace ving
 {
-struct Camera;
+struct PerspectiveCamera;
 class SimpleCubeRenderer : public BaseRenderer
 {
     struct PushConstants
@@ -19,7 +19,7 @@ class SimpleCubeRenderer : public BaseRenderer
   public:
     SimpleCubeRenderer(const Core &core);
 
-    void render(const RenderFrames::FrameInfo &frame, const Camera &camera);
+    void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
     PushConstants m_push_constants;

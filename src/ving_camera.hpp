@@ -4,18 +4,18 @@
 
 namespace ving
 {
-struct Camera
+class PerspectiveCamera
 {
-    void set_perspective_projection();
-    void set_view_direction(glm::vec3 direction, glm::vec3 up = glm::vec3{0.0f, -1.0f, 0.0f});
-    void set_view_YXZ();
+  public:
+    PerspectiveCamera(float aspect, float near, float far, float fov);
 
-    float aspect;
-    float near;
-    float far;
     glm::vec3 position{0.0f, 0.0f, 0.0f};
     glm::vec3 rotation{0.0f, 0.0f, 0.0f};
-    float fov;
+
+    float move_speed{0.01f};
+    float look_speed{0.0002f};
+
+    void update();
 
     [[nodiscard]] glm::mat4 projection() const noexcept { return m_projection; }
     [[nodiscard]] glm::mat4 view() const noexcept { return m_view; }
@@ -25,6 +25,16 @@ struct Camera
     [[nodiscard]] glm::vec3 up() const noexcept { return m_up; }
 
   private:
+    void set_view_direction(glm::vec3 direction, glm::vec3 up = glm::vec3{0.0f, -1.0f, 0.0f});
+
+    void update_projection();
+    void update_view();
+
+    float m_aspect;
+    float m_near;
+    float m_far;
+    float m_fov;
+
     glm::mat4 m_projection{1.0f};
     glm::mat4 m_view{1.0f};
 

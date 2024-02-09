@@ -49,10 +49,10 @@ void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame)
 
     ImGui::Text("FPS: %.0f", (1.0f / frame.delta_time) * 1000.0f);
     ImGui::Text("Latency: %.2f ms", frame.delta_time);
-    ImGui::Text("Mouse");
-    float mouse_x, mouse_y;
-    SDL_GetMouseState(&mouse_x, &mouse_y);
-    ImGui::Text("x:%f y:%f", mouse_x, mouse_y);
+    // ImGui::Text("Mouse");
+    // float mouse_x, mouse_y;
+    // SDL_GetMouseState(&mouse_x, &mouse_y);
+    // ImGui::Text("x:%f y:%f", mouse_x, mouse_y);
 
     ImGui::EndFrame();
 
@@ -75,5 +75,10 @@ void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame)
     cmd.beginRendering(render_info);
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
     cmd.endRendering();
+}
+
+void ImGuiRenderer::process_sdl_event(const SDL_Event &event)
+{
+    ImGui_ImplSDL3_ProcessEvent(&event);
 }
 } // namespace ving

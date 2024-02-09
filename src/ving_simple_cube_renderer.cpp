@@ -52,7 +52,7 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
     m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};
 }
 
-void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const Camera &camera)
+void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;

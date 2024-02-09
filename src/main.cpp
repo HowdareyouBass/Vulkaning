@@ -2,34 +2,12 @@
 
 #include <SDL3/SDL.h>
 
-#include "backends/imgui_impl_sdl3.h"
-#include "backends/imgui_impl_vulkan.h"
-#include <imgui.h>
-
 #include "ving_camera.hpp"
 #include "ving_core.hpp"
-#include "ving_engine.hpp"
 #include "ving_imgui_renderer.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_simple_cube_renderer.hpp"
 #include "ving_slime_renderer.hpp"
-
-namespace ving
-{
-struct ImguiScopedFrame
-{
-    ImguiScopedFrame()
-    {
-        ImGui_ImplVulkan_NewFrame();
-        ImGui_ImplSDL3_NewFrame();
-        ImGui::NewFrame();
-    }
-    ~ImguiScopedFrame() { ImGui::EndFrame(); }
-};
-} // namespace ving
-
-constexpr float camera_speed = 0.01f;
-constexpr float camera_look_speed = 0.0002f;
 
 const Uint8 *keys;
 
@@ -47,14 +25,9 @@ void run_application()
     ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     ving::SimpleCubeRenderer cube_renderer{core};
     ving::ImGuiRenderer imgui_renderer{core, window};
-    ving::Camera camera;
-    camera.aspect =
-        static_cast<float>(core.get_window_extent().width) / static_cast<float>(core.get_window_extent().height);
-    camera.far = 0.1f;
-    camera.near = 100.0f;
-    camera.fov = glm::radians(60.0f);
-    camera.set_perspective_projection();
-    camera.set_view_direction(glm::vec3{0.0f, 0.0f, 1.0f});
+    ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
+                                       static_cast<float>(core.get_window_extent().height),
+                                   100.0f, 0.1f, glm::radians(60.0f)};
 
     bool running = true;
     SDL_Event event;
@@ -76,7 +49,7 @@ void run_application()
             default:
                 break;
             }
-            ImGui_ImplSDL3_ProcessEvent(&event);
+            imgui_renderer.process_sdl_event(event);
         }
 
         if (keys[SDL_SCANCODE_W])
@@ -132,14 +105,14 @@ void run_application()
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame();
         {
-            camera.position += camera.right() * camera_direction.x * frame.delta_time * camera_speed;
-            camera.position += camera.up() * camera_direction.y * frame.delta_time * camera_speed;
-            camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera_speed;
+            camera.position += camera.right() * camera_direction.x * frame.delta_time * camera.move_speed;
+            camera.position += camera.up() * camera_direction.y * frame.delta_time * camera.move_speed;
+            camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera.move_speed;
             if (glm::dot(camera_rotate_dir, camera_rotate_dir) > std::numeric_limits<float>::epsilon())
             {
-                camera.rotation += camera_rotate_dir * frame.delta_time * camera_look_speed;
+                camera.rotation += camera_rotate_dir * frame.delta_time * camera.look_speed;
             }
-            camera.set_view_YXZ();
+            camera.update();
             cube_renderer.render(frame, camera);
             imgui_renderer.render(frame);
         }
@@ -154,8 +127,6 @@ int main()
     try
     {
         run_application();
-        // ving::Engine engine{};
-        // engine.run();
     }
     catch (vk::SystemError &e)
     {

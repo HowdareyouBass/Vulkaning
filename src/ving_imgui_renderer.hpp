@@ -4,6 +4,8 @@
 #include "ving_core.hpp"
 #include "ving_render_frames.hpp"
 
+union SDL_Event;
+
 namespace ving
 {
 class ImGuiRenderer : public BaseRenderer
@@ -18,6 +20,7 @@ class ImGuiRenderer : public BaseRenderer
     ImGuiRenderer &operator=(ImGuiRenderer &&) = delete;
 
     void render(const RenderFrames::FrameInfo &frame);
+    void process_sdl_event(const SDL_Event &event);
 
   private:
     vk::UniqueDescriptorPool m_pool;

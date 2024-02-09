@@ -4,18 +4,27 @@
 
 namespace ving
 {
-void Camera::set_perspective_projection()
+PerspectiveCamera::PerspectiveCamera(float aspect, float near, float far, float fov)
+    : m_aspect{aspect}, m_near{near}, m_far{far}, m_fov{fov}
 {
-    const float tanHalfFovy = tan(fov / 2.f);
-    m_projection[0][0] = 1.f / (aspect * tanHalfFovy);
+    update_projection();
+}
+void PerspectiveCamera::update()
+{
+    update_view();
+}
+void PerspectiveCamera::update_projection()
+{
+    const float tanHalfFovy = tan(m_fov / 2.f);
+    m_projection[0][0] = 1.f / (m_aspect * tanHalfFovy);
     // HACK: We negate the [1][1] because Vulkan has y axis pointed down
     m_projection[1][1] = -1.f / (tanHalfFovy);
-    m_projection[2][2] = far / (far - near);
+    m_projection[2][2] = m_far / (m_far - m_near);
     m_projection[2][3] = 1.f;
-    m_projection[3][2] = -(far * near) / (far - near);
+    m_projection[3][2] = -(m_far * m_near) / (m_far - m_near);
 }
 
-void Camera::set_view_direction(glm::vec3 direction, glm::vec3 up)
+void PerspectiveCamera::set_view_direction(glm::vec3 direction, glm::vec3 up)
 {
     m_forward = glm::normalize(direction);
     m_right = glm::normalize(glm::cross(m_forward, up));
@@ -35,7 +44,7 @@ void Camera::set_view_direction(glm::vec3 direction, glm::vec3 up)
     m_view[3][1] = -glm::dot(m_up, position);
     m_view[3][2] = -glm::dot(m_forward, position);
 }
-void Camera::set_view_YXZ()
+void PerspectiveCamera::update_view()
 {
     const float c3 = glm::cos(rotation.z);
     const float s3 = glm::sin(rotation.z);
