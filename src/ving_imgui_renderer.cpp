@@ -1,5 +1,6 @@
 #include "ving_imgui_renderer.hpp"
 
+#include <SDL3/SDL_mouse.h>
 #include <backends/imgui_impl_sdl3.h>
 #include <backends/imgui_impl_vulkan.h>
 #include <imgui.h>
@@ -48,6 +49,10 @@ void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame)
 
     ImGui::Text("FPS: %.0f", (1.0f / frame.delta_time) * 1000.0f);
     ImGui::Text("Latency: %.2f ms", frame.delta_time);
+    ImGui::Text("Mouse");
+    float mouse_x, mouse_y;
+    SDL_GetMouseState(&mouse_x, &mouse_y);
+    ImGui::Text("x:%f y:%f", mouse_x, mouse_y);
 
     ImGui::EndFrame();
 

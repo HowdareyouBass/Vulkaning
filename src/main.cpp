@@ -29,7 +29,7 @@ struct ImguiScopedFrame
 } // namespace ving
 
 constexpr float camera_speed = 0.01f;
-constexpr float camera_look_speed = 0.002f;
+constexpr float camera_look_speed = 0.0002f;
 
 const Uint8 *keys;
 
@@ -103,22 +103,45 @@ void run_application()
         if (keys[SDL_SCANCODE_LEFT])
             camera_rotate_dir.y -= 1.0f;
 
+        // NOTE: This method freaks out if you have too much fps
+        float mouse_x = 0, mouse_y = 0;
+        Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+        float halfwidth = static_cast<float>(core.get_window_extent().width) / 2.0f;
+        float halfheight = static_cast<float>(core.get_window_extent().height) / 2.0f;
+        if ((mouse_buttons & SDL_BUTTON_RMASK) != 0)
+        {
+            float mouse_x_relative_to_center = mouse_x - halfwidth;
+            float mouse_y_relative_to_center = mouse_y - halfheight;
+            // if (std::abs(mouse_x_relative_to_center) > std::numeric_limits<float>::epsilon() &&
+            //     std::abs(mouse_y_relative_to_center) > std::numeric_limits<float>::epsilon())
+            // {
+            //     SDL_Log("%f %f\n", mouse_x, mouse_y);
+            //     SDL_Log("%f %f\n", mouse_x_relative_to_center, mouse_y_relative_to_center);
+            // }
+
+            camera_rotate_dir.y += mouse_x_relative_to_center;
+            camera_rotate_dir.x += mouse_y_relative_to_center;
+
+            SDL_WarpMouseInWindow(window, halfwidth, halfheight);
+            SDL_HideCursor();
+        }
+        else
+        {
+            SDL_ShowCursor();
+        }
+
         ving::RenderFrames::FrameInfo frame = frames.begin_frame();
         {
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera_speed;
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera_speed;
+            camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera_speed;
             if (glm::dot(camera_rotate_dir, camera_rotate_dir) > std::numeric_limits<float>::epsilon())
             {
                 camera.rotation += camera_rotate_dir * frame.delta_time * camera_look_speed;
             }
-            // camera.position += glm::vec3{0.0f, -1.0f, 0.0f} * camera_direction.y * frame.delta_time * camera_speed;
-            camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera_speed;
-            // camera.set_view_direction(glm::vec3{0.0f, 0.0f, 1.0f});
             camera.set_view_YXZ();
-            // slime_renderer.render(frame);
             cube_renderer.render(frame, camera);
             imgui_renderer.render(frame);
-            // ving::ImguiScopedFrame frame{};
         }
         frames.end_frame();
     }

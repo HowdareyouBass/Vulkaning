@@ -145,8 +145,8 @@ vktypes::Swapchain create_swapchain(vk::PhysicalDevice physical_device, vk::Devi
     vk::SurfaceCapabilitiesKHR surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(surface);
 
     // HARD: Other present modes
-    // vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;
-    vk::PresentModeKHR present_mode = vk::PresentModeKHR::eImmediate;
+    vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;
+    // vk::PresentModeKHR present_mode = vk::PresentModeKHR::eImmediate;
 
     // auto available_present_modes = physical_device.getSurfacePresentModesKHR(surface);
 

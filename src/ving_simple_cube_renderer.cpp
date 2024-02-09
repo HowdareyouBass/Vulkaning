@@ -85,8 +85,8 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const Came
     static float phi = 0.0f;
     phi += glm::quarter_pi<float>() * frame.delta_time / 1000.0f;
 
-    // m_cube.transform.rotation.x = phi;
-    // m_cube.transform.rotation.y = phi / 2.0f;
+    m_cube.transform.rotation.x = phi;
+    m_cube.transform.rotation.y = phi / 2.0f;
 
     auto projection_view = camera.projection() * camera.view();
     m_push_constants.render_mtx = projection_view * m_cube.transform.mat4();
