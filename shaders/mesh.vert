@@ -30,7 +30,9 @@ void main()
 
     gl_Position = PushConstants.render_mtx * vec4(v.position, 1.0);
 
-    out_color = v.color.xyz;
+    out_color = vec3(v.uv_x, v.uv_y, 0.0);
+    // out_color = v.color.xyz;
+    // out_color = v.normal;
     out_uv.x = v.uv_x;
     out_uv.y = v.uv_y;
 }

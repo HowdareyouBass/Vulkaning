@@ -20,7 +20,11 @@ target_sources(imgui PRIVATE
     imgui/backends/imgui_impl_vulkan.cpp
     imgui/backends/imgui_impl_sdl3.cpp
 )
+
+add_library(tinyobjloader INTERFACE)
+target_include_directories(tinyobjloader INTERFACE tinyobjloader)
+
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 
-target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui glm)
-# target_precompile_headers(third-party INTERFACE <vulkan/vulkan.hpp>)
+target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui glm tinyobjloader)
+target_precompile_headers(third-party INTERFACE <vulkan/vulkan.hpp>)

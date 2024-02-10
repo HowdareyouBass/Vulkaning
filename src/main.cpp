@@ -22,7 +22,7 @@ void run_application()
 
     ving::Core core{window};
     ving::RenderFrames frames{core};
-    ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
+    // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     ving::SimpleCubeRenderer cube_renderer{core};
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
@@ -65,8 +65,7 @@ void run_application()
         if (keys[SDL_SCANCODE_C])
             camera_direction.y = -1;
 
-        // HACK: Had to reverse the up and down keys idk why
-        // I really need deeper understaning of this
+        // Camera rotation controls
         if (keys[SDL_SCANCODE_UP])
             camera_rotate_dir.x -= 1.0f;
         if (keys[SDL_SCANCODE_DOWN])
@@ -113,6 +112,7 @@ void run_application()
                 camera.rotation += camera_rotate_dir * frame.delta_time * camera.look_speed;
             }
             camera.update();
+
             cube_renderer.render(frame, camera);
             imgui_renderer.render(frame);
         }
