@@ -46,7 +46,7 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
     m_cube = {std::move(cube_mesh), {}};
     m_push_constants.vertex_buffer_address = m_cube.mesh.gpu_buffers.vertex_buffer_address;
 
-    std::string_view model_filepath = "assets/models/cube.obj";
+    std::string_view model_filepath = "assets/models/flat_vase.obj";
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -114,7 +114,7 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
         m_depth_img.format());
 
     m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};
-    m_model.transform.scale = glm::vec3{0.1f};
+    // m_model.transform.scale = glm::vec3{0.1f};
 }
 
 void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)

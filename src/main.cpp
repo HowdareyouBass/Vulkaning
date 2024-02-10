@@ -109,7 +109,11 @@ void run_application()
             camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera.move_speed;
             if (glm::dot(camera_rotate_dir, camera_rotate_dir) > std::numeric_limits<float>::epsilon())
             {
-                camera.rotation += camera_rotate_dir * frame.delta_time * camera.look_speed;
+                camera.rotation +=
+                    camera_rotate_dir * frame.delta_time *
+                    (((mouse_buttons & SDL_BUTTON_RMASK) != 0) ? camera.mouse_look_speed : camera.arrows_look_speed);
+                camera.rotation.x = glm::clamp(camera.rotation.x, -1.5f, 1.5f);
+                camera.rotation.y = glm::mod(camera.rotation.y, glm::two_pi<float>());
             }
             camera.update();
 

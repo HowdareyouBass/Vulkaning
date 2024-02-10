@@ -13,7 +13,8 @@ class PerspectiveCamera
     glm::vec3 rotation{0.0f, 0.0f, 0.0f};
 
     float move_speed{0.01f};
-    float look_speed{0.0002f};
+    float mouse_look_speed{0.0002f};
+    float arrows_look_speed{0.001f};
 
     void update();
 
