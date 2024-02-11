@@ -16,7 +16,6 @@ class WaterRenderer : public BaseRenderer
         vk::DeviceAddress vertex_buffer_address;
         float time;
         float delta_time;
-        uint32_t wave_count;
     };
 
     struct Wave
@@ -33,16 +32,11 @@ class WaterRenderer : public BaseRenderer
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
-    static constexpr uint32_t wave_count = 5;
-
     PushConstants m_push_constants;
 
     Image2D m_depth_img;
     RenderResources m_resources;
     SceneObject m_plane;
-
-    std::array<Wave, wave_count> m_waves;
-    GPUBuffer m_waves_buffer;
 
     Pipelines m_pipelines;
 };

@@ -120,7 +120,7 @@ void run_application()
             }
             camera.update();
 
-            cube_renderer.render(frame, camera);
+            // cube_renderer.render(frame, camera);
             water_renderer.render(frame, camera);
             imgui_renderer.render(frame);
         }
