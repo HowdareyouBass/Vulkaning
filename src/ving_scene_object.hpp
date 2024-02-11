@@ -31,6 +31,13 @@ struct Mesh
 {
     GPUMeshBuffers gpu_buffers;
     uint32_t indices_count;
+    uint32_t vertices_count;
+};
+
+class Core;
+struct SimpleMesh
+{
+    static Mesh flat_plane(const Core &core, uint32_t length, uint32_t width);
 };
 
 struct Transform

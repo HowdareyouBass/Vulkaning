@@ -16,37 +16,22 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
                                       vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);
 
     auto resource_info = std::vector<RenderResourceCreateInfo>{
-        RenderResourceCreateInfo{vk::DescriptorType::eUniformBuffer, 0},
+        RenderResourceCreateInfo{vk::DescriptorType::eStorageBuffer, 0},
     };
-
     m_resources = core.allocate_render_resources(resource_info,
                                                  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+    m_scene_data.lightning_dir = {0.5f, 0.5f, 0.0f, 0.0f};
+    m_scene_data_buffer =
+        core.create_gpu_buffer(&m_scene_data, sizeof(SceneData), vk::BufferUsageFlagBits::eStorageBuffer);
+    DescriptorWriter writer{};
+    writer.write_buffer(0, m_scene_data_buffer.buffer(), m_scene_data_buffer.size(), 0,
+                        vk::DescriptorType::eStorageBuffer);
+    for (auto &&descriptor : m_resources.descriptors)
+    {
+        writer.update_set(core.device(), descriptor);
+    }
 
-    // clang-format off
-    std::vector<uint32_t> cube_indices{0, 4, 5, 5, 1, 0,
-                                       2, 6, 7, 7, 3, 2,
-                                       1, 5, 6, 1, 6, 2,
-                                       3, 7, 4, 0, 3, 4,
-                                       4, 7, 5, 5, 7, 6,
-                                       1, 2, 3, 0, 1, 3};
-    // clang-format on
-
-    std::vector<Vertex> cube_vertices{
-        Vertex{glm::vec3{-0.5f, -0.5f, -0.5f}, 0.0f, glm::vec3{}, 0.0f, glm::vec4{1.0f, 0.0f, 0.0f, 1.0f}},
-        Vertex{glm::vec3{0.5f, -0.5f, -0.5f}, 0.0f, glm::vec3{}, 0.0f, glm::vec4{0.0f, 1.0f, 0.0f, 1.0f}},
-        Vertex{glm::vec3{0.5f, -0.5f, 0.5f}, 0.0f, glm::vec3{}, 0.0f, glm::vec4{0.0f, 0.0f, 1.0f, 1.0f}},
-        Vertex{glm::vec3{-0.5f, -0.5f, 0.5f}, 0.0f, glm::vec3{}, 0.0f, glm::vec4{1.0f, 1.0f, 1.0f, 1.0f}},
-        Vertex{glm::vec3{-0.5f, 0.5f, -0.5f}, 0.0f, glm::vec3{}, 0.0f, glm::vec4{0.0f, 0.0f, 0.0f, 1.0f}},
-        Vertex{glm::vec3{0.5f, 0.5f, -0.5f}, 0.0f, glm::vec3{}, 0.0f, glm::vec4{0.0f, 1.0f, 1.0f, 1.0f}},
-        Vertex{glm::vec3{0.5f, 0.5f, 0.5f}, 0.0f, glm::vec3{}, 0.0f, glm::vec4{1.0f, 1.0f, 0.0f, 1.0f}},
-        Vertex{glm::vec3{-0.5f, 0.5f, 0.5f}, 0.0f, glm::vec3{}, 0.0f, glm::vec4{1.0f, 0.0f, 1.0f, 1.0f}},
-    };
-    GPUMeshBuffers cube_mesh_buffers = core.allocate_gpu_mesh_buffers(cube_indices, cube_vertices);
-    Mesh cube_mesh = Mesh{std::move(cube_mesh_buffers), static_cast<uint32_t>(cube_indices.size())};
-    m_cube = {std::move(cube_mesh), {}};
-    m_push_constants.vertex_buffer_address = m_cube.mesh.gpu_buffers.vertex_buffer_address;
-
-    std::string_view model_filepath = "assets/models/flat_vase.obj";
+    std::string_view model_filepath = "assets/models/smooth_vase.obj";
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -61,51 +46,40 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
 
     std::vector<Vertex> model_vertices{};
 
-    for (size_t i = 0; i < attrib.vertices.size(); i += 3)
-    {
-        model_vertices.push_back(Vertex{{attrib.vertices[i], attrib.vertices[i + 1], attrib.vertices[i + 2]},
-                                        {},
-                                        {},
-                                        {},
-                                        {1.0f, 1.0f, 1.0f, 1.0f}});
-    }
     std::vector<uint32_t> model_indices{};
 
-    for (size_t s = 0; s < shapes.size(); ++s)
+    for (auto &&shape : shapes)
     {
-        size_t index_offset = 0;
-        for (size_t f = 0; f < shapes[s].mesh.num_face_vertices.size(); f++)
+        for (auto &&index : shape.mesh.indices)
         {
-            size_t fv = size_t(shapes[s].mesh.num_face_vertices[f]);
-            for (size_t v = 0; v < fv; v++)
+            Vertex vertex{};
+
+            if (index.vertex_index >= 0)
             {
-                // Vertex new_vertex{};
-                tinyobj::index_t idx = shapes[s].mesh.indices[index_offset + v];
-
-                model_indices.push_back(size_t(idx.vertex_index));
-                // new_vertex.position = {attrib.vertices[idx.vertex_index], attrib.vertices[idx.vertex_index + 1],
-                //                        attrib.vertices[idx.vertex_index + 2]};
-                // new_vertex.color = {1.0f, 1.0f, 1.0f, 1.0f};
-                // model_vertices.push_back(new_vertex);
-
-                if (idx.normal_index >= 0)
-                {
-                    model_vertices[idx.vertex_index].normal = {attrib.normals[idx.normal_index],
-                                                               attrib.normals[idx.normal_index + 1],
-                                                               attrib.normals[idx.normal_index + 2]};
-                }
-                if (idx.texcoord_index >= 0)
-                {
-                    model_vertices[idx.vertex_index].uv_x = attrib.texcoords[idx.texcoord_index];
-                    model_vertices[idx.vertex_index].uv_y = attrib.texcoords[idx.texcoord_index + 1];
-                }
+                vertex.position = {attrib.vertices[3 * index.vertex_index + 0],
+                                   attrib.vertices[3 * index.vertex_index + 1],
+                                   attrib.vertices[3 * index.vertex_index + 2]};
             }
-            index_offset += fv;
+            if (index.normal_index >= 0)
+            {
+                vertex.normal = {attrib.normals[3 * index.normal_index + 0], attrib.normals[3 * index.normal_index + 1],
+                                 attrib.normals[3 * index.normal_index + 2]};
+            }
+            if (index.texcoord_index >= 0)
+            {
+                vertex.uv_x = attrib.texcoords[2 * index.texcoord_index + 0];
+                vertex.uv_y = attrib.texcoords[2 * index.texcoord_index + 1];
+            }
+            vertex.color = {1.0f, 1.0f, 1.0f, 1.0f};
+            model_vertices.push_back(std::move(vertex));
         }
     }
 
+    model_indices.push_back(0);
+
     GPUMeshBuffers model_mesh_buffers = core.allocate_gpu_mesh_buffers(model_indices, model_vertices);
-    Mesh model_mesh = Mesh{std::move(model_mesh_buffers), static_cast<uint32_t>(model_indices.size())};
+    Mesh model_mesh = Mesh{std::move(model_mesh_buffers), static_cast<uint32_t>(model_indices.size()),
+                           static_cast<uint32_t>(model_vertices.size())};
     m_model = {std::move(model_mesh), {}};
     m_push_constants.vertex_buffer_address = m_model.mesh.gpu_buffers.vertex_buffer_address;
 
@@ -114,6 +88,7 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
         m_depth_img.format());
 
     m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};
+
     // m_model.transform.scale = glm::vec3{0.1f};
 }
 
@@ -161,6 +136,8 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const Pers
 
     cmd.beginRendering(render_info);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors,
+                           nullptr);
     cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                      m_push_constants);
@@ -175,8 +152,10 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const Pers
     // cmd.bindIndexBuffer(m_cube.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
     // cmd.drawIndexed(m_cube.mesh.indices_count, 1, 0, 0, 0);
 
-    cmd.bindIndexBuffer(m_model.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
-    cmd.drawIndexed(m_model.mesh.indices_count, 1, 0, 0, 0);
+    cmd.draw(m_model.mesh.vertices_count, 1, 0, 0);
+
+    // cmd.bindIndexBuffer(m_model.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
+    // cmd.drawIndexed(m_model.mesh.indices_count, 1, 0, 0, 0);
 
     cmd.endRendering();
 }

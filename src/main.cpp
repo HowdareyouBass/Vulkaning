@@ -8,6 +8,7 @@
 #include "ving_render_frames.hpp"
 #include "ving_simple_cube_renderer.hpp"
 #include "ving_slime_renderer.hpp"
+#include "ving_water_renderer.hpp"
 
 const Uint8 *keys;
 
@@ -24,10 +25,12 @@ void run_application()
     ving::RenderFrames frames{core};
     // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     ving::SimpleCubeRenderer cube_renderer{core};
+    ving::WaterRenderer water_renderer{core};
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
                                    100.0f, 0.1f, glm::radians(60.0f)};
+    camera.position = {0.0f, 1.5f, -5.0f};
 
     bool running = true;
     SDL_Event event;
@@ -118,6 +121,7 @@ void run_application()
             camera.update();
 
             cube_renderer.render(frame, camera);
+            water_renderer.render(frame, camera);
             imgui_renderer.render(frame);
         }
         frames.end_frame();
