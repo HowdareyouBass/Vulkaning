@@ -22,12 +22,17 @@ Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width)
     {
         for (uint32_t j = 0; j < width; ++j)
         {
-            indices.push_back(j);
-            indices.push_back(j + 1);
-            indices.push_back(j + 1 + (length + 1) * (i + 1));
-            indices.push_back(j + 1 + (length + 1) * (i + 1));
-            indices.push_back(j + (length + 1) * (i + 1));
-            indices.push_back(j);
+            uint32_t quad_top_left = j + i * (length + 1);
+            uint32_t quad_top_right = quad_top_left + 1;
+            uint32_t quad_bottom_right = quad_top_right + length + 1;
+            uint32_t quad_bottom_left = quad_top_left + length + 1;
+
+            indices.push_back(quad_top_left);
+            indices.push_back(quad_top_right);
+            indices.push_back(quad_bottom_right);
+            indices.push_back(quad_bottom_right);
+            indices.push_back(quad_bottom_left);
+            indices.push_back(quad_top_left);
         }
     }
 

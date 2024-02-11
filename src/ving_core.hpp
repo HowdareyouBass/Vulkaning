@@ -99,7 +99,8 @@ class Core
                                                              std::string_view fragment_shader_path,
                                                              vk::DescriptorSetLayout descriptor_layout,
                                                              vk::Format color_attachment_format,
-                                                             vk::Format depth_attachment_format) const
+                                                             vk::Format depth_attachment_format,
+                                                             vk::PolygonMode polygon_mode) const
     {
         auto fragment_shader = utils::create_shader_module(*m_device, fragment_shader_path);
         auto vertex_shader = utils::create_shader_module(*m_device, vertex_shader_path);
@@ -130,7 +131,8 @@ class Core
         auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
         auto viewport_state = vk::PipelineViewportStateCreateInfo{}.setViewportCount(1).setScissorCount(1);
         auto rasterizer = vk::PipelineRasterizationStateCreateInfo{}
-                              .setPolygonMode(vk::PolygonMode::eFill)
+                              .setPolygonMode(polygon_mode)
+                              // .setPolygonMode(vk::PolygonMode::eLine)
                               .setLineWidth(1.0f)
                               .setCullMode(vk::CullModeFlagBits::eNone)
                               .setFrontFace(vk::FrontFace::eClockwise);

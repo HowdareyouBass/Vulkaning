@@ -14,6 +14,8 @@ class WaterRenderer : public BaseRenderer
     {
         glm::mat4 render_mtx{1.0f};
         vk::DeviceAddress vertex_buffer_address;
+        float time;
+        float delta_time;
     };
 
   public:

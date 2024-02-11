@@ -85,7 +85,7 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/mesh.vert.spv", "shaders/triangle.frag.spv", m_resources.layout.get(), vk::Format::eR16G16B16A16Sfloat,
-        m_depth_img.format());
+        m_depth_img.format(), vk::PolygonMode::eFill);
 
     m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};
 

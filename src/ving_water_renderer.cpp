@@ -19,13 +19,15 @@ WaterRenderer::WaterRenderer(const Core &core)
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/water.vert.spv", "shaders/triangle.frag.spv", m_resources.layout.get(),
-        vk::Format::eR16G16B16A16Sfloat, m_depth_img.format());
+        vk::Format::eR16G16B16A16Sfloat, m_depth_img.format(), vk::PolygonMode::eFill);
 }
 
 void WaterRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
+    m_push_constants.time = frame.time;
+    m_push_constants.delta_time = frame.delta_time;
 
     m_depth_img.transition_layout(cmd, vk::ImageLayout::eDepthAttachmentOptimal);
     img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
