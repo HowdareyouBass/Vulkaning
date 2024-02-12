@@ -1,9 +1,11 @@
 #include "ving_scene_object.hpp"
+#include "ving_color.hpp"
 #include "ving_core.hpp"
 
 namespace ving
 {
-Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width)
+// TODO: Generate uv and normals
+Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width, glm::vec4 color)
 {
     Mesh plane;
     std::vector<Vertex> vertices;
@@ -13,7 +15,7 @@ Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width)
     {
         for (int z = -int(length / 2); z <= int(length / 2); ++z)
         {
-            vertices.push_back(Vertex{{x * 0.05f, 0.0f, z * 0.05f}, 0, {}, 0, {1.0f, 1.0f, 1.0f, 1.0f}});
+            vertices.push_back(Vertex{{x * 0.05f, 0.0f, z * 0.05f}, 0, {}, 0, color});
         }
     }
     assert(vertices.size() == (length + 1) * (width + 1));

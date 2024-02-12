@@ -3,6 +3,7 @@
 
 layout (location = 0) out vec3 out_color;
 layout (location = 1) out vec2 out_uv;
+layout (location = 2) out vec3 out_normal;
 
 struct Vertex
 {
@@ -44,10 +45,23 @@ layout (set = 0, binding = 0) readonly buffer WavesBuffer
     WaveData waves[];
 };
 
+struct UBObj
+{
+    vec4 light_direction;
+};
+
+layout (set = 0, binding = 1) uniform SceneData
+{
+    UBObj ubobj;
+};
+
 
 void main()
 {
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex];
+
+    float der_sum_x = 0.0;
+    float der_sum_z = 0.0;
 
     for (int i = 0; i < pc.wave_count; ++i)
     {
@@ -55,33 +69,26 @@ void main()
 
         float frequency = 2.0 / w.wlength;
         float wave_speed = w.speed * frequency;
-        v.position.y += w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+        float wave_height = w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+        v.position.y += wave_height;
+
+        float der_x = w.amplitude * frequency * w.direction.x * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+        // NOTE: w.direction.y == w.direction.z because using 2d horizontal vector
+        float der_z = w.amplitude * frequency * w.direction.y * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+
+        der_sum_x += der_x;
+        der_sum_z += der_z;
     }
 
-    // WaveData w = waves[0];
-    //
-    // float frequency = 2.0 / w.wlength;
-    // float wave_speed = w.speed * frequency;
-    // v.position.y += w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+    vec3 tangent = vec3(0.0, der_sum_x, 1.0);
+    vec3 binormal = vec3(1.0, der_sum_z, 0.0);
 
-    // const float amplitude = 0.3;
-    // const float wave_length = 1.0;
-    // const float speed = 0.0005;
-    // const vec2 wave_direction = vec2(0.5, 0.5);
-    // float frequency = 2.0 / wave_length;
-    // float wave_speed = speed * frequency;
-    // v.position.y += amplitude * sin(dot(wave_direction, v.position.xz) * frequency + pc.time * wave_speed);
-
-    // if (v.position == vec3(0.0, 0.0, 0.0))
-    // {
-    //     v.position.y += w.direction.y;
-    // }
-    // else
-    // {
-    //     v.position.y += wave_direction.y;
-    // }
+    // v.normal = normalize(v.normal);
+    v.normal = cross(binormal, tangent);
+    // v.normal = cross(tangent, binormal);
 
     gl_Position = pc.render_mtx * vec4(v.position, 1.0);
 
     out_color = v.color.xyz;
+    out_normal = v.normal;
 }

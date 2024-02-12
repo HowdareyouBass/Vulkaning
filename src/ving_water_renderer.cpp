@@ -1,4 +1,5 @@
 #include "ving_water_renderer.hpp"
+#include "ving_color.hpp"
 #include <random>
 
 #include <glm/gtc/constants.hpp>
@@ -12,39 +13,48 @@ WaterRenderer::WaterRenderer(const Core &core)
                                       vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);
     auto resource_info = std::vector<RenderResourceCreateInfo>{
         RenderResourceCreateInfo{vk::DescriptorType::eStorageBuffer, 0},
+        RenderResourceCreateInfo{vk::DescriptorType::eUniformBuffer, 1},
     };
     m_resources = core.allocate_render_resources(resource_info,
                                                  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
     std::default_random_engine gen;
-    std::uniform_real_distribution<float> dir_dist(0.0f, 1.0f);
+    std::uniform_real_distribution<float> dir_x_dist(0.0f, 1.0f);
+    std::uniform_real_distribution<float> dir_y_dist(0.0f, 1.0f);
 
     for (size_t i = 0; i < m_waves.size(); ++i)
     {
         m_waves[i].wave_length = 1.0f / glm::exp(i) * 10.0f;
         m_waves[i].amplitude = 1.0f / glm::exp(i);
-        m_waves[i].direction = glm::normalize(glm::vec2{dir_dist(gen), dir_dist(gen)});
+        m_waves[i].direction = glm::normalize(glm::vec2{dir_x_dist(gen), dir_y_dist(gen)});
         m_waves[i].speed = 0.0003f;
     }
 
     m_waves_buffer =
         core.create_gpu_buffer(m_waves.data(), m_waves.size() * sizeof(Wave), vk::BufferUsageFlagBits::eStorageBuffer);
 
+    glm::vec3 light_direction = glm::normalize(glm::vec3{0.5f, 0.5f, 0.0f});
+    m_scene_data.light_direction = glm::vec4{light_direction, 0.3f};
+    m_scene_data_buffer =
+        core.create_gpu_buffer(&m_scene_data, sizeof(SceneData), vk::BufferUsageFlagBits::eUniformBuffer);
+
     DescriptorWriter writer{};
     writer.write_buffer(0, m_waves_buffer.buffer(), m_waves_buffer.size(), 0, vk::DescriptorType::eStorageBuffer);
+    writer.write_buffer(1, m_scene_data_buffer.buffer(), m_scene_data_buffer.size(), 0,
+                        vk::DescriptorType::eUniformBuffer);
     for (auto &&descriptor : m_resources.descriptors)
     {
         writer.update_set(core.device(), descriptor);
     }
 
-    Mesh plane = SimpleMesh::flat_plane(core, 100, 100);
+    Mesh plane = SimpleMesh::flat_plane(core, 100, 100, slate_blue);
     m_plane = SceneObject{std::move(plane), {}};
     m_push_constants.vertex_buffer_address = m_plane.mesh.gpu_buffers.vertex_buffer_address;
     m_push_constants.wave_count = wave_count;
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/water.vert.spv", "shaders/triangle.frag.spv", m_resources.layout.get(),
-        vk::Format::eR16G16B16A16Sfloat, m_depth_img.format(), vk::PolygonMode::eLine);
+        "shaders/water.vert.spv", "shaders/water.frag.spv", m_resources.layout.get(), vk::Format::eR16G16B16A16Sfloat,
+        m_depth_img.format(), vk::PolygonMode::eFill);
 }
 
 void WaterRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
@@ -57,7 +67,7 @@ void WaterRenderer::render(const RenderFrames::FrameInfo &frame, const Perspecti
     m_depth_img.transition_layout(cmd, vk::ImageLayout::eDepthAttachmentOptimal);
     img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
 
-    auto clear = vk::ClearValue{}.setColor(vk::ClearColorValue{0.0f, 0.0f, 0.0f, 1.0f});
+    auto clear = vk::ClearValue{}.setColor(vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f});
 
     auto color_attachment = vk::RenderingAttachmentInfo{}
                                 .setImageView(img.view())

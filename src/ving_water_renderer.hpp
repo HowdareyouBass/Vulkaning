@@ -28,13 +28,18 @@ class WaterRenderer : public BaseRenderer
         glm::vec2 direction;
     };
 
+    struct SceneData
+    {
+        glm::vec4 light_direction;
+    };
+
   public:
     WaterRenderer(const Core &core);
 
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
-    static constexpr uint32_t wave_count = 10;
+    static constexpr uint32_t wave_count = 30;
 
     PushConstants m_push_constants;
 
@@ -44,6 +49,9 @@ class WaterRenderer : public BaseRenderer
 
     std::array<Wave, wave_count> m_waves;
     GPUBuffer m_waves_buffer;
+
+    SceneData m_scene_data;
+    GPUBuffer m_scene_data_buffer;
 
     Pipelines m_pipelines;
 };
