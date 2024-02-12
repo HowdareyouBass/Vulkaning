@@ -21,16 +21,11 @@ WaterRenderer::WaterRenderer(const Core &core)
 
     for (size_t i = 0; i < m_waves.size(); ++i)
     {
-        m_waves[i].wave_length = 1.0f / glm::exp(i) * 10000.0f;
-        m_waves[i].amplitude = 1.0f / glm::exp(i) * 0.005f;
+        m_waves[i].wave_length = 1.0f / glm::exp(i) * 10.0f;
+        m_waves[i].amplitude = 1.0f / glm::exp(i);
         m_waves[i].direction = glm::normalize(glm::vec2{dir_dist(gen), dir_dist(gen)});
-        m_waves[i].speed = 0.0001f;
+        m_waves[i].speed = 0.0003f;
     }
-
-    m_waves[0].wave_length = 1.0f;
-    m_waves[0].amplitude = 0.3f;
-    m_waves[0].speed = 0.0005f;
-    m_waves[0].direction = glm::vec2(0.5f, 0.5f);
 
     m_waves_buffer =
         core.create_gpu_buffer(m_waves.data(), m_waves.size() * sizeof(Wave), vk::BufferUsageFlagBits::eStorageBuffer);

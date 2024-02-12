@@ -24,6 +24,7 @@ class WaterRenderer : public BaseRenderer
         float wave_length;
         float amplitude;
         float speed;
+        float dummy;
         glm::vec2 direction;
     };
 
@@ -33,7 +34,7 @@ class WaterRenderer : public BaseRenderer
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
-    static constexpr uint32_t wave_count = 5;
+    static constexpr uint32_t wave_count = 10;
 
     PushConstants m_push_constants;
 
