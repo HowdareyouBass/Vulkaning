@@ -36,10 +36,10 @@ class WaterRenderer : public BaseRenderer
   public:
     WaterRenderer(const Core &core);
 
-    void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
+    std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
-    static constexpr uint32_t wave_count = 30;
+    static constexpr uint32_t wave_count = 3;
 
     PushConstants m_push_constants;
 

@@ -2,6 +2,8 @@
 #include "ving_color.hpp"
 #include <random>
 
+#include <imgui.h>
+
 #include <glm/gtc/constants.hpp>
 
 namespace ving
@@ -57,7 +59,7 @@ WaterRenderer::WaterRenderer(const Core &core)
         m_depth_img.format(), vk::PolygonMode::eFill);
 }
 
-void WaterRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
+std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
@@ -111,5 +113,16 @@ void WaterRenderer::render(const RenderFrames::FrameInfo &frame, const Perspecti
     cmd.drawIndexed(m_plane.mesh.indices_count, 1, 0, 0, 0);
 
     cmd.endRendering();
+
+    return [this]() {
+        for (size_t i = 0; i < m_waves.size(); ++i)
+        {
+            ImGui::Text("Wave #%zu", i);
+            ImGui::InputFloat("Amplitude", &m_waves[i].amplitude);
+            ImGui::InputFloat("Wave length", &m_waves[i].wave_length);
+            ImGui::InputFloat("Wave speed", &m_waves[i].speed);
+            ImGui::InputFloat2("Wave direction", reinterpret_cast<float *>(&m_waves[i].direction));
+        }
+    };
 }
 } // namespace ving

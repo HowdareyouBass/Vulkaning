@@ -19,7 +19,7 @@ class ImGuiRenderer : public BaseRenderer
     ImGuiRenderer(ImGuiRenderer &&) = delete;
     ImGuiRenderer &operator=(ImGuiRenderer &&) = delete;
 
-    void render(const RenderFrames::FrameInfo &frame);
+    void render(const RenderFrames::FrameInfo &frame, std::function<void()> &&imgui_frame);
     void process_sdl_event(const SDL_Event &event);
 
   private:

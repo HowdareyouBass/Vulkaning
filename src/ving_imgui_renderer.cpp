@@ -41,7 +41,7 @@ ImGuiRenderer::~ImGuiRenderer()
 {
     ImGui_ImplVulkan_Shutdown();
 }
-void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame)
+void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, std::function<void()> &&imgui_frame)
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -53,6 +53,7 @@ void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame)
     // float mouse_x, mouse_y;
     // SDL_GetMouseState(&mouse_x, &mouse_y);
     // ImGui::Text("x:%f y:%f", mouse_x, mouse_y);
+    imgui_frame();
 
     ImGui::EndFrame();
 

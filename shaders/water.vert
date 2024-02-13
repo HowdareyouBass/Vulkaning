@@ -4,6 +4,7 @@
 layout (location = 0) out vec3 out_color;
 layout (location = 1) out vec2 out_uv;
 layout (location = 2) out vec3 out_normal;
+layout (location = 3) out vec3 out_vpos;
 
 struct Vertex
 {
@@ -62,7 +63,7 @@ void main()
 
     float der_sum_x = 0.0;
     float der_sum_z = 0.0;
-
+    
     for (int i = 0; i < pc.wave_count; ++i)
     {
         WaveData w = waves[i];
@@ -70,7 +71,6 @@ void main()
         float frequency = 2.0 / w.wlength;
         float wave_speed = w.speed * frequency;
         float wave_height = w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
-        v.position.y += wave_height;
 
         float der_x = w.amplitude * frequency * w.direction.x * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
         // NOTE: w.direction.y == w.direction.z because using 2d horizontal vector
@@ -78,17 +78,22 @@ void main()
 
         der_sum_x += der_x;
         der_sum_z += der_z;
+
+        v.position.y += wave_height;
     }
 
-    vec3 tangent = vec3(0.0, der_sum_x, 1.0);
-    vec3 binormal = vec3(1.0, der_sum_z, 0.0);
+    // vec3 tangent = normalize(vec3(0.0, der_sum_x, 1.0));
+    // vec3 binormal = normalize(vec3(1.0, der_sum_z, 0.0));
+    vec3 tangent = vec3(1.0, der_sum_x, 0.0);
+    vec3 binormal = vec3(0.0, der_sum_z, 1.0);
 
-    // v.normal = normalize(v.normal);
     v.normal = cross(binormal, tangent);
     // v.normal = cross(tangent, binormal);
+    v.normal = normalize(v.normal);
 
     gl_Position = pc.render_mtx * vec4(v.position, 1.0);
 
     out_color = v.color.xyz;
     out_normal = v.normal;
+    out_vpos = v.position;
 }
