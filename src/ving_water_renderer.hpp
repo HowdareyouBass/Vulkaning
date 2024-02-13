@@ -31,6 +31,7 @@ class WaterRenderer : public BaseRenderer
     struct SceneData
     {
         glm::vec4 light_direction;
+        glm::vec3 viewer_position;
     };
 
   public:
@@ -39,6 +40,8 @@ class WaterRenderer : public BaseRenderer
     std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
+    const Core& r_core;
+
     static constexpr uint32_t wave_count = 3;
 
     PushConstants m_push_constants;

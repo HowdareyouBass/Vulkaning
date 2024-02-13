@@ -9,14 +9,14 @@
 namespace ving
 {
 
-WaterRenderer::WaterRenderer(const Core &core)
+WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
 {
     m_depth_img = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eD32Sfloat,
                                       vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);
-    auto resource_info = std::vector<RenderResourceCreateInfo>{
-        RenderResourceCreateInfo{vk::DescriptorType::eStorageBuffer, 0},
-        RenderResourceCreateInfo{vk::DescriptorType::eUniformBuffer, 1},
-    };
+    auto resource_info =
+        std::vector<RenderResourceCreateInfo>{RenderResourceCreateInfo{{{vk::DescriptorType::eStorageBuffer, 0}}},
+                                              RenderResourceCreateInfo{{{vk::DescriptorType::eUniformBuffer, 1}}}};
+
     m_resources = core.allocate_render_resources(resource_info,
                                                  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
@@ -26,10 +26,10 @@ WaterRenderer::WaterRenderer(const Core &core)
 
     for (size_t i = 0; i < m_waves.size(); ++i)
     {
-        m_waves[i].wave_length = 1.0f / glm::exp(i) * 10.0f;
-        m_waves[i].amplitude = 1.0f / glm::exp(i);
+        m_waves[i].wave_length = 1.0f / glm::exp(i) * 8.0f;
+        m_waves[i].amplitude = 1.0f / glm::exp(i) / 2.0f;
         m_waves[i].direction = glm::normalize(glm::vec2{dir_x_dist(gen), dir_y_dist(gen)});
-        m_waves[i].speed = 0.0003f;
+        m_waves[i].speed = 0.003f;
     }
 
     m_waves_buffer =
@@ -37,6 +37,7 @@ WaterRenderer::WaterRenderer(const Core &core)
 
     glm::vec3 light_direction = glm::normalize(glm::vec3{0.5f, 0.5f, 0.0f});
     m_scene_data.light_direction = glm::vec4{light_direction, 0.3f};
+    m_scene_data.viewer_position = glm::vec3{0.5f, 0.5f, 0.5f};
     m_scene_data_buffer =
         core.create_gpu_buffer(&m_scene_data, sizeof(SceneData), vk::BufferUsageFlagBits::eUniformBuffer);
 
@@ -55,7 +56,7 @@ WaterRenderer::WaterRenderer(const Core &core)
     m_push_constants.wave_count = wave_count;
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/water.vert.spv", "shaders/water.frag.spv", m_resources.layout.get(), vk::Format::eR16G16B16A16Sfloat,
+        "shaders/water.vert.spv", "shaders/water.frag.spv", m_resources.layouts, vk::Format::eR16G16B16A16Sfloat,
         m_depth_img.format(), vk::PolygonMode::eFill);
 }
 
@@ -115,6 +116,8 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
     cmd.endRendering();
 
     return [this]() {
+        ImGui::DragFloat3("View dir", reinterpret_cast<float *>(&m_scene_data.viewer_position), 0.05f, 0.0f, 1.0f);
+
         for (size_t i = 0; i < m_waves.size(); ++i)
         {
             ImGui::Text("Wave #%zu", i);

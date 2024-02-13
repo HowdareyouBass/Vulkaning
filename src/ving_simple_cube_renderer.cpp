@@ -16,8 +16,9 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
                                       vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);
 
     auto resource_info = std::vector<RenderResourceCreateInfo>{
-        RenderResourceCreateInfo{vk::DescriptorType::eStorageBuffer, 0},
+        RenderResourceCreateInfo{{{vk::DescriptorType::eStorageBuffer, 0}}},
     };
+
     m_resources = core.allocate_render_resources(resource_info,
                                                  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
     m_scene_data.lightning_dir = {0.5f, 0.5f, 0.0f, 0.0f};
@@ -84,7 +85,7 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
     m_push_constants.vertex_buffer_address = m_model.mesh.gpu_buffers.vertex_buffer_address;
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/mesh.vert.spv", "shaders/triangle.frag.spv", m_resources.layout.get(), vk::Format::eR16G16B16A16Sfloat,
+        "shaders/mesh.vert.spv", "shaders/triangle.frag.spv", m_resources.layouts, vk::Format::eR16G16B16A16Sfloat,
         m_depth_img.format(), vk::PolygonMode::eFill);
 
     m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};

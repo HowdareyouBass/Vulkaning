@@ -49,13 +49,13 @@ layout (set = 0, binding = 0) readonly buffer WavesBuffer
 struct UBObj
 {
     vec4 light_direction;
+    vec3 viewer_pos;
 };
 
 layout (set = 0, binding = 1) uniform SceneData
 {
     UBObj ubobj;
 };
-
 
 void main()
 {

@@ -73,13 +73,13 @@ class Core
 
     // TODO: More descriptor layouts??
     template <typename PushConstantsType>
-    BaseRenderer::Pipelines create_compute_render_pipelines(vk::DescriptorSetLayout descriptor_layout,
+    BaseRenderer::Pipelines create_compute_render_pipelines(std::span<vk::DescriptorSetLayout> descriptor_layouts,
                                                             std::string_view shader_path) const
     {
         auto push_range =
             vk::PushConstantRange{}.setSize(sizeof(PushConstantsType)).setStageFlags(vk::ShaderStageFlagBits::eCompute);
         auto layout_info =
-            vk::PipelineLayoutCreateInfo{}.setSetLayouts(descriptor_layout).setPushConstantRanges(push_range);
+            vk::PipelineLayoutCreateInfo{}.setSetLayouts(descriptor_layouts).setPushConstantRanges(push_range);
         auto layout = m_device->createPipelineLayoutUnique(layout_info);
 
         auto shader = utils::create_shader_module(*m_device, shader_path);
@@ -97,7 +97,7 @@ class Core
     template <typename PushConstantsType>
     BaseRenderer::Pipelines create_graphics_render_pipelines(std::string_view vertex_shader_path,
                                                              std::string_view fragment_shader_path,
-                                                             vk::DescriptorSetLayout descriptor_layout,
+                                                             std::span<vk::DescriptorSetLayout> descriptor_layouts,
                                                              vk::Format color_attachment_format,
                                                              vk::Format depth_attachment_format,
                                                              vk::PolygonMode polygon_mode) const
@@ -110,7 +110,7 @@ class Core
                               .setSize(sizeof(PushConstantsType))
                               .setStageFlags(vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
         auto layout_info =
-            vk::PipelineLayoutCreateInfo{}.setPushConstantRanges(push_range).setSetLayouts(descriptor_layout);
+            vk::PipelineLayoutCreateInfo{}.setPushConstantRanges(push_range).setSetLayouts(descriptor_layouts);
 
         auto layout = m_device->createPipelineLayoutUnique(layout_info);
 

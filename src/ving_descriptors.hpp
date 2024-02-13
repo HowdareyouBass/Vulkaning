@@ -28,7 +28,7 @@ class DescriptorAllocator
     DescriptorAllocator() = default;
     DescriptorAllocator(vk::Device device, uint32_t max_sets, std::span<PoolSizeRatio> pool_ratios);
 
-    std::vector<vk::DescriptorSet> allocate(vk::Device device, vk::DescriptorSetLayout layout);
+    std::vector<vk::DescriptorSet> allocate(vk::Device device, std::vector<vk::DescriptorSetLayout> layout);
     void clear_descriptors(vk::Device device);
 
   private:

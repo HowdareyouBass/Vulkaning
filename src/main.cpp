@@ -122,8 +122,8 @@ void run_application()
 
             // cube_renderer.render(frame, camera);
             auto imgui_frame = water_renderer.render(frame, camera);
-            // imgui_renderer.render(frame, std::move(imgui_frame));
-            imgui_renderer.render(frame, []() {});
+            imgui_renderer.render(frame, std::move(imgui_frame));
+            // imgui_renderer.render(frame, []() {});
         }
         frames.end_frame();
     }

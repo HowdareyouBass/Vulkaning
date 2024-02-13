@@ -22,12 +22,10 @@ SlimeRenderer::SlimeRenderer(const Core &core, vk::ImageView render_target)
     m_agents_buffer = core.create_gpu_buffer(m_agents.data(), sizeof(Agent) * m_agents.size(),
                                              vk::BufferUsageFlagBits::eStorageBuffer);
 
-    std::vector<RenderResourceCreateInfo> bindings{
-        {vk::DescriptorType::eStorageImage, 0},
-        {vk::DescriptorType::eStorageBuffer, 1},
-    };
+    std::vector<RenderResourceCreateInfo> resources_info{
+        {{{vk::DescriptorType::eStorageImage, 0}, {vk::DescriptorType::eStorageBuffer, 1}}}};
 
-    m_resources = core.allocate_render_resources(bindings, vk::ShaderStageFlagBits::eCompute);
+    m_resources = core.allocate_render_resources(resources_info, vk::ShaderStageFlagBits::eCompute);
 
     DescriptorWriter writer{};
     writer.write_image(0, render_target, nullptr, vk::ImageLayout::eGeneral, vk::DescriptorType::eStorageImage);
@@ -39,7 +37,7 @@ SlimeRenderer::SlimeRenderer(const Core &core, vk::ImageView render_target)
     }
 
     m_pipelines =
-        core.create_compute_render_pipelines<PushConstants>(m_resources.layout.get(), "shaders/draw_slime.comp.spv");
+        core.create_compute_render_pipelines<PushConstants>(m_resources.layouts, "shaders/draw_slime.comp.spv");
 }
 void SlimeRenderer::render(const RenderFrames::FrameInfo &frame)
 {

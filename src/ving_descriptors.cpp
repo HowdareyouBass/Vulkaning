@@ -34,7 +34,8 @@ DescriptorAllocator::DescriptorAllocator(vk::Device device, uint32_t max_sets, s
     m_descriptor_pool = device.createDescriptorPoolUnique(pool_info);
 }
 
-std::vector<vk::DescriptorSet> DescriptorAllocator::allocate(vk::Device device, vk::DescriptorSetLayout layout)
+std::vector<vk::DescriptorSet> DescriptorAllocator::allocate(vk::Device device,
+                                                             std::vector<vk::DescriptorSetLayout> layout)
 {
     auto alloc_info = vk::DescriptorSetAllocateInfo{}.setDescriptorPool(*m_descriptor_pool).setSetLayouts(layout);
 
