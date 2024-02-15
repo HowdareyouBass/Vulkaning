@@ -5,6 +5,7 @@ find_package(Vulkan REQUIRED)
 add_subdirectory(SDL)
 add_subdirectory(VulkanMemoryAllocator)
 add_subdirectory(glm)
+add_subdirectory(KTX-Software)
 
 add_library(imgui STATIC)
 
@@ -26,5 +27,4 @@ target_include_directories(tinyobjloader INTERFACE tinyobjloader)
 
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 
-target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui glm tinyobjloader)
-target_precompile_headers(third-party INTERFACE <vulkan/vulkan.hpp>)
+target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui glm tinyobjloader ktx)

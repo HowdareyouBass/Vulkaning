@@ -15,6 +15,9 @@ SkyboxRenderer::SkyboxRenderer(const Core &core)
     m_resources = RenderResources{core.device(), resource_infos,
                                   vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment};
 
+    // m_skybox_cubemap = core.create_image2d({}, vk::Format::eR8G8B8A8Unorm, vk::ImageUsageFlagBits::eSampled,
+    //                                        vk::ImageLayout::eUndefined);
+
     m_quad = SimpleMesh::quad(core, colors::red);
     m_push_constants.vertex_buffer_address = m_quad.gpu_buffers.vertex_buffer_address;
 

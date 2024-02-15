@@ -114,11 +114,17 @@ ImGui_ImplVulkan_InitInfo Core::create_imgui_init_info(vk::DescriptorPool pool,
 
     return info;
 }
-Image2D Core::create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
-                             vk::ImageLayout layout) const
+
+Image2D Core::create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout layout,
+                             uint32_t mip, uint32_t layers, vk::ImageCreateFlags flags) const
 {
-    return Image2D{*m_device, memory_properties, size, format, usage, layout};
+    return Image2D{*m_device, memory_properties, size, format, usage, layout, mip, layers, flags};
 }
+Image2D Core::load_image2d(std::string_view filepath, vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
+                           vk::ImageLayout layout, uint32_t mip, uint32_t layers, vk::ImageCreateFlags flags) const
+{
+}
+
 // NOTE: Allocates only GPU Memory!!
 GPUBuffer Core::create_gpu_buffer(void *data, uint64_t size, vk::BufferUsageFlags usage) const
 {

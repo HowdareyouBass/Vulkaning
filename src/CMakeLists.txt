@@ -11,3 +11,4 @@ target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
 
 target_link_libraries(${PROJECT_NAME} third-party)
 
+target_precompile_headers(${PROJECT_NAME} INTERFACE <vulkan/vulkan.hpp>)

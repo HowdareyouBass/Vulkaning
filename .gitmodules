@@ -10,3 +10,6 @@
 [submodule "third-party/glm"]
 	path = third-party/glm
 	url = https://github.com/icaven/glm.git
+[submodule "third-party/KTX-Software"]
+	path = third-party/KTX-Software
+	url = https://github.com/KhronosGroup/KTX-Software

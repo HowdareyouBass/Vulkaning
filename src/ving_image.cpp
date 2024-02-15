@@ -1,22 +1,23 @@
 #include "ving_image.hpp"
 
-#include "ving_defaults.hpp"
 #include "ving_utils.hpp"
 
 namespace ving
 {
 Image2D::Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_mem_props, vk::Extent3D extent,
-                 vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout layout)
+                 vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout layout, uint32_t mip_levels_count,
+                 uint32_t layers_count, vk::ImageCreateFlags flags)
 {
     // Image
     auto info = vk::ImageCreateInfo{}
                     .setImageType(vk::ImageType::e2D)
                     .setFormat(format)
                     .setExtent(extent)
-                    .setMipLevels(1)
-                    .setArrayLayers(1)
                     .setUsage(usage)
-                    .setInitialLayout(layout);
+                    .setInitialLayout(layout)
+                    .setMipLevels(mip_levels_count)
+                    .setArrayLayers(layers_count)
+                    .setFlags(flags);
 
     m_image = device.createImageUnique(info);
     // Memory
@@ -38,16 +39,23 @@ Image2D::Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_me
         aspect_flags = vk::ImageAspectFlagBits::eDepth;
     }
 
+    auto subresource_range = vk::ImageSubresourceRange{}
+                                 .setAspectMask(aspect_flags)
+                                 .setLevelCount(mip_levels_count)
+                                 .setLayerCount(layers_count);
+
     auto view_info = vk::ImageViewCreateInfo{}
                          .setImage(*m_image)
                          .setViewType(vk::ImageViewType::e2D)
                          .setFormat(format)
-                         .setSubresourceRange(def::image_subresource_range_no_mip_no_levels(aspect_flags));
+                         .setSubresourceRange(subresource_range);
 
     m_view = device.createImageViewUnique(view_info);
     m_layout = layout;
     m_format = format;
     m_extent = extent;
+    m_mip_count = mip_levels_count;
+    m_layer_count = layers_count;
 }
 
 void Image2D::transition_layout(vk::CommandBuffer cmd, vk::ImageLayout new_layout)

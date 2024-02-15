@@ -43,8 +43,11 @@ class Core
 
     ImGui_ImplVulkan_InitInfo create_imgui_init_info(vk::DescriptorPool pool, vk::Format color_attachment_format) const;
 
-    Image2D create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
-                           vk::ImageLayout layout) const;
+    Image2D create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout layout,
+                           uint32_t mip = 1, uint32_t layers = 1, vk::ImageCreateFlags flags = {}) const;
+    Image2D load_image2d(std::string_view filepath, vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
+                         vk::ImageLayout layout, uint32_t mip, uint32_t layers, vk::ImageCreateFlags flags) const;
+
     GPUBuffer create_gpu_buffer(void *data, uint64_t size, vk::BufferUsageFlags usage) const;
     GPUBuffer create_cpu_visible_gpu_buffer(uint64_t size, vk::BufferUsageFlags usage) const;
     vktypes::Swapchain create_swapchain(uint32_t image_count) const;

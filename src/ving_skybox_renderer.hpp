@@ -30,6 +30,7 @@ class SkyboxRenderer : public BaseRenderer
   private:
     PushConstants m_push_constants{};
 
+    Image2D m_skybox_cubemap;
     Mesh m_quad;
 
     RenderResources m_resources;
