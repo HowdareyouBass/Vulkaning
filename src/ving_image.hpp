@@ -19,6 +19,7 @@ class Image2D
     [[nodiscard]] vk::ImageLayout layout() const noexcept { return m_layout; }
     [[nodiscard]] vk::ImageView view() const noexcept { return m_view.get(); }
     [[nodiscard]] vk::Format format() const noexcept { return m_format; }
+    [[nodiscard]] uint32_t mip_levels() const noexcept { return m_mip_count; }
 
   private:
     vk::UniqueImage m_image;

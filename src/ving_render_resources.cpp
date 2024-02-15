@@ -21,12 +21,15 @@ void RenderResource::write_buffer(vk::Device device, uint32_t binding, const vin
 
     device.updateDescriptorSets(write, nullptr);
 }
-void RenderResource::write_image(vk::Device device, uint32_t binding, const ving::Image2D &image) const
+void RenderResource::write_image(vk::Device device, uint32_t binding, const ving::Image2D &image,
+                                 vk::Sampler sampler) const
 {
     assert(m_bindings.find(binding) != m_bindings.end());
 
-    // TODO: Image Samplers
     auto info = vk::DescriptorImageInfo{}.setImageView(image.view()).setImageLayout(image.layout());
+
+    if (sampler != nullptr)
+        info.sampler = sampler;
 
     auto write = vk::WriteDescriptorSet{}
                      .setDstBinding(binding)
@@ -37,12 +40,15 @@ void RenderResource::write_image(vk::Device device, uint32_t binding, const ving
 
     device.updateDescriptorSets(write, nullptr);
 }
-void RenderResource::write_image(vk::Device device, uint32_t binding, vk::ImageView image, vk::ImageLayout layout) const
+void RenderResource::write_image(vk::Device device, uint32_t binding, vk::ImageView image, vk::ImageLayout layout,
+                                 vk::Sampler sampler) const
 {
     assert(m_bindings.find(binding) != m_bindings.end());
 
-    // TODO: Image Samplers
     auto info = vk::DescriptorImageInfo{}.setImageView(image).setImageLayout(layout);
+
+    if (sampler != nullptr)
+        info.sampler = sampler;
 
     auto write = vk::WriteDescriptorSet{}
                      .setDstBinding(binding)

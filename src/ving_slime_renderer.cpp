@@ -29,7 +29,7 @@ SlimeRenderer::SlimeRenderer(const Core &core, vk::ImageView render_target)
     m_resources = core.allocate_render_resources(resources_info, vk::ShaderStageFlagBits::eCompute);
 
     m_resources.get_resource(ResourceIds::Global)
-        .write_image(core.device(), 0, render_target, vk::ImageLayout::eGeneral);
+        .write_image(core.device(), 0, render_target, vk::ImageLayout::eGeneral, nullptr);
     m_resources.get_resource(ResourceIds::Global).write_buffer(core.device(), 1, m_agents_buffer);
 
     m_pipelines =

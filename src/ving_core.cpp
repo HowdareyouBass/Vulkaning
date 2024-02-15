@@ -120,9 +120,21 @@ Image2D Core::create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsag
 {
     return Image2D{*m_device, memory_properties, size, format, usage, layout, mip, layers, flags};
 }
-Image2D Core::load_image2d(std::string_view filepath, vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
-                           vk::ImageLayout layout, uint32_t mip, uint32_t layers, vk::ImageCreateFlags flags) const
+vk::UniqueSampler Core::create_sampler(uint32_t mip_levels) const
 {
+    auto sampler_info = vk::SamplerCreateInfo{}
+                            .setMagFilter(vk::Filter::eLinear)
+                            .setMinFilter(vk::Filter::eLinear)
+                            .setMipmapMode(vk::SamplerMipmapMode::eLinear)
+                            .setAddressModeU(vk::SamplerAddressMode::eClampToEdge)
+                            .setAddressModeV(vk::SamplerAddressMode::eClampToEdge)
+                            .setAddressModeW(vk::SamplerAddressMode::eClampToEdge)
+                            .setCompareOp(vk::CompareOp::eNever)
+                            .setMaxLod(static_cast<float>(mip_levels))
+                            .setBorderColor(vk::BorderColor::eFloatOpaqueWhite)
+                            .setMaxAnisotropy(1.0f);
+
+    return m_device->createSamplerUnique(sampler_info);
 }
 
 // NOTE: Allocates only GPU Memory!!

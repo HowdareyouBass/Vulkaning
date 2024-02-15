@@ -45,8 +45,9 @@ class Core
 
     Image2D create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout layout,
                            uint32_t mip = 1, uint32_t layers = 1, vk::ImageCreateFlags flags = {}) const;
-    Image2D load_image2d(std::string_view filepath, vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
-                         vk::ImageLayout layout, uint32_t mip, uint32_t layers, vk::ImageCreateFlags flags) const;
+    // Image2D load_image2d(std::string_view filepath, vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
+    //                      vk::ImageLayout layout, uint32_t mip, uint32_t layers, vk::ImageCreateFlags flags) const;
+    vk::UniqueSampler create_sampler(uint32_t mip_levels) const;
 
     GPUBuffer create_gpu_buffer(void *data, uint64_t size, vk::BufferUsageFlags usage) const;
     GPUBuffer create_cpu_visible_gpu_buffer(uint64_t size, vk::BufferUsageFlags usage) const;
@@ -58,6 +59,8 @@ class Core
     std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(uint32_t count) const;
     RenderResources allocate_render_resources(std::span<RenderResourceCreateInfo> infos,
                                               vk::ShaderStageFlags stage) const;
+
+    void immediate_transfer(std::function<void(vk::CommandBuffer)> &&function) const;
 
     void wait_for_fence(vk::Fence fence) const
     {
@@ -196,8 +199,6 @@ class Core
     vk::PhysicalDeviceMemoryProperties memory_properties;
 
   private:
-    void immediate_transfer(std::function<void(vk::CommandBuffer)> &&function) const;
-
     std::vector<const char *> m_required_instance_layers{};
     std::vector<const char *> m_required_instance_extensions{};
     std::vector<const char *> m_required_device_extensions{VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
