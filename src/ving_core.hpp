@@ -8,6 +8,7 @@
 #include "ving_descriptors.hpp"
 #include "ving_gpu_buffer.hpp"
 #include "ving_image.hpp"
+#include "ving_render_resources.hpp"
 #include "ving_utils.hpp"
 #include "vk_types.hpp"
 
@@ -51,8 +52,8 @@ class Core
 
     GPUMeshBuffers allocate_gpu_mesh_buffers(std::span<uint32_t> indices, std::span<Vertex> vertices) const;
     std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(uint32_t count) const;
-    BaseRenderer::RenderResources allocate_render_resources(std::span<BaseRenderer::RenderResourceCreateInfo> infos,
-                                                            vk::ShaderStageFlags stage) const;
+    RenderResources allocate_render_resources(std::span<RenderResourceCreateInfo> infos,
+                                              vk::ShaderStageFlags stage) const;
 
     void wait_for_fence(vk::Fence fence) const
     {
@@ -73,8 +74,8 @@ class Core
 
     // TODO: More descriptor layouts??
     template <typename PushConstantsType>
-    BaseRenderer::Pipelines create_compute_render_pipelines(std::span<vk::DescriptorSetLayout> descriptor_layouts,
-                                                            std::string_view shader_path) const
+    BaseRenderer::Pipelines create_compute_render_pipelines(
+        const std::vector<vk::DescriptorSetLayout> &descriptor_layouts, std::string_view shader_path) const
     {
         auto push_range =
             vk::PushConstantRange{}.setSize(sizeof(PushConstantsType)).setStageFlags(vk::ShaderStageFlagBits::eCompute);
@@ -95,12 +96,10 @@ class Core
     }
     // HARD: Most of the settings are hardcoded
     template <typename PushConstantsType>
-    BaseRenderer::Pipelines create_graphics_render_pipelines(std::string_view vertex_shader_path,
-                                                             std::string_view fragment_shader_path,
-                                                             std::span<vk::DescriptorSetLayout> descriptor_layouts,
-                                                             vk::Format color_attachment_format,
-                                                             vk::Format depth_attachment_format,
-                                                             vk::PolygonMode polygon_mode) const
+    BaseRenderer::Pipelines create_graphics_render_pipelines(
+        std::string_view vertex_shader_path, std::string_view fragment_shader_path,
+        const std::vector<vk::DescriptorSetLayout> &descriptor_layouts, vk::Format color_attachment_format,
+        vk::Format depth_attachment_format, vk::PolygonMode polygon_mode) const
     {
         auto fragment_shader = utils::create_shader_module(*m_device, fragment_shader_path);
         auto vertex_shader = utils::create_shader_module(*m_device, vertex_shader_path);

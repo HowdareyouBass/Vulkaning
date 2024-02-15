@@ -4,6 +4,7 @@
 #include "ving_camera.hpp"
 #include "ving_core.hpp"
 #include "ving_render_frames.hpp"
+#include "ving_render_resources.hpp"
 #include "ving_scene_object.hpp"
 
 namespace ving
@@ -34,13 +35,19 @@ class WaterRenderer : public BaseRenderer
         glm::vec3 viewer_position;
     };
 
+    enum ResourceIds : uint32_t
+    {
+        Waves,
+        SceneDataId
+    };
+
   public:
     WaterRenderer(const Core &core);
 
     std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
-    const Core& r_core;
+    const Core &r_core;
 
     static constexpr uint32_t wave_count = 3;
 

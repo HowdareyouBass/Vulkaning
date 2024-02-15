@@ -13,12 +13,18 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
 {
     m_depth_img = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eD32Sfloat,
                                       vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);
-    auto resource_info =
-        std::vector<RenderResourceCreateInfo>{RenderResourceCreateInfo{{{vk::DescriptorType::eStorageBuffer, 0}}},
-                                              RenderResourceCreateInfo{{{vk::DescriptorType::eUniformBuffer, 1}}}};
 
-    m_resources = core.allocate_render_resources(resource_info,
-                                                 vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+    auto resources_info = std::vector<RenderResourceCreateInfo>{
+        RenderResourceCreateInfo{ResourceIds::Waves, {{0, vk::DescriptorType::eStorageBuffer}}},
+        RenderResourceCreateInfo{ResourceIds::SceneDataId, {{0, vk::DescriptorType::eUniformBuffer}}},
+    };
+
+    // m_resources = core.allocate_render_resources(resources_info,
+    //                                              vk::ShaderStageFlagBits::eVertex |
+    //                                              vk::ShaderStageFlagBits::eFragment);
+    RenderResources temp_res{core.device(), resources_info,
+                             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment};
+    m_resources = std::move(temp_res);
 
     std::default_random_engine gen;
     std::uniform_real_distribution<float> dir_x_dist(0.0f, 1.0f);
@@ -41,14 +47,8 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
     m_scene_data_buffer =
         core.create_gpu_buffer(&m_scene_data, sizeof(SceneData), vk::BufferUsageFlagBits::eUniformBuffer);
 
-    DescriptorWriter writer{};
-    writer.write_buffer(0, m_waves_buffer.buffer(), m_waves_buffer.size(), 0, vk::DescriptorType::eStorageBuffer);
-    writer.write_buffer(1, m_scene_data_buffer.buffer(), m_scene_data_buffer.size(), 0,
-                        vk::DescriptorType::eUniformBuffer);
-    for (auto &&descriptor : m_resources.descriptors)
-    {
-        writer.update_set(core.device(), descriptor);
-    }
+    m_resources.get_resource(ResourceIds::Waves).write_buffer(core.device(), 0, m_waves_buffer);
+    m_resources.get_resource(ResourceIds::SceneDataId).write_buffer(core.device(), 0, m_scene_data_buffer);
 
     Mesh plane = SimpleMesh::flat_plane(core, 100, 100, slate_blue);
     m_plane = SceneObject{std::move(plane), {}};
@@ -56,7 +56,7 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
     m_push_constants.wave_count = wave_count;
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/water.vert.spv", "shaders/water.frag.spv", m_resources.layouts, vk::Format::eR16G16B16A16Sfloat,
+        "shaders/water.vert.spv", "shaders/water.frag.spv", m_resources.layouts(), vk::Format::eR16G16B16A16Sfloat,
         m_depth_img.format(), vk::PolygonMode::eFill);
 }
 
@@ -98,7 +98,7 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
 
     cmd.beginRendering(render_info);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors,
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors(),
                            nullptr);
     cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,

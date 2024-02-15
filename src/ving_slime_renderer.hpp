@@ -5,6 +5,7 @@
 
 #include "ving_base_renderer.hpp"
 #include "ving_render_frames.hpp"
+#include "ving_render_resources.hpp"
 
 namespace ving
 {
@@ -23,6 +24,11 @@ class SlimeRenderer : public BaseRenderer
         float time;
         float dummy;
         int agents_count;
+    };
+
+    enum ResourceIds : uint32_t
+    {
+        Global
     };
 
   public:

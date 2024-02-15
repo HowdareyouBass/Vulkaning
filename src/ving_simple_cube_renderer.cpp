@@ -15,22 +15,25 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
     m_depth_img = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eD32Sfloat,
                                       vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);
 
-    auto resource_info = std::vector<RenderResourceCreateInfo>{
-        RenderResourceCreateInfo{{{vk::DescriptorType::eStorageBuffer, 0}}},
+    auto resource_infos = std::vector<RenderResourceCreateInfo>{
+        RenderResourceCreateInfo{ResourceIds::Global, {{0, vk::DescriptorType::eStorageBuffer}}},
     };
 
-    m_resources = core.allocate_render_resources(resource_info,
-                                                 vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+    // FIXME: Doesn't work because allocate_render_resources returns temporary object
+    // m_resources = core.allocate_render_resources(resource_info,
+    //                                              vk::ShaderStageFlagBits::eVertex |
+    //                                              vk::ShaderStageFlagBits::eFragment);
+
+    m_resources = RenderResources{core.device(), resource_infos,
+                                  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment};
+
     m_scene_data.lightning_dir = {0.5f, 0.5f, 0.0f, 0.0f};
     m_scene_data_buffer =
         core.create_gpu_buffer(&m_scene_data, sizeof(SceneData), vk::BufferUsageFlagBits::eStorageBuffer);
-    DescriptorWriter writer{};
-    writer.write_buffer(0, m_scene_data_buffer.buffer(), m_scene_data_buffer.size(), 0,
-                        vk::DescriptorType::eStorageBuffer);
-    for (auto &&descriptor : m_resources.descriptors)
-    {
-        writer.update_set(core.device(), descriptor);
-    }
+    // DescriptorWriter writer{};
+    // writer.write_buffer(0, m_scene_data_buffer.buffer(), m_scene_data_buffer.size(), 0,
+    //                     vk::DescriptorType::eStorageBuffer);
+    m_resources.get_resource(ResourceIds::Global).write_buffer(core.device(), 0, m_scene_data_buffer);
 
     std::string_view model_filepath = "assets/models/smooth_vase.obj";
     tinyobj::attrib_t attrib;
@@ -85,7 +88,7 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
     m_push_constants.vertex_buffer_address = m_model.mesh.gpu_buffers.vertex_buffer_address;
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/mesh.vert.spv", "shaders/triangle.frag.spv", m_resources.layouts, vk::Format::eR16G16B16A16Sfloat,
+        "shaders/mesh.vert.spv", "shaders/triangle.frag.spv", m_resources.layouts(), vk::Format::eR16G16B16A16Sfloat,
         m_depth_img.format(), vk::PolygonMode::eFill);
 
     m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};
@@ -137,7 +140,7 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const Pers
 
     cmd.beginRendering(render_info);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors,
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors(),
                            nullptr);
     cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,

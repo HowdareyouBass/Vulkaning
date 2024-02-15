@@ -47,7 +47,7 @@ struct UBObj
     vec4 light_direction;
     vec3 viewer_position;
 };
-layout (set = 0, binding = 1) uniform SceneData
+layout (set = 1, binding = 0) uniform SceneData
 {
     UBObj ubobj;
 };

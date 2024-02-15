@@ -23,21 +23,17 @@ SlimeRenderer::SlimeRenderer(const Core &core, vk::ImageView render_target)
                                              vk::BufferUsageFlagBits::eStorageBuffer);
 
     std::vector<RenderResourceCreateInfo> resources_info{
-        {{{vk::DescriptorType::eStorageImage, 0}, {vk::DescriptorType::eStorageBuffer, 1}}}};
+        {ResourceIds::Global, {{0, vk::DescriptorType::eStorageImage}, {1, vk::DescriptorType::eStorageBuffer}}},
+    };
 
     m_resources = core.allocate_render_resources(resources_info, vk::ShaderStageFlagBits::eCompute);
 
-    DescriptorWriter writer{};
-    writer.write_image(0, render_target, nullptr, vk::ImageLayout::eGeneral, vk::DescriptorType::eStorageImage);
-    writer.write_buffer(1, m_agents_buffer.buffer(), m_agents_buffer.size(), 0, vk::DescriptorType::eStorageBuffer);
-
-    for (auto &&descriptor : m_resources.descriptors)
-    {
-        writer.update_set(core.device(), descriptor);
-    }
+    m_resources.get_resource(ResourceIds::Global)
+        .write_image(core.device(), 0, render_target, vk::ImageLayout::eGeneral);
+    m_resources.get_resource(ResourceIds::Global).write_buffer(core.device(), 1, m_agents_buffer);
 
     m_pipelines =
-        core.create_compute_render_pipelines<PushConstants>(m_resources.layouts, "shaders/draw_slime.comp.spv");
+        core.create_compute_render_pipelines<PushConstants>(m_resources.layouts(), "shaders/draw_slime.comp.spv");
 }
 void SlimeRenderer::render(const RenderFrames::FrameInfo &frame)
 {
@@ -55,7 +51,7 @@ void SlimeRenderer::render(const RenderFrames::FrameInfo &frame)
     // cmd.clearColorImage(draw_image.image(), draw_image.layout(), clear, range);
 
     cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_pipelines.pipeline.get());
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_pipelines.layout.get(), 0, m_resources.descriptors,
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_pipelines.layout.get(), 0, m_resources.descriptors(),
                            nullptr);
 
     m_constants.delta_time = frame.delta_time;

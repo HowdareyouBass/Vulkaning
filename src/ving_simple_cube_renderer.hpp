@@ -3,6 +3,7 @@
 #include <glm/mat4x4.hpp>
 
 #include "ving_render_frames.hpp"
+#include "ving_render_resources.hpp"
 #include "ving_scene_object.hpp"
 
 namespace ving
@@ -18,6 +19,11 @@ class SimpleCubeRenderer : public BaseRenderer
     struct SceneData
     {
         glm::vec4 lightning_dir;
+    };
+
+    enum ResourceIds : uint32_t
+    {
+        Global
     };
 
   public:

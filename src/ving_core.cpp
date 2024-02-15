@@ -172,34 +172,10 @@ std::vector<vk::UniqueCommandBuffer> Core::allocate_command_buffers(uint32_t cou
     return utils::allocate_command_buffers(*m_device, *m_command_pool, count);
 }
 
-BaseRenderer::RenderResources Core::allocate_render_resources(std::span<BaseRenderer::RenderResourceCreateInfo> infos,
-                                                              vk::ShaderStageFlags stage) const
+RenderResources Core::allocate_render_resources(std::span<RenderResourceCreateInfo> infos,
+                                                vk::ShaderStageFlags stage) const
 {
-    auto layouts = std::vector<vk::DescriptorSetLayout>{};
-    layouts.reserve(infos.size());
-
-    std::vector<vk::DescriptorPoolSize> sizes{};
-
-    for (auto &&info : infos)
-    {
-        std::vector<vk::DescriptorSetLayoutBinding> bindings{};
-        bindings.reserve(info.bindings.size());
-
-        for (auto &&binding : info.bindings)
-        {
-            sizes.push_back(vk::DescriptorPoolSize{binding.type, binding.binding});
-            bindings.push_back(vk::DescriptorSetLayoutBinding{binding.binding, binding.type, 1, stage});
-        }
-        auto layout_info = vk::DescriptorSetLayoutCreateInfo{}.setBindings(bindings);
-
-        layouts.push_back(m_device->createDescriptorSetLayout(layout_info));
-    }
-
-    auto pool_create_info = vk::DescriptorPoolCreateInfo{}.setMaxSets(infos.size()).setPoolSizes(sizes);
-    vk::DescriptorPool pool = m_device->createDescriptorPool(pool_create_info);
-
-    auto alloc_info = vk::DescriptorSetAllocateInfo{}.setSetLayouts(layouts).setDescriptorPool(pool);
-    return BaseRenderer::RenderResources{m_device.get(), m_device->allocateDescriptorSets(alloc_info), layouts, pool};
+    return RenderResources{m_device.get(), infos, stage};
 }
 void Core::immediate_transfer(std::function<void(vk::CommandBuffer)> &&function) const
 {
