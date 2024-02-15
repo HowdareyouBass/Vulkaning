@@ -89,10 +89,6 @@ RenderResources::RenderResources(vk::Device device, std::span<RenderResourceCrea
 
     for (size_t i = 0; i < infos.size(); ++i)
     {
-
-        // NOTE: HOW?????
-        // It just converted from std::vector<RenderResourceBinding> to
-        // std::unordered_map<uint32_t, vk::DescriptorType>
         m_resources[infos[i].id] =
             RenderResource{m_descriptors[i], std::unordered_map<uint32_t, vk::DescriptorType>{infos[i].bindings.begin(),
                                                                                               infos[i].bindings.end()}};
@@ -108,4 +104,5 @@ RenderResources::~RenderResources()
     if (m_pool != nullptr)
         m_device.destroyDescriptorPool(m_pool);
 }
+
 } // namespace ving

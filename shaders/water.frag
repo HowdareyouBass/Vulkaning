@@ -4,6 +4,7 @@
 layout (location = 0) in vec3 frag_color;
 layout (location = 1) in vec2 uv;
 layout (location = 2) in vec3 in_normal;
+layout (location = 3) in vec3 in_vpos;
 
 layout (location = 0) out vec4 out_color;
 
@@ -52,8 +53,17 @@ layout (set = 1, binding = 0) uniform SceneData
     UBObj ubobj;
 };
 
+const vec3 specular_color = vec3(1.0, 1.0, 1.0);
+const float specular_size = 5.0;
+
 void main()
 {
-    out_color = vec4(frag_color * dot(ubobj.light_direction.xyz, in_normal), 1.0);
-    out_color = vec4(ubobj.viewer_position, 1.0);
+    vec3 view = normalize(ubobj.viewer_position - in_vpos);
+    vec3 half_way = normalize(view + ubobj.light_direction.xyz);
+
+    float specular = pow(dot(half_way, in_normal), specular_size);
+    float diffuse = dot(ubobj.light_direction.xyz, in_normal);
+
+    out_color = vec4(frag_color * diffuse + specular * specular_color, 1.0);
+    // out_color = vec4(ubobj.viewer_position, 1.0);
 }

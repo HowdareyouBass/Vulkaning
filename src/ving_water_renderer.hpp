@@ -60,7 +60,7 @@ class WaterRenderer : public BaseRenderer
     std::array<Wave, wave_count> m_waves;
     GPUBuffer m_waves_buffer;
 
-    SceneData m_scene_data;
+    SceneData *m_scene_data;
     GPUBuffer m_scene_data_buffer;
 
     Pipelines m_pipelines;

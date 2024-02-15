@@ -38,6 +38,7 @@ class Core;
 struct SimpleMesh
 {
     static Mesh flat_plane(const Core &core, uint32_t length, uint32_t width, glm::vec4 color);
+    static Mesh quad(const Core &core, glm::vec4 color);
 };
 
 struct Transform

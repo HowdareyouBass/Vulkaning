@@ -7,7 +7,6 @@ namespace ving
 // TODO: Generate uv and normals
 Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width, glm::vec4 color)
 {
-    Mesh plane;
     std::vector<Vertex> vertices;
     std::vector<uint32_t> indices;
 
@@ -39,6 +38,19 @@ Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width, g
     }
 
     assert(indices.size() == 6 * (width * length));
+
+    return Mesh{core.allocate_gpu_mesh_buffers(indices, vertices), static_cast<uint32_t>(indices.size()),
+                static_cast<uint32_t>(vertices.size())};
+}
+Mesh SimpleMesh::quad(const Core &core, glm::vec4 color)
+{
+    std::array<uint32_t, 6> indices{0, 1, 2, 2, 3, 0};
+    std::array<Vertex, 4> vertices{
+        Vertex{{-1.0f, 1.0f, 0.0f}, 0, {}, 0, color},
+        Vertex{{-1.0f, -1.0f, 0.0f}, 0, {}, 0, color},
+        Vertex{{1.0f, -1.0f, 0.0f}, 0, {}, 0, color},
+        Vertex{{1.0f, 1.0f, 0.0f}, 0, {}, 0, color},
+    };
 
     return Mesh{core.allocate_gpu_mesh_buffers(indices, vertices), static_cast<uint32_t>(indices.size()),
                 static_cast<uint32_t>(vertices.size())};

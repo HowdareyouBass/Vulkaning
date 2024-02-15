@@ -57,6 +57,8 @@ class RenderResources
         return *this;
     }
 
+    void reset();
+
     [[nodiscard]] std::vector<vk::DescriptorSetLayout> layouts() const noexcept { return m_layouts; }
     [[nodiscard]] std::vector<vk::DescriptorSet> descriptors() const noexcept { return m_descriptors; }
     // NOTE: Assuming user will save his ids in enum

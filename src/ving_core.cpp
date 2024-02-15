@@ -134,6 +134,14 @@ GPUBuffer Core::create_gpu_buffer(void *data, uint64_t size, vk::BufferUsageFlag
 
     return new_buffer;
 }
+GPUBuffer Core::create_cpu_visible_gpu_buffer(uint64_t size, vk::BufferUsageFlags usage) const
+{
+    GPUBuffer cpu_visible_buffer{m_device.get(), memory_properties, size, usage,
+                                 vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent};
+
+    return cpu_visible_buffer;
+}
+
 vktypes::Swapchain Core::create_swapchain(uint32_t image_count) const
 {
     return utils::create_swapchain(m_physical_device, *m_device, *m_surface, m_window_extent,

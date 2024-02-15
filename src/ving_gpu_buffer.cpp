@@ -40,28 +40,15 @@ void GPUBuffer::set_memory(vk::Device device, void *data, vk::DeviceSize size)
     memcpy(buffer_data, data, size);
     device.unmapMemory(*m_memory);
 }
-void GPUBuffer::copy_to(vk::Device device, vk::Queue transfer_queue, vk::CommandPool pool, const GPUBuffer &buffer)
+void GPUBuffer::map_data()
 {
-    auto alloc_info = vk::CommandBufferAllocateInfo{}.setCommandPool(pool).setCommandBufferCount(1);
-
-    vk::UniqueCommandBuffer cmd;
-
-    cmd = std::move(device.allocateCommandBuffersUnique(alloc_info).back());
-
-    auto begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-    cmd->begin(begin_info);
-
-    auto copy_region = vk::BufferCopy{}.setSize(m_size);
-
-    cmd->copyBuffer(*m_buffer, buffer.buffer(), copy_region);
-
-    cmd->end();
-
-    auto submit = vk::SubmitInfo{}.setCommandBuffers(*cmd);
-
-    transfer_queue.submit(submit);
-
-    transfer_queue.waitIdle();
+    vk::Device device = m_memory.getOwner();
+    m_data = device.mapMemory(m_memory.get(), 0, m_size);
 }
-
+void GPUBuffer::unmap_data()
+{
+    vk::Device device = m_memory.getOwner();
+    device.unmapMemory(m_memory.get());
+    m_data = nullptr;
+}
 } // namespace ving

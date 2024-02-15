@@ -42,15 +42,18 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
         core.create_gpu_buffer(m_waves.data(), m_waves.size() * sizeof(Wave), vk::BufferUsageFlagBits::eStorageBuffer);
 
     glm::vec3 light_direction = glm::normalize(glm::vec3{0.5f, 0.5f, 0.0f});
-    m_scene_data.light_direction = glm::vec4{light_direction, 0.3f};
-    m_scene_data.viewer_position = glm::vec3{0.5f, 0.5f, 0.5f};
+
     m_scene_data_buffer =
-        core.create_gpu_buffer(&m_scene_data, sizeof(SceneData), vk::BufferUsageFlagBits::eUniformBuffer);
+        core.create_cpu_visible_gpu_buffer(sizeof(SceneData), vk::BufferUsageFlagBits::eUniformBuffer);
+    m_scene_data_buffer.map_data();
+    m_scene_data = static_cast<SceneData *>(m_scene_data_buffer.data());
+
+    m_scene_data->light_direction = glm::vec4{light_direction, 1.0f};
 
     m_resources.get_resource(ResourceIds::Waves).write_buffer(core.device(), 0, m_waves_buffer);
     m_resources.get_resource(ResourceIds::SceneDataId).write_buffer(core.device(), 0, m_scene_data_buffer);
 
-    Mesh plane = SimpleMesh::flat_plane(core, 100, 100, slate_blue);
+    Mesh plane = SimpleMesh::flat_plane(core, 100, 100, colors::slate_blue);
     m_plane = SceneObject{std::move(plane), {}};
     m_push_constants.vertex_buffer_address = m_plane.mesh.gpu_buffers.vertex_buffer_address;
     m_push_constants.wave_count = wave_count;
@@ -64,8 +67,10 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
+
     m_push_constants.time = frame.time;
     m_push_constants.delta_time = frame.delta_time;
+    m_scene_data->viewer_position = camera.position;
 
     m_depth_img.transition_layout(cmd, vk::ImageLayout::eDepthAttachmentOptimal);
     img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
@@ -75,7 +80,7 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
     auto color_attachment = vk::RenderingAttachmentInfo{}
                                 .setImageView(img.view())
                                 .setImageLayout(img.layout())
-                                .setLoadOp(vk::AttachmentLoadOp::eClear)
+                                .setLoadOp(vk::AttachmentLoadOp::eLoad)
                                 .setClearValue(clear)
                                 .setStoreOp(vk::AttachmentStoreOp::eStore);
 
@@ -116,7 +121,8 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
     cmd.endRendering();
 
     return [this]() {
-        ImGui::DragFloat3("View dir", reinterpret_cast<float *>(&m_scene_data.viewer_position), 0.05f, 0.0f, 1.0f);
+        // ImGui::DragFloat3("View dir", reinterpret_cast<float *>(&(m_scene_data->viewer_position)), 0.05f,
+        // 0.0f, 1.0f);
 
         for (size_t i = 0; i < m_waves.size(); ++i)
         {
