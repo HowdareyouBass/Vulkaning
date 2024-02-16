@@ -32,9 +32,9 @@ void main()
 
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex];
 
-    // out_UVW = v.position;
-    out_UVW = pc.camera_forward;
-    // out_UVW *= -1.0;
+    out_UVW = vec3(v.position.xy, 1.0);
+    // out_UVW = pc.camera_forward;
+    out_UVW *= -1.0;
 
     gl_Position = pc.render_mtx * vec4(v.position, 1.0);
 
