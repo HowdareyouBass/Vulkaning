@@ -54,7 +54,7 @@ layout (set = 1, binding = 0) uniform SceneData
 };
 
 const vec3 specular_color = vec3(1.0, 1.0, 1.0);
-const float specular_size = 5.0;
+const float specular_size = 100.0;
 
 void main()
 {

@@ -49,7 +49,7 @@ class WaterRenderer : public BaseRenderer
   private:
     const Core &r_core;
 
-    static constexpr uint32_t wave_count = 3;
+    static constexpr uint32_t wave_count = 10;
 
     PushConstants m_push_constants;
 

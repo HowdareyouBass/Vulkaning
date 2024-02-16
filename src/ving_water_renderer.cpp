@@ -32,8 +32,8 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
 
     for (size_t i = 0; i < m_waves.size(); ++i)
     {
-        m_waves[i].wave_length = 1.0f / glm::exp(i) * 8.0f;
-        m_waves[i].amplitude = 1.0f / glm::exp(i) / 2.0f;
+        m_waves[i].wave_length = glm::pow(0.84f, i) * 5.0f;
+        m_waves[i].amplitude = glm::pow(0.82f, i) / 4.0f;
         m_waves[i].direction = glm::normalize(glm::vec2{dir_x_dist(gen), dir_y_dist(gen)});
         m_waves[i].speed = 0.003f;
     }
@@ -53,7 +53,7 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
     m_resources.get_resource(ResourceIds::Waves).write_buffer(core.device(), 0, m_waves_buffer);
     m_resources.get_resource(ResourceIds::SceneDataId).write_buffer(core.device(), 0, m_scene_data_buffer);
 
-    Mesh plane = SimpleMesh::flat_plane(core, 100, 100, colors::slate_blue);
+    Mesh plane = SimpleMesh::flat_plane(core, 1000, 1000, colors::slate_blue);
     m_plane = SceneObject{std::move(plane), {}};
     m_push_constants.vertex_buffer_address = m_plane.mesh.gpu_buffers.vertex_buffer_address;
     m_push_constants.wave_count = wave_count;
@@ -124,14 +124,14 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
         // ImGui::DragFloat3("View dir", reinterpret_cast<float *>(&(m_scene_data->viewer_position)), 0.05f,
         // 0.0f, 1.0f);
 
-        for (size_t i = 0; i < m_waves.size(); ++i)
-        {
-            ImGui::Text("Wave #%zu", i);
-            ImGui::InputFloat("Amplitude", &m_waves[i].amplitude);
-            ImGui::InputFloat("Wave length", &m_waves[i].wave_length);
-            ImGui::InputFloat("Wave speed", &m_waves[i].speed);
-            ImGui::InputFloat2("Wave direction", reinterpret_cast<float *>(&m_waves[i].direction));
-        }
+        // for (size_t i = 0; i < m_waves.size(); ++i)
+        // {
+        //     ImGui::Text("Wave #%zu", i);
+        //     ImGui::InputFloat("Amplitude", &m_waves[i].amplitude);
+        //     ImGui::InputFloat("Wave length", &m_waves[i].wave_length);
+        //     ImGui::InputFloat("Wave speed", &m_waves[i].speed);
+        //     ImGui::InputFloat2("Wave direction", reinterpret_cast<float *>(&m_waves[i].direction));
+        // }
     };
 }
 } // namespace ving
