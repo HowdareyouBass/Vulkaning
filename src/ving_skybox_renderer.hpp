@@ -18,6 +18,10 @@ class SkyboxRenderer : public BaseRenderer
         glm::mat4 render_mtx{1.0f};
         glm::vec3 camera_forward;
         vk::DeviceAddress vertex_buffer_address;
+        glm::vec2 dummy2;
+        glm::vec3 camera_right;
+        float dummy;
+        glm::vec3 camera_up;
     };
 
     enum ResourceIds

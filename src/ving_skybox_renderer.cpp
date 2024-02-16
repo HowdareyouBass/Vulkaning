@@ -36,6 +36,8 @@ void SkyboxRenderer::render(const RenderFrames::FrameInfo &frame, const Perspect
     Image2D &img = frame.draw_image;
 
     m_push_constants.camera_forward = glm::normalize(camera.forward());
+    m_push_constants.camera_right = glm::normalize(camera.right());
+    m_push_constants.camera_up = glm::normalize(camera.up());
 
     img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
 
