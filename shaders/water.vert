@@ -70,25 +70,28 @@ void main()
 
         float frequency = 2.0 / w.wlength;
         float wave_speed = w.speed * frequency;
-        float wave_height = w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+        // float wave_height = w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+        float wave_height = exp(w.amplitude*sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed) - 1);
 
-        float der_x = w.amplitude * frequency * w.direction.x * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
-        // NOTE: w.direction.y == w.direction.z because using 2d horizontal vector
-        float der_z = w.amplitude * frequency * w.direction.y * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
 
-        der_sum_x += der_x;
-        der_sum_z += der_z;
+        // float der_x = w.amplitude * frequency * w.direction.x * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+        // float der_z = w.amplitude * frequency * w.direction.y * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+
+        vec2 derivative = w.amplitude * frequency * w.direction * exp(w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed) - 1) * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+
+        // float der_x = w.amplitude * frequency * w.direction.x * exp(w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed) - 1) * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+        // float der_z = w.amplitude * frequency * w.direction.z * exp(w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed) - 1) * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+
+        der_sum_x += derivative.x;
+        der_sum_z += derivative.y;
 
         v.position.y += wave_height;
     }
 
-    // vec3 tangent = normalize(vec3(0.0, der_sum_x, 1.0));
-    // vec3 binormal = normalize(vec3(1.0, der_sum_z, 0.0));
     vec3 tangent = vec3(1.0, der_sum_x, 0.0);
     vec3 binormal = vec3(0.0, der_sum_z, 1.0);
 
     v.normal = cross(binormal, tangent);
-    // v.normal = cross(tangent, binormal);
     v.normal = normalize(v.normal);
 
     gl_Position = pc.render_mtx * vec4(v.position, 1.0);

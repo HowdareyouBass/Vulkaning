@@ -19,27 +19,30 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
         RenderResourceCreateInfo{ResourceIds::SceneDataId, {{0, vk::DescriptorType::eUniformBuffer}}},
     };
 
-    // m_resources = core.allocate_render_resources(resources_info,
-    //                                              vk::ShaderStageFlagBits::eVertex |
-    //                                              vk::ShaderStageFlagBits::eFragment);
-    RenderResources temp_res{core.device(), resources_info,
-                             vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment};
-    m_resources = std::move(temp_res);
-
-    std::default_random_engine gen;
-    std::uniform_real_distribution<float> dir_x_dist(0.0f, 1.0f);
-    std::uniform_real_distribution<float> dir_y_dist(0.0f, 1.0f);
-
-    for (size_t i = 0; i < m_waves.size(); ++i)
-    {
-        m_waves[i].wave_length = glm::pow(0.84f, i) * 5.0f;
-        m_waves[i].amplitude = glm::pow(0.82f, i) / 4.0f;
-        m_waves[i].direction = glm::normalize(glm::vec2{dir_x_dist(gen), dir_y_dist(gen)});
-        m_waves[i].speed = 0.003f;
-    }
+    m_resources = RenderResources{core.device(), resources_info,
+                                  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment};
 
     m_waves_buffer =
-        core.create_gpu_buffer(m_waves.data(), m_waves.size() * sizeof(Wave), vk::BufferUsageFlagBits::eStorageBuffer);
+        core.create_cpu_visible_gpu_buffer(wave_count * sizeof(Wave), vk::BufferUsageFlagBits::eStorageBuffer);
+    m_waves_buffer.map_data();
+    m_waves = std::span<Wave>{static_cast<Wave *>(m_waves_buffer.data()),
+                              static_cast<Wave *>(m_waves_buffer.data()) + wave_count};
+
+    assert(m_waves.size() == wave_count);
+
+    // m_waves.resize(wave_count);
+    generate_waves();
+    // m_waves_buffer =
+    // core.create_gpu_buffer(m_waves.data(), m_waves.size() * sizeof(Wave), vk::BufferUsageFlagBits::eStorageBuffer);
+
+    // Wave *w = reinterpret_cast<Wave *>(m_waves_buffer.data());
+    // std::default_random_engine gen;
+    // std::uniform_real_distribution<float> dir_x_dist(-1.0f, 1.0f);
+    // std::uniform_real_distribution<float> dir_y_dist(-1.0f, 1.0f);
+    // w->wave_length = wave_length_coefficient;
+    // w->amplitude = amplitude_coefficient;
+    // w->direction = glm::normalize(glm::vec2{dir_x_dist(gen), dir_y_dist(gen)});
+    // w->speed = start_speed;
 
     glm::vec3 light_direction = glm::normalize(glm::vec3{0.5f, 0.5f, 0.0f});
 
@@ -121,8 +124,17 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
     cmd.endRendering();
 
     return [this]() {
-        // ImGui::DragFloat3("View dir", reinterpret_cast<float *>(&(m_scene_data->viewer_position)), 0.05f,
-        // 0.0f, 1.0f);
+        // ImGui::DragInt("Wave count", reinterpret_cast<int *>(&wave_count));
+        ImGui::DragFloat("Wave Length Coefficient", &wave_length_coefficient, 0.1f, 1.0f, 200.0f);
+        ImGui::DragFloat("Wave Length Power", &wave_length_power, 0.01f, 0.1f, 1.0f);
+        ImGui::DragFloat("Wave Amplitude Coefficient", &amplitude_coefficient, 0.01f, 1.0f, 4.0f);
+        ImGui::DragFloat("Wave Amplitude Power", &amplitude_power, 0.01f, 0.1f, 1.0f);
+        ImGui::DragFloat("Start Speed", &start_speed, 0.0001f, 0.0001f, 0.1f);
+        ImGui::Spacing();
+        if (ImGui::Button("Generate Waves"))
+        {
+            generate_waves();
+        }
 
         // for (size_t i = 0; i < m_waves.size(); ++i)
         // {
@@ -132,6 +144,23 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
         //     ImGui::InputFloat("Wave speed", &m_waves[i].speed);
         //     ImGui::InputFloat2("Wave direction", reinterpret_cast<float *>(&m_waves[i].direction));
         // }
+
+        // ImGui::ShowDemoWindow();
     };
+}
+void WaterRenderer::generate_waves()
+{
+    std::default_random_engine gen;
+    std::uniform_real_distribution<float> dir_x_dist(-1.0f, 1.0f);
+    std::uniform_real_distribution<float> dir_y_dist(-1.0f, 1.0f);
+    // std::uniform_real_distribution<float> speed_dist(0.009f, 0.01f);
+
+    for (size_t i = 0; i < wave_count; ++i)
+    {
+        m_waves[i].wave_length = glm::pow(wave_length_power, i) * wave_length_coefficient;
+        m_waves[i].amplitude = glm::pow(amplitude_power, i) * amplitude_coefficient;
+        m_waves[i].direction = glm::normalize(glm::vec2{dir_x_dist(gen), dir_y_dist(gen)});
+        m_waves[i].speed = start_speed;
+    }
 }
 } // namespace ving

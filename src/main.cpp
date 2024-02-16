@@ -18,7 +18,7 @@ void run_application()
     if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
         throw std::runtime_error(std::format("Couldn't initialize SDL: {}", SDL_GetError()));
 
-    SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 800, 800, SDL_WINDOW_VULKAN);
+    SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1000, 1000, SDL_WINDOW_VULKAN);
     if (!window)
         throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
 

@@ -44,12 +44,20 @@ class WaterRenderer : public BaseRenderer
   public:
     WaterRenderer(const Core &core);
 
+    // TODO: To change wave_count need to reallocate gpu buffer
+    uint32_t wave_count = 27;
+    float wave_length_power = 0.8f;
+    float amplitude_power = 0.75f;
+    float wave_length_coefficient = 100.0f;
+    float amplitude_coefficient = 2.0f;
+    float start_speed = 0.007f;
+
     std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
-    const Core &r_core;
+    void generate_waves();
 
-    static constexpr uint32_t wave_count = 10;
+    const Core &r_core;
 
     PushConstants m_push_constants;
 
@@ -57,7 +65,8 @@ class WaterRenderer : public BaseRenderer
     RenderResources m_resources;
     SceneObject m_plane;
 
-    std::array<Wave, wave_count> m_waves;
+    // std::vector<Wave> m_waves;
+    std::span<Wave> m_waves;
     GPUBuffer m_waves_buffer;
 
     SceneData *m_scene_data;
