@@ -119,7 +119,7 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
 
     // cmd.draw(m_plane.mesh.vertices_count, 1, 0, 0);
     cmd.bindIndexBuffer(m_plane.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
-    cmd.drawIndexed(m_plane.mesh.indices_count, 1, 0, 0, 0);
+    cmd.drawIndexed(m_plane.mesh.indices_count, 4, 0, 0, 0);
 
     cmd.endRendering();
 
