@@ -45,11 +45,11 @@ class WaterRenderer : public BaseRenderer
     WaterRenderer(const Core &core);
 
     // TODO: To change wave_count need to reallocate gpu buffer
-    uint32_t wave_count = 27;
-    float wave_length_power = 0.8f;
-    float amplitude_power = 0.75f;
-    float wave_length_coefficient = 100.0f;
-    float amplitude_coefficient = 2.0f;
+    uint32_t wave_count = 25;
+    float wave_length_power = 0.85f;
+    float amplitude_power = 0.73f;
+    float wave_length_coefficient = 13.3f;
+    float amplitude_coefficient = 2.27f;
     float start_speed = 0.007f;
 
     std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);

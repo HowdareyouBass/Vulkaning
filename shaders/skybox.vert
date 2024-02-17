@@ -21,15 +21,28 @@ layout (buffer_reference, std430) readonly buffer VertexBuffer
 layout (push_constant) uniform constants
 {
     mat4 render_mtx;
-    vec3 camera_forward;
     VertexBuffer vertex_buffer;
     vec2 dummy;
-    vec3 camera_right;
-    float dummy1;
-    vec3 camera_up;
+    vec4 lightning_direction;
 } pc;
 
 layout (set = 0, binding = 0) uniform samplerCube sampler_cube_map;
+
+struct CameraInfo
+{
+    vec3 up;
+    float dummy;
+    vec3 right;
+    float dummy1;
+    vec3 forward;
+    float dummy2;
+    vec3 position;
+};
+
+layout (set = 0, binding = 1) uniform CameraInfoBuffer
+{
+    CameraInfo camera_info;
+};
 
 void main()
 {
@@ -39,7 +52,7 @@ void main()
     // out_UVW = normalize(vec3(v.position.xy, 1.0));
     // out_UVW = vec3(pc.camera_forward.xy + v.position.xy, 1.0);
     // out_UVW = normalize(pc.camera_forward + v.position);
-    out_UVW = normalize(v.position.x * pc.camera_right + -v.position.y * pc.camera_up + pc.camera_forward);
+    out_UVW = normalize(v.position.x * camera_info.right + -v.position.y * camera_info.up + camera_info.forward);
     // out_UVW.yz *= -1.0;
 
     gl_Position = pc.render_mtx * vec4(v.position, 1.0);

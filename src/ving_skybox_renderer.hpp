@@ -5,6 +5,7 @@
 #include "ving_core.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_render_resources.hpp"
+#include "ving_scene.hpp"
 #include "ving_scene_object.hpp"
 
 #include <glm/mat4x4.hpp>
@@ -16,12 +17,20 @@ class SkyboxRenderer : public BaseRenderer
     struct PushConstants
     {
         glm::mat4 render_mtx{1.0f};
-        glm::vec3 camera_forward;
         vk::DeviceAddress vertex_buffer_address;
-        glm::vec2 dummy2;
-        glm::vec3 camera_right;
+        glm::vec2 dummy;
+        glm::vec4 light_direction;
+    };
+
+    struct CameraInfo
+    {
+        glm::vec3 up;
         float dummy;
-        glm::vec3 camera_up;
+        glm::vec3 right;
+        float dummy1;
+        glm::vec3 forward;
+        float dummy2;
+        glm::vec3 position;
     };
 
     enum ResourceIds
@@ -30,7 +39,7 @@ class SkyboxRenderer : public BaseRenderer
     };
 
   public:
-    SkyboxRenderer(const Core &core);
+    SkyboxRenderer(const Core &core, const Scene &scene);
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
@@ -43,6 +52,9 @@ class SkyboxRenderer : public BaseRenderer
     Image2D m_skybox_cubemap;
     vk::UniqueSampler m_skybox_sampler;
     Mesh m_quad;
+
+    CameraInfo *m_camera_info;
+    GPUBuffer m_camera_info_buffer;
 
     RenderResources m_resources;
     Pipelines m_pipelines;

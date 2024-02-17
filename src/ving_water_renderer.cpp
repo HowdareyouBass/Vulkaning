@@ -127,7 +127,7 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
         // ImGui::DragInt("Wave count", reinterpret_cast<int *>(&wave_count));
         ImGui::DragFloat("Wave Length Coefficient", &wave_length_coefficient, 0.1f, 1.0f, 200.0f);
         ImGui::DragFloat("Wave Length Power", &wave_length_power, 0.01f, 0.1f, 1.0f);
-        ImGui::DragFloat("Wave Amplitude Coefficient", &amplitude_coefficient, 0.01f, 1.0f, 4.0f);
+        ImGui::DragFloat("Wave Amplitude Coefficient", &amplitude_coefficient, 0.01f, 1.0f, 100.0f);
         ImGui::DragFloat("Wave Amplitude Power", &amplitude_power, 0.01f, 0.1f, 1.0f);
         ImGui::DragFloat("Start Speed", &start_speed, 0.0001f, 0.0001f, 0.1f);
         ImGui::Spacing();
@@ -157,8 +157,8 @@ void WaterRenderer::generate_waves()
 
     for (size_t i = 0; i < wave_count; ++i)
     {
-        m_waves[i].wave_length = glm::pow(wave_length_power, i) * wave_length_coefficient;
-        m_waves[i].amplitude = glm::pow(amplitude_power, i) * amplitude_coefficient;
+        m_waves[i].wave_length = glm::pow(wave_length_power, i + 1) * wave_length_coefficient;
+        m_waves[i].amplitude = glm::pow(amplitude_power, i + 1) * amplitude_coefficient;
         m_waves[i].direction = glm::normalize(glm::vec2{dir_x_dist(gen), dir_y_dist(gen)});
         m_waves[i].speed = start_speed;
     }

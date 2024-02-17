@@ -5,12 +5,13 @@
 
 namespace ving
 {
-SkyboxRenderer::SkyboxRenderer(const Core &core) : r_core{core}
+SkyboxRenderer::SkyboxRenderer(const Core &core, const Scene &scene) : r_core{core}
 {
     auto resource_infos = std::vector<RenderResourceCreateInfo>{
         RenderResourceCreateInfo{ResourceIds::Skybox,
                                  {
                                      {0, vk::DescriptorType::eCombinedImageSampler},
+                                     {1, vk::DescriptorType::eUniformBuffer},
                                  }},
     };
 
@@ -26,6 +27,15 @@ SkyboxRenderer::SkyboxRenderer(const Core &core) : r_core{core}
     m_quad = SimpleMesh::quad(core, colors::red);
     m_push_constants.vertex_buffer_address = m_quad.gpu_buffers.vertex_buffer_address;
 
+    m_camera_info_buffer =
+        core.create_cpu_visible_gpu_buffer(sizeof(CameraInfo), vk::BufferUsageFlagBits::eUniformBuffer);
+    m_camera_info_buffer.map_data();
+    m_camera_info = static_cast<CameraInfo *>(m_camera_info_buffer.data());
+
+    m_resources.get_resource(ResourceIds::Skybox).write_buffer(core.device(), 1, m_camera_info_buffer);
+
+    m_push_constants.light_direction = scene.light_direction;
+
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/skybox.vert.spv", "shaders/skybox.frag.spv", m_resources.layouts(), vk::Format::eR16G16B16A16Sfloat,
         vk::Format::eUndefined, vk::PolygonMode::eFill);
@@ -35,9 +45,10 @@ void SkyboxRenderer::render(const RenderFrames::FrameInfo &frame, const Perspect
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
 
-    m_push_constants.camera_forward = glm::normalize(camera.forward());
-    m_push_constants.camera_right = glm::normalize(camera.right());
-    m_push_constants.camera_up = glm::normalize(camera.up());
+    m_camera_info->forward = glm::normalize(camera.forward());
+    m_camera_info->right = glm::normalize(camera.right());
+    m_camera_info->up = glm::normalize(camera.up());
+    m_camera_info->position = camera.position;
 
     img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
 

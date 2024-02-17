@@ -59,6 +59,7 @@ const float specular_size = 200.0;
 void main()
 {
     vec3 view = normalize(ubobj.viewer_position - in_vpos);
+    // vec3 view = normalize(in_vpos - ubobj.viewer_position);
     vec3 half_way = normalize(view + ubobj.light_direction.xyz);
 
     // float specular = pow(dot(half_way, in_normal), specular_size);

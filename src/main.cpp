@@ -22,11 +22,12 @@ void run_application()
     if (!window)
         throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
 
+    ving::Scene scene;
     ving::Core core{window};
     ving::RenderFrames frames{core};
     // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     ving::SimpleCubeRenderer cube_renderer{core};
-    ving::SkyboxRenderer skybox_renderer{core};
+    ving::SkyboxRenderer skybox_renderer{core, scene};
     ving::WaterRenderer water_renderer{core};
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
