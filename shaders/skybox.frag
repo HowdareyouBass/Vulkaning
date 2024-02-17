@@ -34,9 +34,10 @@ layout (set = 0, binding = 1) uniform CameraInfoBuffer
 void main()
 {
     // out_color = vec4(frag_color, 1.0); 
-    vec3 sun_color = vec3(0.9, 0.9, 0.9);
+    // vec3 sun_color = vec3(0.9, 0.9, 0.9);
+    vec3 sun_color = vec3(1.0, 1.0, 1.0);
 
-    float sun_strength = dot(camera_info.forward, pc.light_direction.xyz);
+    float sun_strength = clamp(0.0, 1.0, dot(in_UVW, pc.light_direction.xyz)) * pc.light_direction.w;
 
     out_color = texture(sampler_cube_map, in_UVW) + vec4(sun_color * sun_strength, 1.0);
 }

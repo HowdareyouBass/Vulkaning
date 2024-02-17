@@ -1,6 +1,7 @@
 #pragma once
 
 #include "glm/geometric.hpp"
+#include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
 namespace ving
@@ -8,6 +9,6 @@ namespace ving
 struct Scene
 {
     // NOTE: W for light intencity
-    glm::vec4 light_direction{glm::normalize(glm::vec4{0.5f, 0.5f, 0.0f, 0.3f})};
+    glm::vec4 light_direction{glm::normalize(glm::vec3{0.5f, 0.5f, 0.0f}), 1.5f};
 };
 } // namespace ving

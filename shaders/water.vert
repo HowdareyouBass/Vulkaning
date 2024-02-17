@@ -57,12 +57,19 @@ layout (set = 0, binding = 1) uniform SceneData
     UBObj ubobj;
 };
 
+vec2 exp_sine_wave_derivative(WaveData w, Vertex v, float frequency, float wave_speed)
+{
+    return w.amplitude * frequency * w.direction * exp(w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed) - 1) * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+}
+
 void main()
 {
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex];
 
     float der_sum_x = 0.0;
     float der_sum_z = 0.0;
+
+    float der_prev_sum_x = 0.0;
     
     for (int i = 0; i < pc.wave_count; ++i)
     {
@@ -73,19 +80,21 @@ void main()
         // float wave_height = w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
         float wave_height = exp(w.amplitude*sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed) - 1);
 
-
-        // float der_x = w.amplitude * frequency * w.direction.x * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
-        // float der_z = w.amplitude * frequency * w.direction.y * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
-
-        vec2 derivative = w.amplitude * frequency * w.direction * exp(w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed) - 1) * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
-
-        // float der_x = w.amplitude * frequency * w.direction.x * exp(w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed) - 1) * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
-        // float der_z = w.amplitude * frequency * w.direction.z * exp(w.amplitude * sin(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed) - 1) * cos(dot(w.direction, v.position.xz) * frequency + pc.time * wave_speed);
+        vec2 derivative = exp_sine_wave_derivative(w, v, frequency, wave_speed);
 
         der_sum_x += derivative.x;
         der_sum_z += derivative.y;
 
         v.position.y += wave_height;
+
+        int prev_index = gl_VertexIndex - 1;
+        if (prev_index < 0)
+        {
+            prev_index = 0;
+        }
+
+        vec2 derivative_prev = exp_sine_wave_derivative(w, pc.vertex_buffer.vertices[prev_index], frequency, wave_speed);
+        der_prev_sum_x += derivative_prev.x;
     }
 
     vec3 tangent = vec3(1.0, der_sum_x, 0.0);
@@ -93,6 +102,8 @@ void main()
 
     v.normal = cross(binormal, tangent);
     v.normal = normalize(v.normal);
+
+    v.position.x += der_prev_sum_x;
 
     gl_Position = pc.render_mtx * vec4(v.position, 1.0);
 
