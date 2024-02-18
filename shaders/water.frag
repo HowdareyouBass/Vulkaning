@@ -55,7 +55,7 @@ layout (set = 0, binding = 1) uniform SceneData
 layout (set = 1, binding = 0) uniform samplerCube skybox;
 
 const vec3 specular_color = vec3(1.0, 1.0, 1.0);
-const float specular_size = 70.0;
+const float specular_size = 10.0;
 
 void main()
 {
