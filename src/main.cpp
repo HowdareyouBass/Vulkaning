@@ -22,13 +22,18 @@ void run_application()
     if (!window)
         throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
 
-    ving::Scene scene;
     ving::Core core{window};
+
+    ving::Scene scene;
+
+    scene.skybox_cubemap = ving::utils::load_cube_map("assets/textures/skies.ktx", core);
+    scene.skybox_sampler = core.create_sampler(scene.skybox_cubemap.mip_levels());
+
     ving::RenderFrames frames{core};
     // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     ving::SimpleCubeRenderer cube_renderer{core};
-    ving::SkyboxRenderer skybox_renderer{core};
-    ving::WaterRenderer water_renderer{core};
+    ving::SkyboxRenderer skybox_renderer{core, scene};
+    ving::WaterRenderer water_renderer{core, scene};
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),

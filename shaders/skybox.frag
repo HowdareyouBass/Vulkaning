@@ -40,6 +40,7 @@ void main()
     // vec3 sun_color = vec3(0.9, 0.9, 0.9);
 
     vec3 uvw = normalize(in_UVW);
+    uvw.z *= -1;
 
     float sun_strength = clamp(0.0, 1.0, dot(uvw, pc.light_direction.xyz) - 1.0 + sun_radius) * pc.light_direction.w;
 

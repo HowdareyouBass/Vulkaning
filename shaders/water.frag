@@ -52,18 +52,15 @@ layout (set = 0, binding = 1) uniform SceneData
 {
     UBObj ubobj;
 };
+layout (set = 1, binding = 0) uniform samplerCube skybox;
 
 const vec3 specular_color = vec3(1.0, 1.0, 1.0);
-const float specular_size = 50.0;
+const float specular_size = 70.0;
 
 void main()
 {
-    vec3 view = normalize(ubobj.viewer_position - in_vpos);
-    // vec3 view = normalize(in_vpos - ubobj.viewer_position);
-    vec3 half_way = normalize(view + ubobj.light_direction.xyz);
-
-    // float specular = pow(dot(half_way, in_normal), specular_size);
-    // float diffuse = dot(ubobj.light_direction.xyz, in_normal);
+    vec3 to_viewer = normalize(ubobj.viewer_position - in_vpos);
+    vec3 half_way = normalize(to_viewer + ubobj.light_direction.xyz);
 
     float sum_der_x = 0;
     float sum_der_z = 0;
@@ -74,23 +71,27 @@ void main()
         float frequency = 2.0 / w.wave_length;
         float wave_speed= w.speed * frequency;
 
-        // float der_x = w.amplitude * frequency  * w.direction.x * cos(dot(w.direction, in_vpos.xz) * frequency + pc.time * wave_speed);
-        // float der_z = w.amplitude * frequency  * w.direction.y * cos(dot(w.direction, in_vpos.xz) * frequency + pc.time * wave_speed);
-
         vec2 derivative = w.amplitude * frequency * w.direction * exp(w.amplitude * sin(dot(w.direction, in_vpos.xz) * frequency + pc.time * wave_speed) - 1) * cos(dot(w.direction, in_vpos.xz) * frequency + pc.time * wave_speed);
 
         sum_der_x += derivative.x;
         sum_der_z += derivative.y;
     }
 
-    vec3 tangent = vec3(1.0, sum_der_x, 0.0);
-    vec3 binormal = vec3(0.0, sum_der_x, 1.0);
+    vec3 tangent = normalize(vec3(1.0, sum_der_x, 0.0));
+    vec3 binormal = normalize(vec3(0.0, sum_der_z, 1.0));
 
-    vec3 normal = normalize(cross(binormal, tangent));
+    vec3 normal = cross(binormal, tangent);
 
     float specular = pow(dot(half_way, normal), specular_size);
     float diffuse = clamp(0, 1, dot(ubobj.light_direction.xyz, normal));
 
-    out_color = vec4(frag_color * diffuse + specular * specular_color, 1.0);
-    // out_color = vec4(ubobj.viewer_position, 1.0);
+    vec3 from_viewer = to_viewer;
+    vec3 reflect = 2.0 * (normal * dot(normal, from_viewer)) - from_viewer;
+    vec4 skybox = texture(skybox, reflect);
+
+    float fresnel = pow(1.0 - dot(to_viewer, normal), 3);
+
+    // out_color = vec4(frag_color * diffuse + specular * specular_color, 1.0);
+    out_color = skybox * fresnel;
+    out_color = vec4(frag_color * diffuse * (1.0 - fresnel), 1.0) + vec4(specular * specular_color * fresnel, 1.0) + skybox * fresnel;
 }

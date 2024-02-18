@@ -38,10 +38,11 @@ class WaterRenderer : public BaseRenderer
     enum ResourceIds : uint32_t
     {
         Waves,
+        Skybox
     };
 
   public:
-    WaterRenderer(const Core &core);
+    WaterRenderer(const Core &core, const Scene &scene);
 
     // TODO: To change wave_count need to reallocate gpu buffer
     uint32_t wave_count = 25;

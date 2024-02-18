@@ -9,7 +9,7 @@
 namespace ving
 {
 
-WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
+WaterRenderer::WaterRenderer(const Core &core, const Scene &scene) : r_core{core}
 {
     m_depth_img = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eD32Sfloat,
                                       vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);
@@ -17,7 +17,7 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
     auto resources_info = std::vector<RenderResourceCreateInfo>{
         RenderResourceCreateInfo{ResourceIds::Waves,
                                  {{0, vk::DescriptorType::eStorageBuffer}, {1, vk::DescriptorType::eUniformBuffer}}},
-    };
+        RenderResourceCreateInfo{ResourceIds::Skybox, {{0, vk::DescriptorType::eCombinedImageSampler}}}};
 
     m_resources = RenderResources{core.device(), resources_info,
                                   vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment};
@@ -43,6 +43,10 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
     m_plane = SceneObject{std::move(plane), {}};
     m_push_constants.vertex_buffer_address = m_plane.mesh.gpu_buffers.vertex_buffer_address;
     m_push_constants.wave_count = wave_count;
+
+    // Write skybox
+    m_resources.get_resource(ResourceIds::Skybox)
+        .write_image(core.device(), 0, scene.skybox_cubemap, scene.skybox_sampler.get());
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/water.vert.spv", "shaders/water.frag.spv", m_resources.layouts(), vk::Format::eR16G16B16A16Sfloat,

@@ -8,6 +8,9 @@
 
 namespace ving
 {
+class Image2D;
+class Core;
+
 namespace utils
 {
 
@@ -48,5 +51,6 @@ void transition_image(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout cu
                       vk::ImageLayout new_layout);
 void copy_image_to_image(vk::CommandBuffer cmd, vk::Image source, vk::Image dst, vk::Extent2D src_size,
                          vk::Extent2D dst_size);
+Image2D load_cube_map(std::string_view filepath, const Core &core);
 } // namespace utils
 } // namespace ving

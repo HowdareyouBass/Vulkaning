@@ -39,18 +39,14 @@ class SkyboxRenderer : public BaseRenderer
     };
 
   public:
-    SkyboxRenderer(const Core &core);
+    SkyboxRenderer(const Core &core, const Scene &scene);
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene);
 
   private:
     const Core &r_core;
 
-    Image2D load_cube_map(std::string_view filepath);
-
     PushConstants m_push_constants{};
 
-    Image2D m_skybox_cubemap;
-    vk::UniqueSampler m_skybox_sampler;
     Mesh m_quad;
 
     CameraInfo *m_camera_info;
