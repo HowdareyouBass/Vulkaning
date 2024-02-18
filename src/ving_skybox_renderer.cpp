@@ -18,7 +18,8 @@ SkyboxRenderer::SkyboxRenderer(const Core &core, const Scene &scene) : r_core{co
     m_resources = RenderResources{core.device(), resource_infos,
                                   vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment};
 
-    m_skybox_cubemap = load_cube_map("assets/textures/cubemap_yokohama_rgba.ktx");
+    // m_skybox_cubemap = load_cube_map("assets/textures/cubemap_yokohama_rgba.ktx");
+    m_skybox_cubemap = load_cube_map("assets/textures/skies.ktx");
     m_skybox_sampler = core.create_sampler(m_skybox_cubemap.mip_levels());
 
     m_resources.get_resource(ResourceIds::Skybox)
