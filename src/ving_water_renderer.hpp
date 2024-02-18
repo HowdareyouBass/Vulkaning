@@ -5,6 +5,7 @@
 #include "ving_core.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_render_resources.hpp"
+#include "ving_scene.hpp"
 #include "ving_scene_object.hpp"
 
 namespace ving
@@ -28,17 +29,15 @@ class WaterRenderer : public BaseRenderer
         float dummy;
         glm::vec2 direction;
     };
-
     struct SceneData
     {
         glm::vec4 light_direction;
-        glm::vec3 viewer_position;
+        glm::vec3 camera_position;
     };
 
     enum ResourceIds : uint32_t
     {
         Waves,
-        SceneDataId
     };
 
   public:
@@ -52,7 +51,8 @@ class WaterRenderer : public BaseRenderer
     float amplitude_coefficient = 2.3f;
     float start_speed = 0.007f;
 
-    std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
+    std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
+                                 const Scene &scene);
 
   private:
     void generate_waves();

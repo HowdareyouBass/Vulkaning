@@ -15,46 +15,29 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
                                       vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);
 
     auto resources_info = std::vector<RenderResourceCreateInfo>{
-        RenderResourceCreateInfo{ResourceIds::Waves, {{0, vk::DescriptorType::eStorageBuffer}}},
-        RenderResourceCreateInfo{ResourceIds::SceneDataId, {{0, vk::DescriptorType::eUniformBuffer}}},
+        RenderResourceCreateInfo{ResourceIds::Waves,
+                                 {{0, vk::DescriptorType::eStorageBuffer}, {1, vk::DescriptorType::eUniformBuffer}}},
     };
 
     m_resources = RenderResources{core.device(), resources_info,
                                   vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment};
 
+    // Create and write waves data
     m_waves_buffer =
         core.create_cpu_visible_gpu_buffer(wave_count * sizeof(Wave), vk::BufferUsageFlagBits::eStorageBuffer);
     m_waves_buffer.map_data();
     m_waves = std::span<Wave>{static_cast<Wave *>(m_waves_buffer.data()),
                               static_cast<Wave *>(m_waves_buffer.data()) + wave_count};
-
     assert(m_waves.size() == wave_count);
-
-    // m_waves.resize(wave_count);
     generate_waves();
-    // m_waves_buffer =
-    // core.create_gpu_buffer(m_waves.data(), m_waves.size() * sizeof(Wave), vk::BufferUsageFlagBits::eStorageBuffer);
+    m_resources.get_resource(ResourceIds::Waves).write_buffer(core.device(), 0, m_waves_buffer);
 
-    // Wave *w = reinterpret_cast<Wave *>(m_waves_buffer.data());
-    // std::default_random_engine gen;
-    // std::uniform_real_distribution<float> dir_x_dist(-1.0f, 1.0f);
-    // std::uniform_real_distribution<float> dir_y_dist(-1.0f, 1.0f);
-    // w->wave_length = wave_length_coefficient;
-    // w->amplitude = amplitude_coefficient;
-    // w->direction = glm::normalize(glm::vec2{dir_x_dist(gen), dir_y_dist(gen)});
-    // w->speed = start_speed;
-
-    glm::vec3 light_direction = glm::normalize(glm::vec3{0.5f, 0.5f, 0.0f});
-
+    // Create and write scene data
     m_scene_data_buffer =
         core.create_cpu_visible_gpu_buffer(sizeof(SceneData), vk::BufferUsageFlagBits::eUniformBuffer);
     m_scene_data_buffer.map_data();
     m_scene_data = static_cast<SceneData *>(m_scene_data_buffer.data());
-
-    m_scene_data->light_direction = glm::vec4{light_direction, 1.0f};
-
-    m_resources.get_resource(ResourceIds::Waves).write_buffer(core.device(), 0, m_waves_buffer);
-    m_resources.get_resource(ResourceIds::SceneDataId).write_buffer(core.device(), 0, m_scene_data_buffer);
+    m_resources.get_resource(ResourceIds::Waves).write_buffer(core.device(), 1, m_scene_data_buffer);
 
     Mesh plane = SimpleMesh::flat_plane(core, 1000, 1000, 0.1f, colors::slate_blue);
     m_plane = SceneObject{std::move(plane), {}};
@@ -66,14 +49,17 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
         m_depth_img.format(), vk::PolygonMode::eFill);
 }
 
-std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
+std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
+                                            const Scene &scene)
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
 
     m_push_constants.time = frame.time;
     m_push_constants.delta_time = frame.delta_time;
-    m_scene_data->viewer_position = camera.position;
+
+    m_scene_data->camera_position = camera.position;
+    m_scene_data->light_direction = scene.light_direction;
 
     m_depth_img.transition_layout(cmd, vk::ImageLayout::eDepthAttachmentOptimal);
     img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);

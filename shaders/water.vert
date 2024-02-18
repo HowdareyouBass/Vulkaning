@@ -15,8 +15,6 @@ struct Vertex
     vec4 color;
 };
 
-
-
 layout (buffer_reference, std430) readonly buffer VertexBuffer
 {
     Vertex vertices[];

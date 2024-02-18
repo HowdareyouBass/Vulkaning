@@ -39,8 +39,8 @@ class SkyboxRenderer : public BaseRenderer
     };
 
   public:
-    SkyboxRenderer(const Core &core, const Scene &scene);
-    void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
+    SkyboxRenderer(const Core &core);
+    void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene);
 
   private:
     const Core &r_core;
