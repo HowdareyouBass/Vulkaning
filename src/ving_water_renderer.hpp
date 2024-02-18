@@ -49,7 +49,7 @@ class WaterRenderer : public BaseRenderer
     float wave_length_power = 0.85f;
     float amplitude_power = 0.73f;
     float wave_length_coefficient = 13.3f;
-    float amplitude_coefficient = 2.27f;
+    float amplitude_coefficient = 2.3f;
     float start_speed = 0.007f;
 
     std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);

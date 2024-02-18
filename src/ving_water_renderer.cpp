@@ -56,7 +56,7 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
     m_resources.get_resource(ResourceIds::Waves).write_buffer(core.device(), 0, m_waves_buffer);
     m_resources.get_resource(ResourceIds::SceneDataId).write_buffer(core.device(), 0, m_scene_data_buffer);
 
-    Mesh plane = SimpleMesh::flat_plane(core, 1000, 1000, colors::slate_blue);
+    Mesh plane = SimpleMesh::flat_plane(core, 1000, 1000, 0.1f, colors::slate_blue);
     m_plane = SceneObject{std::move(plane), {}};
     m_push_constants.vertex_buffer_address = m_plane.mesh.gpu_buffers.vertex_buffer_address;
     m_push_constants.wave_count = wave_count;
@@ -119,7 +119,7 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
 
     // cmd.draw(m_plane.mesh.vertices_count, 1, 0, 0);
     cmd.bindIndexBuffer(m_plane.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
-    cmd.drawIndexed(m_plane.mesh.indices_count, 4, 0, 0, 0);
+    cmd.drawIndexed(m_plane.mesh.indices_count, 1, 0, 0, 0);
 
     cmd.endRendering();
 

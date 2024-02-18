@@ -54,7 +54,7 @@ layout (set = 1, binding = 0) uniform SceneData
 };
 
 const vec3 specular_color = vec3(1.0, 1.0, 1.0);
-const float specular_size = 200.0;
+const float specular_size = 50.0;
 
 void main()
 {
@@ -89,7 +89,7 @@ void main()
     vec3 normal = normalize(cross(binormal, tangent));
 
     float specular = pow(dot(half_way, normal), specular_size);
-    float diffuse = dot(ubobj.light_direction.xyz, normal);
+    float diffuse = clamp(0, 1, dot(ubobj.light_direction.xyz, normal));
 
     out_color = vec4(frag_color * diffuse + specular * specular_color, 1.0);
     // out_color = vec4(ubobj.viewer_position, 1.0);

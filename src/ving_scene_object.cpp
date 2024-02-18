@@ -5,16 +5,17 @@
 namespace ving
 {
 // TODO: Generate uv and normals
-Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width, glm::vec4 color)
+Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width, float spacing, glm::vec4 color)
 {
     std::vector<Vertex> vertices;
+    vertices.reserve((length + 1) * (width + 1));
     std::vector<uint32_t> indices;
 
     for (int x = -int(width / 2); x <= int(width / 2); ++x)
     {
         for (int z = -int(length / 2); z <= int(length / 2); ++z)
         {
-            vertices.push_back(Vertex{{x * 0.05f, 0.0f, z * 0.05f}, 0, {}, 0, color});
+            vertices.push_back(Vertex{{x * spacing, 0.0f, z * spacing}, 0, {}, 0, color});
         }
     }
     assert(vertices.size() == (length + 1) * (width + 1));
