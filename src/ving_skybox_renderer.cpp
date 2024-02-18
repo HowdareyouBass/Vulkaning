@@ -44,7 +44,7 @@ void SkyboxRenderer::render(const RenderFrames::FrameInfo &frame, const Perspect
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
 
-    m_push_constants.light_direction = scene.light_direction;
+    m_push_constants.light_direction = {glm::normalize(glm::vec3{scene.light_direction}), scene.light_direction.w};
 
     m_camera_info->forward = glm::normalize(camera.forward());
     m_camera_info->right = glm::normalize(camera.right());

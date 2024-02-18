@@ -50,7 +50,7 @@ WaterRenderer::WaterRenderer(const Core &core) : r_core{core}
 }
 
 std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
-                                            const Scene &scene)
+                                            Scene &scene)
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
@@ -59,7 +59,7 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
     m_push_constants.delta_time = frame.delta_time;
 
     m_scene_data->camera_position = camera.position;
-    m_scene_data->light_direction = scene.light_direction;
+    m_scene_data->light_direction = {glm::normalize(glm::vec3{scene.light_direction}), scene.light_direction.w};
 
     m_depth_img.transition_layout(cmd, vk::ImageLayout::eDepthAttachmentOptimal);
     img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
@@ -109,8 +109,12 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
 
     cmd.endRendering();
 
-    return [this]() {
+    return [this, &scene]() {
         // ImGui::DragInt("Wave count", reinterpret_cast<int *>(&wave_count));
+        ImGui::Text("Scene:");
+        ImGui::DragFloat3("Light Direction:", reinterpret_cast<float *>(&scene.light_direction), 0.01f, -1.0f, 1.0f);
+        ImGui::DragFloat("Light Intencity", reinterpret_cast<float *>(&scene.light_direction) + 3, 1.0f, 0.0f, 200.0f);
+        ImGui::Text("Wave Generation:");
         ImGui::DragFloat("Wave Length Coefficient", &wave_length_coefficient, 0.1f, 1.0f, 200.0f);
         ImGui::DragFloat("Wave Length Power", &wave_length_power, 0.01f, 0.1f, 1.0f);
         ImGui::DragFloat("Wave Amplitude Coefficient", &amplitude_coefficient, 0.01f, 1.0f, 100.0f);

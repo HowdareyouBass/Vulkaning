@@ -51,8 +51,7 @@ class WaterRenderer : public BaseRenderer
     float amplitude_coefficient = 2.3f;
     float start_speed = 0.007f;
 
-    std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
-                                 const Scene &scene);
+    std::function<void()> render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, Scene &scene);
 
   private:
     void generate_waves();
