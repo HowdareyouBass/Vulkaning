@@ -8,6 +8,8 @@
 
 namespace ving
 {
+class Profiler;
+
 class RenderFrames
 {
   private:
@@ -40,8 +42,8 @@ class RenderFrames
     RenderFrames(RenderFrames &&) = delete;
     RenderFrames &operator=(RenderFrames &&) = delete;
 
-    FrameInfo begin_frame();
-    void end_frame();
+    FrameInfo begin_frame(Profiler &profiler);
+    void end_frame(Profiler &profiler);
 
     vk::ImageView draw_image_view() { return m_draw_image.view(); }
 

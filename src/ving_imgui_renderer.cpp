@@ -1,4 +1,5 @@
 #include "ving_imgui_renderer.hpp"
+#include "ving_profilers.hpp"
 
 #include <SDL3/SDL_mouse.h>
 #include <backends/imgui_impl_sdl3.h>
@@ -41,19 +42,31 @@ ImGuiRenderer::~ImGuiRenderer()
 {
     ImGui_ImplVulkan_Shutdown();
 }
-void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, std::function<void()> &&imgui_frame)
+void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, Profiler &profiler, const ImGuiFrame &imgui_frame)
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL3_NewFrame();
     ImGui::NewFrame();
 
+    ImGui::Begin("Profile");
     ImGui::Text("FPS: %.0f", (1.0f / frame.delta_time) * 1000.0f);
     ImGui::Text("Latency: %.2f ms", frame.delta_time);
     // ImGui::Text("Mouse");
     // float mouse_x, mouse_y;
     // SDL_GetMouseState(&mouse_x, &mouse_y);
     // ImGui::Text("x:%f y:%f", mouse_x, mouse_y);
-    imgui_frame();
+    profiler.imgui_frame();
+    profiler.flush();
+    ImGui::End();
+
+    ImGui::Begin("Render Data Controls");
+    for (auto &&func : imgui_frame.functions)
+    {
+        func();
+    }
+    ImGui::End();
+
+    // ImGui::ShowDemoWindow();
 
     ImGui::EndFrame();
 

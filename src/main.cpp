@@ -116,8 +116,10 @@ void run_application()
             SDL_ShowCursor();
         }
 
-        ving::RenderFrames::FrameInfo frame = frames.begin_frame();
+        ving::RenderFrames::FrameInfo frame = frames.begin_frame(profiler);
         {
+            ving::ImGuiFrame imgui_frame;
+
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera.move_speed;
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera.move_speed;
             camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera.move_speed;
@@ -134,17 +136,16 @@ void run_application()
             // cube_renderer.render(frame, camera);
             // imgui_renderer.render(frame, []() {});
             {
-                auto task = profiler.start_scoped_task("Skybox");
+                auto task = profiler.start_scoped_task("Recording Skybox");
                 skybox_renderer.render(frame, camera, scene);
             }
             {
-                auto task = profiler.start_scoped_task("Water");
-                auto imgui_frame = water_renderer.render(frame, camera, scene);
+                auto task = profiler.start_scoped_task("Recording Water");
+                imgui_frame.functions.push_back(water_renderer.render(frame, camera, scene));
             }
-            imgui_renderer.render(frame, profiler.imgui_frame());
+            imgui_renderer.render(frame, profiler, imgui_frame);
         }
-        frames.end_frame();
-        profiler.flush();
+        frames.end_frame(profiler);
     }
 
     core.wait_idle();

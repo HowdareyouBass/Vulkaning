@@ -27,13 +27,11 @@ void Profiler::flush()
 {
     m_tasks.clear();
 }
-std::function<void()> Profiler::imgui_frame()
+void Profiler::imgui_frame() const
 {
-    return [this]() {
-        for (auto &&task : m_tasks)
-        {
-            ImGui::Text("%s: %.3f ms", task.name.data(), task.duration.count() * 1000.0f);
-        }
-    };
+    for (auto &&task : m_tasks)
+    {
+        ImGui::Text("%s: %.3f ms", task.name.data(), task.duration.count() * 1000.0f);
+    }
 }
 } // namespace ving
