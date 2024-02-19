@@ -5,6 +5,7 @@
 #include "ving_camera.hpp"
 #include "ving_core.hpp"
 #include "ving_imgui_renderer.hpp"
+#include "ving_profilers.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_simple_cube_renderer.hpp"
 #include "ving_skybox_renderer.hpp"
@@ -29,16 +30,18 @@ void run_application()
     scene.skybox_cubemap = ving::utils::load_cube_map("assets/textures/skies.ktx", core);
     scene.skybox_sampler = core.create_sampler(scene.skybox_cubemap.mip_levels());
 
+    ving::Profiler profiler;
+
     ving::RenderFrames frames{core};
     // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
-    ving::SimpleCubeRenderer cube_renderer{core};
+    // ving::SimpleCubeRenderer cube_renderer{core};
     ving::SkyboxRenderer skybox_renderer{core, scene};
     ving::WaterRenderer water_renderer{core, scene};
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
                                    100.0f, 0.1f, glm::radians(60.0f)};
-    camera.position = {0.0f, 1.5f, -5.0f};
+    camera.position = {0.0f, 5.5f, -5.0f};
 
     bool running = true;
     SDL_Event event;
@@ -130,11 +133,18 @@ void run_application()
 
             // cube_renderer.render(frame, camera);
             // imgui_renderer.render(frame, []() {});
-            skybox_renderer.render(frame, camera, scene);
-            auto imgui_frame = water_renderer.render(frame, camera, scene);
-            imgui_renderer.render(frame, std::move(imgui_frame));
+            {
+                auto task = profiler.start_scoped_task("Skybox");
+                skybox_renderer.render(frame, camera, scene);
+            }
+            {
+                auto task = profiler.start_scoped_task("Water");
+                auto imgui_frame = water_renderer.render(frame, camera, scene);
+            }
+            imgui_renderer.render(frame, profiler.imgui_frame());
         }
         frames.end_frame();
+        profiler.flush();
     }
 
     core.wait_idle();
