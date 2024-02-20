@@ -13,30 +13,48 @@ layout (set = 0, binding = 1) buffer SphereBuffer
 {
     Sphere spheres[];
 };
+layout (set = 0, binding = 2) uniform samplerCube skybox;
 
-struct Ray
+struct CameraInfo
 {
-    vec3 A;
-    vec3 B;
+    vec3 forward;
+    float dummy0;
+    vec3 up;
+    float dummy1;
+    vec3 right;
+    float dummy2;
+    vec3 position;
+    float dummy3;
 };
-
-bool hit_sphere(Sphere s, Ray r)
+layout (set = 0, binding = 3) uniform CameraInfoUniform
 {
-    float a = dot(r.B, r.B);
-    float b = 2*dot(r.B, r.A - s.center);
-    float c = dot(r.A - s.center, r.A - s.center) - s.radius*s.radius;
-
-    float discriminant = b*b - 4*a*c;
-
-    return (discriminant >= 0);
-}
+    CameraInfo camera_info;
+};
 
 layout (push_constant) uniform constants
 {
     int sphere_count;
 } pc;
 
+
+
+struct Ray
+{
+    vec3 position;
+    vec3 direction;
+};
 const Ray test_ray = Ray(vec3(2.0, 0.0, 0.0), vec3(0.0, 1.0, 0.0));
+
+bool hit_sphere(Sphere s, Ray r)
+{
+    float a = dot(r.direction, r.direction);
+    float b = 2*dot(r.direction, r.position - s.center);
+    float c = dot(r.position - s.center, r.position - s.center) - s.radius*s.radius;
+
+    float discriminant = b*b - 4*a*c;
+
+    return (discriminant >= 0);
+}
 
 void main()
 {
@@ -46,7 +64,12 @@ void main()
     if (texel_coord.x < img_size.x && texel_coord.y < img_size.y)
     {
         Ray forward = Ray(vec3(float(texel_coord.x)/float(img_size.x) * 2 - 1, float(texel_coord.y)/float(img_size.y) * 2 - 1, 0.0), vec3(0.0, 0.0, 1.0));
-        imageStore(draw_img, texel_coord, vec4(0.1, 0.1, 0.1, 1.0));
+        forward.position.y *= -1;
+
+        // vec3 uvw = ; 
+        // imageStore(draw_img, texel_coord, texture(skybox, uvw));
+        // imageStore(draw_img, texel_coord, vec4(0.1, 0.1, 0.1, 0.0));
+        imageStore(draw_img, texel_coord, texture(skybox, forward.position + forward.direction));
         for (int i = 0; i < pc.sphere_count; i++)
         {
             if (hit_sphere(spheres[i], forward))

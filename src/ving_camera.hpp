@@ -4,6 +4,19 @@
 
 namespace ving
 {
+// Shader aligned camera information
+struct CameraInfo
+{
+    glm::vec3 forward;
+    float dummy0;
+    glm::vec3 up;
+    float dummy1;
+    glm::vec3 right;
+    float dummy2;
+    glm::vec3 position;
+    float dummy3;
+};
+
 class PerspectiveCamera
 {
   public:
@@ -24,6 +37,11 @@ class PerspectiveCamera
     [[nodiscard]] glm::vec3 forward() const noexcept { return m_forward; }
     [[nodiscard]] glm::vec3 right() const noexcept { return m_right; }
     [[nodiscard]] glm::vec3 up() const noexcept { return m_up; }
+
+    [[nodiscard]] CameraInfo camera_info() const noexcept
+    {
+        return CameraInfo{m_forward, 0.0f, m_up, 0.0f, m_right, 0.0f, position, 0.0f};
+    }
 
   private:
     void set_view_direction(glm::vec3 direction, glm::vec3 up = glm::vec3{0.0f, -1.0f, 0.0f});

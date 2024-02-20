@@ -8,6 +8,10 @@
 
 namespace ving
 {
+class Scene;
+struct CameraInfo;
+class PerspectiveCamera;
+
 class PathTracingRenderer : public BaseRenderer
 {
     enum RenderResourceIds : uint32_t
@@ -28,9 +32,9 @@ class PathTracingRenderer : public BaseRenderer
     };
 
   public:
-    PathTracingRenderer(const Core &core);
+    PathTracingRenderer(const Core &core, const Scene &scene);
 
-    void render(const RenderFrames::FrameInfo &frame);
+    void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
     constexpr static uint32_t sphere_count = 1;
@@ -39,6 +43,9 @@ class PathTracingRenderer : public BaseRenderer
     Image2D m_render_image;
     GPUBuffer m_sphere_buffer;
     std::array<Sphere, sphere_count> m_spheres;
+
+    GPUBuffer m_camera_info_buffer;
+    CameraInfo *m_camera_info;
 
     RenderResources m_resources;
     Pipelines m_pipelines;

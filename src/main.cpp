@@ -36,9 +36,9 @@ void run_application()
     ving::RenderFrames frames{core};
     // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     // ving::SimpleCubeRenderer cube_renderer{core};
-    ving::SkyboxRenderer skybox_renderer{core, scene};
+    // ving::SkyboxRenderer skybox_renderer{core, scene};
     // ving::WaterRenderer water_renderer{core, scene};
-    ving::PathTracingRenderer path_tracing_renderer{core};
+    ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
@@ -138,8 +138,8 @@ void run_application()
             // cube_renderer.render(frame, camera);
             // imgui_renderer.render(frame, []() {});
             {
-                auto task = profiler.start_scoped_task("Recording Skybox");
-                skybox_renderer.render(frame, camera, scene);
+                // auto task = profiler.start_scoped_task("Recording Skybox");
+                // skybox_renderer.render(frame, camera, scene);
             }
             {
                 // auto task = profiler.start_scoped_task("Recording Water");
@@ -147,7 +147,7 @@ void run_application()
             }
             {
                 auto task = profiler.start_scoped_task("Recording path tracer");
-                path_tracing_renderer.render(frame);
+                path_tracing_renderer.render(frame, camera);
             }
             imgui_renderer.render(frame, profiler, imgui_frame);
         }
