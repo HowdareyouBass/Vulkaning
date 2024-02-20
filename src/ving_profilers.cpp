@@ -31,7 +31,7 @@ void Profiler::imgui_frame() const
 {
     for (auto &&task : m_tasks)
     {
-        ImGui::Text("%s: %.3f ms", task.name.data(), task.duration.count() * 1000.0f);
+        ImGui::Text("%s: %.2f ms", task.name.data(), task.duration.count() * 1000.0f);
     }
 }
 } // namespace ving
