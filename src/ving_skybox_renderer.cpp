@@ -44,10 +44,7 @@ void SkyboxRenderer::render(const RenderFrames::FrameInfo &frame, const Perspect
 
     m_push_constants.light_direction = {glm::normalize(glm::vec3{scene.light_direction}), scene.light_direction.w};
 
-    m_camera_info->forward = glm::normalize(camera.forward());
-    m_camera_info->right = glm::normalize(camera.right());
-    m_camera_info->up = glm::normalize(camera.up());
-    m_camera_info->position = camera.position;
+    *m_camera_info = camera.camera_info();
 
     img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
 

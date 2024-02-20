@@ -147,7 +147,7 @@ void run_application()
             }
             {
                 auto task = profiler.start_scoped_task("Recording path tracer");
-                path_tracing_renderer.render(frame, camera);
+                path_tracing_renderer.render(frame, camera, scene);
             }
             imgui_renderer.render(frame, profiler, imgui_frame);
         }

@@ -9,9 +9,6 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
 {
     m_push_constants.sphere_count = sphere_count;
 
-    m_render_image = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1u}, vk::Format::eR8G8B8A8Unorm,
-                                         vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eStorage);
-
     for (auto &&sphere : m_spheres)
     {
         sphere.position = {0.0f, 0.0f, 0.0f};
@@ -29,41 +26,56 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
     auto resource_infos = std::vector<RenderResourceCreateInfo>{
         RenderResourceCreateInfo{RenderResourceIds::PathTracing,
                                  {
-                                     {0, vk::DescriptorType::eStorageImage},
-                                     {1, vk::DescriptorType::eStorageBuffer},
-                                     {2, vk::DescriptorType::eCombinedImageSampler},
-                                     {3, vk::DescriptorType::eUniformBuffer},
+                                     {0, vk::DescriptorType::eStorageBuffer},
+                                     {1, vk::DescriptorType::eCombinedImageSampler},
+                                     {2, vk::DescriptorType::eUniformBuffer},
                                  }},
     };
 
-    m_resources = core.allocate_render_resources(resource_infos, vk::ShaderStageFlagBits::eCompute);
+    m_resources = core.allocate_render_resources(resource_infos,
+                                                 vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
+    m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 0, m_sphere_buffer);
     m_resources.get_resource(RenderResourceIds::PathTracing)
-        .write_image(core.device(), 0, m_render_image.view(), vk::ImageLayout::eGeneral);
-    m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 1, m_sphere_buffer);
-    m_resources.get_resource(RenderResourceIds::PathTracing)
-        .write_image(core.device(), 2, scene.skybox_cubemap, scene.skybox_sampler.get());
-    m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 3, m_camera_info_buffer);
+        .write_image(core.device(), 1, scene.skybox_cubemap, scene.skybox_sampler.get());
+    m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 2, m_camera_info_buffer);
 
-    m_pipelines =
-        core.create_compute_render_pipelines<PushConstants>(m_resources.layouts(), "shaders/path_tracing.comp.spv");
+    m_quad = SimpleMesh::quad(core, glm::vec4{0.1f, 0.1f, 0.1f, 1.0f});
+    m_push_constants.vertex_buffer = m_quad.gpu_buffers.vertex_buffer_address;
+
+    m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
+        "shaders/path_tracing.vert.spv", "shaders/path_tracing.frag.spv", m_resources.layouts(),
+        vk::Format::eR16G16B16A16Sfloat, vk::Format::eUndefined);
 }
 
-void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
+void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
+                                 const Scene &scene)
 {
+    m_push_constants.light_direction = scene.light_direction;
+
     *m_camera_info = camera.camera_info();
 
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
-    m_render_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
+    img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
 
-    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_pipelines.pipeline.get());
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_pipelines.layout.get(), 0, m_resources.descriptors(),
+    start_rendering2d(cmd, img);
+
+    cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors(),
                            nullptr);
-    cmd.pushConstants<PushConstants>(m_pipelines.layout.get(), vk::ShaderStageFlagBits::eCompute, 0, m_push_constants);
-    cmd.dispatch(std::ceil(m_render_image.extent().width / 32.0), std::ceil(m_render_image.extent().height / 32.0), 1);
 
-    m_render_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
-    img.transition_layout(cmd, vk::ImageLayout::eTransferDstOptimal);
-    m_render_image.copy_to(cmd, img);
+    cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
+                                     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
+                                     m_push_constants);
+    auto viewport =
+        vk::Viewport{}.setWidth(img.extent().width).setHeight(img.extent().height).setMinDepth(0.0f).setMaxDepth(1.0f);
+    cmd.setViewport(0, viewport);
+    auto scissor = vk::Rect2D{}.setOffset(vk::Offset2D{0, 0}).setExtent(img.extent());
+    cmd.setScissor(0, scissor);
+
+    cmd.bindIndexBuffer(m_quad.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(m_quad.indices_count, 1, 0, 0, 0);
+
+    cmd.endRendering();
 }
 } // namespace ving

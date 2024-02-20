@@ -22,17 +22,6 @@ class SkyboxRenderer : public BaseRenderer
         glm::vec4 light_direction;
     };
 
-    struct CameraInfo
-    {
-        glm::vec3 up;
-        float dummy;
-        glm::vec3 right;
-        float dummy1;
-        glm::vec3 forward;
-        float dummy2;
-        glm::vec3 position;
-    };
-
     enum ResourceIds
     {
         Skybox

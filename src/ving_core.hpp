@@ -107,7 +107,7 @@ class Core
     BaseRenderer::Pipelines create_graphics_render_pipelines(
         std::string_view vertex_shader_path, std::string_view fragment_shader_path,
         const std::vector<vk::DescriptorSetLayout> &descriptor_layouts, vk::Format color_attachment_format,
-        vk::Format depth_attachment_format, vk::PolygonMode polygon_mode) const
+        vk::Format depth_attachment_format, vk::PolygonMode polygon_mode = vk::PolygonMode::eFill) const
     {
         auto fragment_shader = utils::create_shader_module(*m_device, fragment_shader_path);
         auto vertex_shader = utils::create_shader_module(*m_device, vertex_shader_path);

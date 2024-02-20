@@ -5,6 +5,7 @@
 
 #include "ving_core.hpp"
 #include "ving_render_frames.hpp"
+#include "ving_scene_object.hpp"
 
 namespace ving
 {
@@ -21,6 +22,9 @@ class PathTracingRenderer : public BaseRenderer
 
     struct PushConstants
     {
+        vk::DeviceAddress vertex_buffer;
+        glm::vec2 dummy;
+        glm::vec4 light_direction;
         int sphere_count;
     };
 
@@ -34,13 +38,15 @@ class PathTracingRenderer : public BaseRenderer
   public:
     PathTracingRenderer(const Core &core, const Scene &scene);
 
-    void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
+    void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene);
 
   private:
     constexpr static uint32_t sphere_count = 1;
 
     PushConstants m_push_constants;
-    Image2D m_render_image;
+
+    Mesh m_quad;
+
     GPUBuffer m_sphere_buffer;
     std::array<Sphere, sphere_count> m_spheres;
 

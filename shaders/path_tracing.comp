@@ -63,8 +63,8 @@ void main()
 
     if (texel_coord.x < img_size.x && texel_coord.y < img_size.y)
     {
-        Ray forward = Ray(vec3(float(texel_coord.x)/float(img_size.x) * 2 - 1, float(texel_coord.y)/float(img_size.y) * 2 - 1, 0.0), vec3(0.0, 0.0, 1.0));
-        forward.position.y *= -1;
+        Ray forward = Ray(vec3(float(texel_coord.x)/float(img_size.x) * 2.0 - 1.0, float(texel_coord.y)/float(img_size.y) * 2.0 - 1.0, 0.0), camera_info.forward);
+        // forward.position.y *= -1;
 
         // vec3 uvw = ; 
         // imageStore(draw_img, texel_coord, texture(skybox, uvw));

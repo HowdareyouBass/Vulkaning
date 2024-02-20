@@ -3,6 +3,7 @@
 
 layout (location = 0) out vec3 out_color;
 layout (location = 1) out vec3 out_UVW;
+layout (location = 2) out vec3 out_vpos;
 
 struct Vertex
 {
@@ -20,43 +21,37 @@ layout (buffer_reference, std430) readonly buffer VertexBuffer
 
 layout (push_constant) uniform constants
 {
-    mat4 render_mtx;
     VertexBuffer vertex_buffer;
     vec2 dummy;
-    vec4 lightning_direction;
+    vec4 light_direction;
+    int sphere_count;
 } pc;
-
-layout (set = 0, binding = 0) uniform samplerCube sampler_cube_map;
 
 struct CameraInfo
 {
-    vec3 up;
-    float dummy;
-    vec3 right;
-    float dummy1;
     vec3 forward;
+    float dummy0;
+    vec3 up;
+    float dummy1;
+    vec3 right;
     float dummy2;
     vec3 position;
     float dummy3;
 };
-
-layout (set = 0, binding = 1) uniform CameraInfoBuffer
+layout (set = 0, binding = 2) uniform CameraInfoUniform
 {
     CameraInfo camera_info;
 };
 
+const float sun_radius = 0.2;
+const vec3 sun_color = vec3(1.0, 1.0, 1.0);
+
 void main()
 {
-
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex];
 
-    // out_UVW = normalize(vec3(v.position.xy, 1.0));
-    // out_UVW = vec3(pc.camera_forward.xy + v.position.xy, 1.0);
-    // out_UVW = normalize(pc.camera_forward + v.position);
     out_UVW = normalize(v.position.x * camera_info.right + -v.position.y * camera_info.up + camera_info.forward);
-    // out_UVW.yz *= -1.0;
+    out_vpos = v.position;
 
-    gl_Position = pc.render_mtx * vec4(v.position, 1.0);
-
-    // out_color = v.color.xyz;
+    gl_Position = vec4(v.position, 1.0);
 }
