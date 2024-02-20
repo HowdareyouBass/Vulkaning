@@ -1,8 +1,7 @@
 #version 450
 
 layout (location = 0) in vec3 frag_color;
-layout (location = 1) in vec3 in_UVW;
-layout (location = 2) in vec3 in_vpos;
+layout (location = 1) in vec3 in_vpos;
 
 layout (location = 0) out vec4 out_color;
 
@@ -66,17 +65,17 @@ void main()
     // out_color = vec4(frag_color, 1.0); 
     // vec3 sun_color = vec3(0.9, 0.9, 0.9);
 
-    vec3 uvw = normalize(in_UVW);
+    Ray ray = Ray(in_vpos.x * camera_info.right + -in_vpos.y * camera_info.up, camera_info.forward);
+    vec3 uvw = normalize(ray.position + ray.direction);
     uvw.z *= -1;
 
     float sun_strength = clamp(0.0, 1.0, dot(uvw, pc.light_direction.xyz) - 1.0 + sun_radius) * pc.light_direction.w;
 
     for (int i = 0; i < pc.sphere_count; ++i)
     {
-        out_color = texture(sampler_cube_map, in_UVW) + vec4(sun_color * sun_strength, 1.0);
-        Ray r = Ray(vec3(in_vpos.xy, 0.0), normalize(camera_info.forward));
+        out_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
         // Ray r = Ray(vec3(in_vpos.xy, 0.0), vec3(0.0, 0.0, 1.0));
-        if (hit_sphere(spheres[i], r))
+        if (hit_sphere(spheres[i], ray))
         {
             out_color = vec4(1.0, 0.0, 0.0, 1.0); 
         }

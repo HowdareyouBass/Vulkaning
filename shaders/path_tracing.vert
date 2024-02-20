@@ -2,8 +2,7 @@
 #extension GL_EXT_buffer_reference : require
 
 layout (location = 0) out vec3 out_color;
-layout (location = 1) out vec3 out_UVW;
-layout (location = 2) out vec3 out_vpos;
+layout (location = 1) out vec3 out_vpos;
 
 struct Vertex
 {
@@ -50,7 +49,7 @@ void main()
 {
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex];
 
-    out_UVW = normalize(v.position.x * camera_info.right + -v.position.y * camera_info.up + camera_info.forward);
+    // out_UVW = normalize(v.position.x * camera_info.right + -v.position.y * camera_info.up + camera_info.forward);
     out_vpos = v.position;
 
     gl_Position = vec4(v.position, 1.0);
