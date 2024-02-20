@@ -4,6 +4,8 @@
 
 namespace ving
 {
+class Image2D;
+
 class BaseRenderer
 {
   public:
@@ -12,6 +14,8 @@ class BaseRenderer
         vk::UniquePipeline pipeline;
         vk::UniquePipelineLayout layout;
     };
+
+    void start_rendering2d(vk::CommandBuffer cmd, const Image2D &render_image) const;
 
     // virtual ~BaseRenderer();
 };

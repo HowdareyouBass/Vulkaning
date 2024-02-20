@@ -13,6 +13,7 @@ class Image2D
             uint32_t layers_count = 1, vk::ImageCreateFlags flags = {});
 
     void transition_layout(vk::CommandBuffer cmd, vk::ImageLayout new_layout);
+    void copy_to(vk::CommandBuffer cmd, const Image2D &image) const;
 
     [[nodiscard]] vk::Image image() const noexcept { return m_image.get(); }
     [[nodiscard]] vk::Extent2D extent() const noexcept { return {m_extent.width, m_extent.height}; }

@@ -39,7 +39,7 @@ WaterRenderer::WaterRenderer(const Core &core, const Scene &scene) : r_core{core
     m_scene_data = static_cast<SceneData *>(m_scene_data_buffer.data());
     m_resources.get_resource(ResourceIds::Waves).write_buffer(core.device(), 1, m_scene_data_buffer);
 
-    Mesh plane = SimpleMesh::flat_plane(core, 1000, 1000, 0.1f, colors::slate_blue);
+    Mesh plane = SimpleMesh::flat_plane(core, 1000, 1000, 0.1f, colors::cool_blue);
     m_plane = SceneObject{std::move(plane), {}};
     m_push_constants.vertex_buffer_address = m_plane.mesh.gpu_buffers.vertex_buffer_address;
     m_push_constants.wave_count = wave_count;

@@ -5,6 +5,7 @@
 #include "ving_camera.hpp"
 #include "ving_core.hpp"
 #include "ving_imgui_renderer.hpp"
+#include "ving_path_tracing_renderer.hpp"
 #include "ving_profilers.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_simple_cube_renderer.hpp"
@@ -36,7 +37,8 @@ void run_application()
     // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     // ving::SimpleCubeRenderer cube_renderer{core};
     ving::SkyboxRenderer skybox_renderer{core, scene};
-    ving::WaterRenderer water_renderer{core, scene};
+    // ving::WaterRenderer water_renderer{core, scene};
+    ving::PathTracingRenderer path_tracing_renderer{core};
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
@@ -140,8 +142,12 @@ void run_application()
                 skybox_renderer.render(frame, camera, scene);
             }
             {
-                auto task = profiler.start_scoped_task("Recording Water");
-                imgui_frame.functions.push_back(water_renderer.render(frame, camera, scene));
+                // auto task = profiler.start_scoped_task("Recording Water");
+                // imgui_frame.functions.push_back(water_renderer.render(frame, camera, scene));
+            }
+            {
+                auto task = profiler.start_scoped_task("Recording path tracer");
+                path_tracing_renderer.render(frame);
             }
             imgui_renderer.render(frame, profiler, imgui_frame);
         }

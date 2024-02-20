@@ -93,4 +93,9 @@ void Image2D::transition_layout(vk::CommandBuffer cmd, vk::ImageLayout new_layou
 
     m_layout = new_layout;
 }
+void Image2D::copy_to(vk::CommandBuffer cmd, const Image2D &image) const
+{
+    utils::copy_image_to_image(cmd, m_image.get(), image.image(), vk::Extent2D{m_extent.width, m_extent.height},
+                               vk::Extent2D{image.extent().width, image.extent().height});
+}
 } // namespace ving

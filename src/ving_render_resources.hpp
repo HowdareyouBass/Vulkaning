@@ -26,9 +26,10 @@ class RenderResource
     RenderResource(vk::DescriptorSet descriptor, std::unordered_map<uint32_t, vk::DescriptorType> bindings);
 
     void write_buffer(vk::Device device, uint32_t binding, const ving::GPUBuffer &buffer) const;
-    void write_image(vk::Device device, uint32_t binding, const ving::Image2D &image, vk::Sampler sampler) const;
+    void write_image(vk::Device device, uint32_t binding, const ving::Image2D &image,
+                     vk::Sampler sampler = nullptr) const;
     void write_image(vk::Device device, uint32_t binding, vk::ImageView image, vk::ImageLayout layout,
-                     vk::Sampler sampler) const;
+                     vk::Sampler sampler = nullptr) const;
 
   private:
     vk::DescriptorSet m_descriptor;

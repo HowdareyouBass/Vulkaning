@@ -1,0 +1,16 @@
+#version 450
+
+layout (local_size_x = 32, local_size_y = 32) in;
+
+layout (rgba8, set = 0, binding = 0) uniform image2D draw_img;
+
+void main()
+{
+    ivec2 texel_coord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 img_size = imageSize(draw_img);
+
+    if (texel_coord.x < img_size.x && texel_coord.y < img_size.y)
+    {
+        imageStore(draw_img, texel_coord, vec4(1.0, 0.0, 0.0, 1.0));
+    }
+}
