@@ -9,6 +9,7 @@ struct Sphere
 {
     vec3 center;
     float radius;
+    vec4 color;
 };
 layout (set = 0, binding = 0) buffer SphereBuffer
 {
@@ -49,7 +50,7 @@ struct Ray
     vec3 position;
     vec3 direction;
 };
-bool hit_sphere(Sphere s, Ray r)
+bool hit_sphere(Sphere s, Ray r, out float t)
 {
     float a = dot(r.direction, r.direction);
     float b = 2*dot(r.direction, r.position - s.center);
@@ -57,7 +58,20 @@ bool hit_sphere(Sphere s, Ray r)
 
     float discriminant = b*b - 4*a*c;
 
+    if (discriminant < 0)
+    {
+        t = -1;
+    }
+    else
+    {
+        t = ((-b-sqrt(discriminant))/(2.0*a));
+    }
+
     return (discriminant >= 0);
+}
+vec3 ray_at(Ray ray, float t)
+{
+    return ray.position + ray.direction * t;
 }
 
 void main()
@@ -67,6 +81,7 @@ void main()
 
     Ray ray = Ray(in_vpos.x * camera_info.right + -in_vpos.y * camera_info.up, camera_info.forward);
     vec3 uvw = normalize(ray.position + ray.direction);
+    // ray.position += camera_info.position;
     uvw.z *= -1;
 
     float sun_strength = clamp(0.0, 1.0, dot(uvw, pc.light_direction.xyz) - 1.0 + sun_radius) * pc.light_direction.w;
@@ -75,9 +90,16 @@ void main()
     {
         out_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
         // Ray r = Ray(vec3(in_vpos.xy, 0.0), vec3(0.0, 0.0, 1.0));
-        if (hit_sphere(spheres[i], ray))
+        float t;
+        if (hit_sphere(spheres[i], ray, t))
         {
-            out_color = vec4(1.0, 0.0, 0.0, 1.0); 
+            vec4 ray_color = t.xxxx;
+            vec3 normal = normalize(ray_at(ray, t) - spheres[i].center);
+        
+            normal.xyz += 1;
+            normal.xyz *= 0.5;
+
+            out_color = vec4(normal, 1.0);
         }
     }
 
