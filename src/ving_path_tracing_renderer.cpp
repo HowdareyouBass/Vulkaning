@@ -69,6 +69,7 @@ void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const Per
                                      m_push_constants);
     auto viewport =
         vk::Viewport{}.setWidth(img.extent().width).setHeight(img.extent().height).setMinDepth(0.0f).setMaxDepth(1.0f);
+    // auto viewport = vk::Viewport{}.setWidth(1000).setHeight(1000).setMinDepth(0.0f).setMaxDepth(1.0f);
     cmd.setViewport(0, viewport);
     auto scissor = vk::Rect2D{}.setOffset(vk::Offset2D{0, 0}).setExtent(img.extent());
     cmd.setScissor(0, scissor);

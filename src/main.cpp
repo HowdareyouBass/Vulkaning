@@ -21,6 +21,7 @@ void run_application()
         throw std::runtime_error(std::format("Couldn't initialize SDL: {}", SDL_GetError()));
 
     SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1000, 1000, SDL_WINDOW_VULKAN);
+    // SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1280, 720, SDL_WINDOW_VULKAN);
     if (!window)
         throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
 
@@ -43,7 +44,7 @@ void run_application()
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
                                    100.0f, 0.1f, glm::radians(60.0f)};
-    camera.position = {0.0f, 5.5f, -5.0f};
+    // camera.position = {0.0f, 5.5f, -5.0f};
 
     bool running = true;
     SDL_Event event;
@@ -137,14 +138,14 @@ void run_application()
 
             // cube_renderer.render(frame, camera);
             // imgui_renderer.render(frame, []() {});
-            {
-                // auto task = profiler.start_scoped_task("Recording Skybox");
-                // skybox_renderer.render(frame, camera, scene);
-            }
-            {
-                // auto task = profiler.start_scoped_task("Recording Water");
-                // imgui_frame.functions.push_back(water_renderer.render(frame, camera, scene));
-            }
+            // {
+            //     auto task = profiler.start_scoped_task("Recording Skybox");
+            //     skybox_renderer.render(frame, camera, scene);
+            // }
+            // {
+            //     auto task = profiler.start_scoped_task("Recording Water");
+            //     imgui_frame.functions.push_back(water_renderer.render(frame, camera, scene));
+            // }
             {
                 auto task = profiler.start_scoped_task("Recording path tracer");
                 path_tracing_renderer.render(frame, camera, scene);
