@@ -153,7 +153,7 @@ const vec3 sun_color = vec3(1.0, 1.0, 1.0);
 // Anti aliasing
 const int samples_per_pixel = 4;
 // Path tracing settings
-const int max_bounces = 1;
+const int max_bounces = 4;
 
 void main()
 {
@@ -175,8 +175,8 @@ void main()
 
         if (hit_sphere(spheres[i], ray, 0.0, infinite, record))
         {
-            vec4 accumulated_color = vec4(0.0, 0.0, 0.0, 0.0);
-            int num_bounces = 0;
+            vec4 accumulated_color = record.color;
+            int num_bounces = 1;
             for (int bounce = 0; bounce < max_bounces; ++bounce)
             {
                 ivec3 seed = ivec3(record.normal * 4294967295.0);
