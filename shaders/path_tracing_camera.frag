@@ -13,12 +13,28 @@ struct Sphere
     float radius;
     vec4 color;
 };
-layout (set = 0, binding = 0) readonly buffer SphereBuffer
+layout (set = 0, binding = 0) buffer SphereBuffer
 {
     Sphere spheres[];
 };
 
 layout (set = 0, binding = 1) uniform samplerCube sampler_cube_map;
+
+struct CameraInfo
+{
+    vec3 forward;
+    float dummy0;
+    vec3 up;
+    float dummy1;
+    vec3 right;
+    float dummy2;
+    vec3 position;
+    float dummy3;
+};
+layout (set = 0, binding = 2) uniform CameraInfoUnifrom
+{
+    CameraInfo camera_info;
+};
 
 layout (push_constant) uniform constants
 {
@@ -140,48 +156,47 @@ const int samples_per_pixel = 4;
 // Path tracing settings
 const int max_bounces = 2;
 
-// NOTE: Probably could do it smarter
-bool hit_closest_sphere(Ray ray, out HitRecord record)
-{
-    HitRecord min_record;
-    min_record.t = infinite;
-    bool hit_anything = false;
-
-    for (int i = 0; i < pc.sphere_count; ++i)
-    {
-        if (hit_sphere(spheres[i], ray, 0.0, infinite, record))
-        {
-            if (record.t < min_record.t)
-            {
-                min_record = record;
-            }
-            hit_anything = true;
-        }
-    }
-    record = min_record;
-
-    return hit_anything;
-}
-
 void main()
 {
-    Ray ray = Ray(in_vpos, vec3(0.0, 0.0, -1.0));
-    ray.position.y *= -1;
+    Ray ray = Ray(in_vpos.x * camera_info.right + -in_vpos.y * camera_info.up, camera_info.forward);
     vec3 uvw = normalize(ray.position + ray.direction);
+
     // ray.position += camera_info.position;
+
+    uvw.z *= -1;
 
     // Skybox
     float sun_strength = clamp(0.0, 1.0, dot(uvw, pc.light_direction.xyz) - 1.0 + sun_radius) * pc.light_direction.w;
 
-    HitRecord record;
+    for (int i = 0; i < pc.sphere_count; ++i)
+    {
+        HitRecord record;
 
-    if (hit_closest_sphere(ray, record))
-    {
-        // out_color = record.normal.xyzz;
-        out_color = record.color;
-    }
-    else
-    {
-        out_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
+        if (hit_sphere(spheres[i], ray, 0.0, infinite, record))
+        {
+            vec4 accumulated_color = record.color;
+            int num_bounces = 1;
+            for (int bounce = 0; bounce < max_bounces; ++bounce)
+            {
+                ivec3 seed = ivec3(record.normal * 4294967295.0);
+                Ray bounce_ray = Ray(record.position, random_on_hemisphere(record.normal, seed));
+                if (hit_sphere(spheres[i], bounce_ray, 0.0, infinite, record))
+                {
+                    accumulated_color += ray_color(record);
+                }
+                else
+                {
+                    break;
+                }
+                
+                ++num_bounces;
+            }
+
+            out_color = accumulated_color / num_bounces;
+        }
+        else
+        {
+            out_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
+        }
     }
 }

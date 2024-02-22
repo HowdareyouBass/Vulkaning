@@ -121,8 +121,6 @@ void run_application()
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame(profiler);
         {
-            ving::ImGuiFrame imgui_frame;
-
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera.move_speed;
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera.move_speed;
             camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera.move_speed;
@@ -150,7 +148,7 @@ void run_application()
                 auto task = profiler.start_scoped_task("Recording path tracer");
                 path_tracing_renderer.render(frame, camera, scene);
             }
-            imgui_renderer.render(frame, profiler, imgui_frame);
+            imgui_renderer.render(frame, profiler, path_tracing_renderer.get_imgui());
         }
         frames.end_frame(profiler);
     }

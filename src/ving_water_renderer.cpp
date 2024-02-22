@@ -130,14 +130,14 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
             generate_waves();
         }
 
-        // for (size_t i = 0; i < m_waves.size(); ++i)
-        // {
-        //     ImGui::Text("Wave #%zu", i);
-        //     ImGui::InputFloat("Amplitude", &m_waves[i].amplitude);
-        //     ImGui::InputFloat("Wave length", &m_waves[i].wave_length);
-        //     ImGui::InputFloat("Wave speed", &m_waves[i].speed);
-        //     ImGui::InputFloat2("Wave direction", reinterpret_cast<float *>(&m_waves[i].direction));
-        // }
+        for (size_t i = 0; i < m_waves.size(); ++i)
+        {
+            ImGui::Text("Wave #%zu", i);
+            ImGui::InputFloat("Amplitude", &m_waves[i].amplitude);
+            ImGui::InputFloat("Wave length", &m_waves[i].wave_length);
+            ImGui::InputFloat("Wave speed", &m_waves[i].speed);
+            ImGui::InputFloat2("Wave direction", reinterpret_cast<float *>(&m_waves[i].direction));
+        }
 
         // ImGui::ShowDemoWindow();
     };

@@ -39,16 +39,17 @@ class PathTracingRenderer : public BaseRenderer
     PathTracingRenderer(const Core &core, const Scene &scene);
 
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene);
+    std::function<void()> get_imgui() const;
 
   private:
-    constexpr static uint32_t sphere_count = 1;
+    constexpr static uint32_t sphere_count = 2;
 
     PushConstants m_push_constants;
 
     Mesh m_quad;
 
     GPUBuffer m_sphere_buffer;
-    std::array<Sphere, sphere_count> m_spheres;
+    std::span<Sphere> m_spheres;
 
     GPUBuffer m_camera_info_buffer;
     CameraInfo *m_camera_info;

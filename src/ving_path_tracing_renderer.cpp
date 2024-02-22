@@ -1,7 +1,13 @@
-#include "ving_path_tracing_renderer.hpp"
-#include "ving_camera.hpp"
-#include "ving_scene.hpp"
 #include <cmath>
+
+#include <imgui.h>
+
+#include "ving_camera.hpp"
+#include "ving_imgui_renderer.hpp"
+#include "ving_path_tracing_renderer.hpp"
+#include "ving_scene.hpp"
+
+#include <SDL3/SDL_log.h>
 
 namespace ving
 {
@@ -9,15 +15,21 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
 {
     m_push_constants.sphere_count = sphere_count;
 
-    for (auto &&sphere : m_spheres)
-    {
-        sphere.position = {0.0f, 0.0f, 0.0f};
-        sphere.radius = 0.5f;
-        sphere.color = {1.0f, 0.0f, 0.0f, 1.0f};
-    }
+    // for (auto &&sphere : m_spheres)
+    // {
+    //     sphere.position = {1.0f, 0.0f, 0.0f};
+    //     sphere.radius = 0.5f;
+    //     sphere.color = {1.0f, 0.0f, 0.0f, 1.0f};
+    // }
 
-    m_sphere_buffer = core.create_gpu_buffer(m_spheres.data(), sizeof(Sphere) * m_spheres.size(),
-                                             vk::BufferUsageFlagBits::eStorageBuffer);
+    m_sphere_buffer =
+        core.create_cpu_visible_gpu_buffer(sizeof(Sphere) * sphere_count, vk::BufferUsageFlagBits::eStorageBuffer);
+    m_sphere_buffer.map_data();
+    m_spheres = std::span<Sphere>{static_cast<Sphere *>(m_sphere_buffer.data()),
+                                  static_cast<Sphere *>(m_sphere_buffer.data()) + sphere_count};
+    m_spheres[0].radius = 0.8f;
+    m_spheres[1].radius = 0.5f;
+
     m_camera_info_buffer =
         core.create_cpu_visible_gpu_buffer(sizeof(CameraInfo), vk::BufferUsageFlagBits::eUniformBuffer);
     m_camera_info_buffer.map_data();
@@ -79,4 +91,19 @@ void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const Per
 
     cmd.endRendering();
 }
+
+std::function<void()> PathTracingRenderer::get_imgui() const
+{
+    return [this]() {
+        for (size_t i = 0; i < m_spheres.size(); ++i)
+        {
+            ImGui::Text("%s", std::format("Sphere #{}", i).c_str());
+            ImGui::DragFloat3(std::format("Position ##{}", i).c_str(),
+                              reinterpret_cast<float *>(&m_spheres[i].position), 0.1f, -1.0f, 1.0f);
+            ImGui::DragFloat(std::format("Radius ##{}", i).c_str(), &m_spheres[i].radius, 0.05f, 0.0f, 1.0f);
+            ImGui::ColorEdit4(std::format("Color ##{}", i).c_str(), reinterpret_cast<float *>(&m_spheres[i].color));
+        }
+    };
+}
+
 } // namespace ving

@@ -42,7 +42,8 @@ ImGuiRenderer::~ImGuiRenderer()
 {
     ImGui_ImplVulkan_Shutdown();
 }
-void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, Profiler &profiler, const ImGuiFrame &imgui_frame)
+void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, Profiler &profiler,
+                           const std::function<void()> &imgui_frame)
 {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplSDL3_NewFrame();
@@ -60,10 +61,7 @@ void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, Profiler &profi
     ImGui::End();
 
     ImGui::Begin("Render Data Controls");
-    for (auto &&func : imgui_frame.functions)
-    {
-        func();
-    }
+    imgui_frame();
     ImGui::End();
 
     // ImGui::ShowDemoWindow();

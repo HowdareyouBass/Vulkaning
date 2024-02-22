@@ -26,7 +26,7 @@ class ImGuiRenderer : public BaseRenderer
     ImGuiRenderer(ImGuiRenderer &&) = delete;
     ImGuiRenderer &operator=(ImGuiRenderer &&) = delete;
 
-    void render(const RenderFrames::FrameInfo &frame, Profiler &profiler, const ImGuiFrame &imgui_frame);
+    void render(const RenderFrames::FrameInfo &frame, Profiler &profiler, const std::function<void()> &imgui_frame);
     void process_sdl_event(const SDL_Event &event);
 
   private:
