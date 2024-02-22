@@ -125,21 +125,6 @@ bool hit_sphere(Sphere s, Ray r, float min_t, float max_t , out HitRecord record
     record = HitRecord(position, normal, s.color, t, (dot(r.direction, normal) < 0));
     return true;
 }
-
-vec4 ray_color(HitRecord h)
-{
-    return h.color;
-}
-
-// Skybox
-const float sun_radius = 0.2;
-const vec3 sun_color = vec3(1.0, 1.0, 1.0);
-// Anti aliasing
-const int samples_per_pixel = 4;
-
-// Path tracing settings
-const int max_bounces = 2;
-
 // NOTE: Probably could do it smarter
 bool hit_closest_sphere(Ray ray, out HitRecord record)
 {
@@ -163,6 +148,15 @@ bool hit_closest_sphere(Ray ray, out HitRecord record)
     return hit_anything;
 }
 
+// Skybox
+const float sun_radius = 0.2;
+const vec3 sun_color = vec3(1.0, 1.0, 1.0);
+// Anti aliasing
+const int samples_per_pixel = 4;
+
+// Path tracing settings
+const int max_bounces = 5;
+
 void main()
 {
     Ray ray = Ray(in_vpos, vec3(0.0, 0.0, -1.0));
@@ -178,7 +172,27 @@ void main()
     if (hit_closest_sphere(ray, record))
     {
         // out_color = record.normal.xyzz;
-        out_color = record.color;
+        vec4 ray_color = record.color;
+        int num_bounces = 1;
+
+        for (int i = 0; i < max_bounces; ++i)
+        {
+            ivec3 seed = ivec3(record.normal * 4294967295.0);
+
+            Ray bounce_ray = Ray(vec3(record.position), vec3(random_on_hemisphere(record.normal, seed)));
+
+            if (hit_closest_sphere(bounce_ray, record))
+            {
+                ray_color += record.color;
+            }   
+            else
+            {
+                break;
+            }
+            ++num_bounces;
+        }
+
+        out_color = ray_color / num_bounces;
     }
     else
     {

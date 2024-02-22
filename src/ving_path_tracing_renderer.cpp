@@ -99,8 +99,8 @@ std::function<void()> PathTracingRenderer::get_imgui() const
         {
             ImGui::Text("%s", std::format("Sphere #{}", i).c_str());
             ImGui::DragFloat3(std::format("Position ##{}", i).c_str(),
-                              reinterpret_cast<float *>(&m_spheres[i].position), 0.1f, -1.0f, 1.0f);
-            ImGui::DragFloat(std::format("Radius ##{}", i).c_str(), &m_spheres[i].radius, 0.05f, 0.0f, 1.0f);
+                              reinterpret_cast<float *>(&m_spheres[i].position), 0.01f, -1.0f, 1.0f);
+            ImGui::DragFloat(std::format("Radius ##{}", i).c_str(), &m_spheres[i].radius, 0.005f, 0.0f, 1.0f);
             ImGui::ColorEdit4(std::format("Color ##{}", i).c_str(), reinterpret_cast<float *>(&m_spheres[i].color));
         }
     };
