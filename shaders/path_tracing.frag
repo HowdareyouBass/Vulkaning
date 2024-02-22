@@ -64,11 +64,11 @@ float length_squared(vec3 vec)
 {
     return vec.x*vec.x + vec.y*vec.y + vec.z*vec.z;
 }
-vec3 random_vec3(ivec3 seed)
+vec3 random_vec3(uvec3 seed)
 {
     return vec3(Random(seed.x), Random(seed.y), Random(seed.z));
 }
-vec3 random_vec3_unit_sphere(ivec3 seed)
+vec3 random_vec3_unit_sphere(uvec3 seed)
 {
     vec3 p = vec3(1.0, 1.0, 1.0);
     while (length_squared(p) >= 1)
@@ -78,7 +78,7 @@ vec3 random_vec3_unit_sphere(ivec3 seed)
     }
     return normalize(p);
 }
-vec3 random_on_hemisphere(vec3 normal, ivec3 seed)
+vec3 random_on_hemisphere(vec3 normal, uvec3 seed)
 {
     vec3 unit = random_vec3_unit_sphere(seed);
     if (dot(unit, normal) > 0.0)
@@ -159,7 +159,7 @@ const int max_bounces = 5;
 
 void main()
 {
-    Ray ray = Ray(in_vpos, vec3(0.0, 0.0, -1.0));
+    Ray ray = Ray(in_vpos, vec3(0.0, 0.0, 1.0));
     ray.position.y *= -1;
     vec3 uvw = normalize(ray.position + ray.direction);
     // ray.position += camera_info.position;
@@ -177,19 +177,15 @@ void main()
 
         for (int i = 0; i < max_bounces; ++i)
         {
-            ivec3 seed = ivec3(record.normal * 4294967295.0);
+            uvec3 seed = ivec3(i * in_vpos * 4294967295.0);
 
             Ray bounce_ray = Ray(vec3(record.position), vec3(random_on_hemisphere(record.normal, seed)));
 
             if (hit_closest_sphere(bounce_ray, record))
             {
                 ray_color += record.color;
+                ++num_bounces;
             }   
-            else
-            {
-                break;
-            }
-            ++num_bounces;
         }
 
         out_color = ray_color / num_bounces;
