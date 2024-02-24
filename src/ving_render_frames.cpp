@@ -32,7 +32,10 @@ RenderFrames::FrameInfo RenderFrames::begin_frame(Profiler &profiler)
     }
     r_core.reset_fence(cur_frame.render_fence.get());
 
-    m_present_queue.acquire_image(cur_frame.image_acquired_semaphore.get());
+    {
+        auto task = profiler.start_scoped_task("Acquire Image");
+        m_present_queue.acquire_image(cur_frame.image_acquired_semaphore.get());
+    }
 
     vk::CommandBuffer &cmd = cur_frame.commands.get();
 
@@ -45,13 +48,14 @@ RenderFrames::FrameInfo RenderFrames::begin_frame(Profiler &profiler)
 }
 void RenderFrames::end_frame(Profiler &profiler)
 {
+    auto task = profiler.start_scoped_task("End Frame");
+
     FrameResources &cur_frame = m_frames[m_frame_number % frames_in_flight];
     vk::CommandBuffer &cmd = cur_frame.commands.get();
 
     m_draw_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
 
     m_present_queue.copy_image_to_swapchain(cmd, m_draw_image.image(), m_draw_image.extent(), m_frame_number);
-
     m_present_queue.transition_swapchain_image_to_present(cmd, m_frame_number);
 
     cmd.end();

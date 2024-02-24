@@ -38,6 +38,7 @@ class Profiler final
 {
   public:
     ScopedTask start_scoped_task(std::string_view name);
+
     void end_task(TaskInfo info);
     void flush();
 

@@ -6,6 +6,7 @@ add_subdirectory(SDL)
 add_subdirectory(VulkanMemoryAllocator)
 add_subdirectory(glm)
 add_subdirectory(KTX-Software)
+add_subdirectory(json)
 
 add_library(imgui STATIC)
 
@@ -27,4 +28,4 @@ target_include_directories(tinyobjloader INTERFACE tinyobjloader)
 
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 
-target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui glm tinyobjloader ktx)
+target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui glm tinyobjloader ktx nlohmann_json)

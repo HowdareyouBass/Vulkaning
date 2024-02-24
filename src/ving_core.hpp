@@ -107,7 +107,8 @@ class Core
     BaseRenderer::Pipelines create_graphics_render_pipelines(
         std::string_view vertex_shader_path, std::string_view fragment_shader_path,
         const std::vector<vk::DescriptorSetLayout> &descriptor_layouts, vk::Format color_attachment_format,
-        vk::Format depth_attachment_format, vk::PolygonMode polygon_mode = vk::PolygonMode::eFill) const
+        vk::Format depth_attachment_format = vk::Format::eUndefined,
+        vk::PolygonMode polygon_mode = vk::PolygonMode::eFill) const
     {
         auto fragment_shader = utils::create_shader_module(*m_device, fragment_shader_path);
         auto vertex_shader = utils::create_shader_module(*m_device, vertex_shader_path);
@@ -160,15 +161,17 @@ class Core
                                .setLogicOpEnable(vk::False)
                                .setLogicOp(vk::LogicOp::eCopy)
                                .setAttachments(color_blend_attachment);
-
-        auto depthtest = vk::PipelineDepthStencilStateCreateInfo{}
-                             .setDepthTestEnable(vk::True)
-                             .setDepthWriteEnable(vk::True)
-                             .setDepthCompareOp(vk::CompareOp::eGreaterOrEqual)
-                             .setDepthBoundsTestEnable(vk::False)
-                             .setStencilTestEnable(vk::False)
-                             .setMinDepthBounds(0.0f)
-                             .setMaxDepthBounds(1.0f);
+        auto depthtest = vk::PipelineDepthStencilStateCreateInfo{};
+        if (depth_attachment_format != vk::Format::eUndefined)
+        {
+            depthtest.setDepthWriteEnable(vk::True)
+                .setDepthTestEnable(vk::True)
+                .setDepthCompareOp(vk::CompareOp::eGreaterOrEqual)
+                .setDepthBoundsTestEnable(vk::False)
+                .setStencilTestEnable(vk::False)
+                .setMinDepthBounds(0.0f)
+                .setMaxDepthBounds(1.0f);
+        }
 
         auto render_info = vk::PipelineRenderingCreateInfo{}
                                .setColorAttachmentFormats(color_attachment_format)

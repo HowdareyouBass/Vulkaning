@@ -33,6 +33,7 @@ class RenderFrames
 
     // HARD: Let the user decide
     static constexpr int frames_in_flight = 2;
+    static constexpr vk::Format render_image_format = vk::Format::eR16G16B16A16Sfloat;
 
     RenderFrames(const Core &core);
     ~RenderFrames() = default;

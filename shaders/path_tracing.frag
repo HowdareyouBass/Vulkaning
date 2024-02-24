@@ -134,7 +134,7 @@ bool hit_closest_sphere(Ray ray, out HitRecord record)
 
     for (int i = 0; i < pc.sphere_count; ++i)
     {
-        if (hit_sphere(spheres[i], ray, 0.0, infinite, record))
+        if (hit_sphere(spheres[i], ray, 0.001, infinite, record))
         {
             if (record.t < min_record.t)
             {
@@ -155,7 +155,7 @@ const vec3 sun_color = vec3(1.0, 1.0, 1.0);
 const int samples_per_pixel = 4;
 
 // Path tracing settings
-const int max_bounces = 5;
+const int max_bounces = 2;
 
 void main()
 {
@@ -171,13 +171,12 @@ void main()
 
     if (hit_closest_sphere(ray, record))
     {
-        // out_color = record.normal.xyzz;
         vec4 ray_color = record.color;
         int num_bounces = 1;
 
         for (int i = 0; i < max_bounces; ++i)
         {
-            uvec3 seed = ivec3(i * in_vpos * 4294967295.0);
+            uvec3 seed = ivec3(i * in_vpos * record.normal * 4294967295.0);
 
             Ray bounce_ray = Ray(vec3(record.position), vec3(random_on_hemisphere(record.normal, seed)));
 

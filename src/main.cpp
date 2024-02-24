@@ -1,9 +1,11 @@
 #include <iostream>
 
 #include <SDL3/SDL.h>
+#include <imgui.h>
 
 #include "ving_camera.hpp"
 #include "ving_core.hpp"
+#include "ving_gi_renderer.hpp"
 #include "ving_imgui_renderer.hpp"
 #include "ving_path_tracing_renderer.hpp"
 #include "ving_profilers.hpp"
@@ -28,7 +30,6 @@ void run_application()
     ving::Core core{window};
 
     ving::Scene scene;
-
     scene.skybox_cubemap = ving::utils::load_cube_map("assets/textures/skies.ktx", core);
     scene.skybox_sampler = core.create_sampler(scene.skybox_cubemap.mip_levels());
 
@@ -39,7 +40,8 @@ void run_application()
     // ving::SimpleCubeRenderer cube_renderer{core};
     // ving::SkyboxRenderer skybox_renderer{core, scene};
     // ving::WaterRenderer water_renderer{core, scene};
-    ving::PathTracingRenderer path_tracing_renderer{core, scene};
+    // ving::PathTracingRenderer path_tracing_renderer{core, scene};
+    ving::GiRenderer gi_renderer{core};
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
@@ -101,12 +103,6 @@ void run_application()
         {
             float mouse_x_relative_to_center = mouse_x - halfwidth;
             float mouse_y_relative_to_center = mouse_y - halfheight;
-            // if (std::abs(mouse_x_relative_to_center) > std::numeric_limits<float>::epsilon() &&
-            //     std::abs(mouse_y_relative_to_center) > std::numeric_limits<float>::epsilon())
-            // {
-            //     SDL_Log("%f %f\n", mouse_x, mouse_y);
-            //     SDL_Log("%f %f\n", mouse_x_relative_to_center, mouse_y_relative_to_center);
-            // }
 
             camera_rotate_dir.y += mouse_x_relative_to_center;
             camera_rotate_dir.x += mouse_y_relative_to_center;
@@ -124,6 +120,7 @@ void run_application()
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera.move_speed;
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera.move_speed;
             camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera.move_speed;
+
             if (glm::dot(camera_rotate_dir, camera_rotate_dir) > std::numeric_limits<float>::epsilon())
             {
                 camera.rotation +=
@@ -136,19 +133,14 @@ void run_application()
 
             // cube_renderer.render(frame, camera);
             // imgui_renderer.render(frame, []() {});
-            // {
-            //     auto task = profiler.start_scoped_task("Recording Skybox");
-            //     skybox_renderer.render(frame, camera, scene);
-            // }
-            // {
-            //     auto task = profiler.start_scoped_task("Recording Water");
-            //     imgui_frame.functions.push_back(water_renderer.render(frame, camera, scene));
-            // }
             {
-                auto task = profiler.start_scoped_task("Recording path tracer");
-                path_tracing_renderer.render(frame, camera, scene);
+                auto trask = profiler.start_scoped_task("Recording");
+                // skybox_renderer.render(frame, camera, scene);
+                // water_renderer.render(frame, camera, scene);
+                // path_tracing_renderer.render(frame, camera, scene);
+                gi_renderer.render(frame, camera, scene);
             }
-            imgui_renderer.render(frame, profiler, path_tracing_renderer.get_imgui());
+            imgui_renderer.render(frame, profiler, {});
         }
         frames.end_frame(profiler);
     }
