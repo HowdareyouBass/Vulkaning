@@ -42,7 +42,7 @@ class PathTracingRenderer : public BaseRenderer
     std::function<void()> get_imgui() const;
 
   private:
-    constexpr static uint32_t sphere_count = 2;
+    constexpr static uint32_t sphere_count = 1;
 
     PushConstants m_push_constants;
 

@@ -27,8 +27,19 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
     m_sphere_buffer.map_data();
     m_spheres = std::span<Sphere>{static_cast<Sphere *>(m_sphere_buffer.data()),
                                   static_cast<Sphere *>(m_sphere_buffer.data()) + sphere_count};
-    m_spheres[0].radius = 0.8f;
-    m_spheres[1].radius = 0.5f;
+
+    // m_spheres[0].radius = 0.3f;
+    // m_spheres[1].radius = 0.5f;
+    //
+    // m_spheres[0].color = {1.0f, 0.0f, 0.0f, 1.0f};
+    // m_spheres[1].color = {0.0f, 1.0f, 0.0f, 1.0f};
+    //
+    // m_spheres[0].position = {0.5f, 0.0f, 1.0f};
+    // m_spheres[1].position = {-0.5f, 0.0f, 1.0f};
+
+    m_spheres[0].radius = 0.5f;
+    m_spheres[0].color = {0.0f, 1.0f, 0.0f, 1.0f};
+    m_spheres[0].position.z = 10.0f;
 
     m_camera_info_buffer =
         core.create_cpu_visible_gpu_buffer(sizeof(CameraInfo), vk::BufferUsageFlagBits::eUniformBuffer);
@@ -55,7 +66,7 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
     m_push_constants.vertex_buffer = m_quad.gpu_buffers.vertex_buffer_address;
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/path_tracing.vert.spv", "shaders/path_tracing.frag.spv", m_resources.layouts(),
+        "shaders/bin/path_tracing.vert.spv", "shaders/bin/path_tracing.frag.spv", m_resources.layouts(),
         vk::Format::eR16G16B16A16Sfloat, vk::Format::eUndefined);
 }
 
@@ -79,12 +90,8 @@ void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const Per
     cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                      m_push_constants);
-    auto viewport =
-        vk::Viewport{}.setWidth(img.extent().width).setHeight(img.extent().height).setMinDepth(0.0f).setMaxDepth(1.0f);
-    // auto viewport = vk::Viewport{}.setWidth(1000).setHeight(1000).setMinDepth(0.0f).setMaxDepth(1.0f);
-    cmd.setViewport(0, viewport);
-    auto scissor = vk::Rect2D{}.setOffset(vk::Offset2D{0, 0}).setExtent(img.extent());
-    cmd.setScissor(0, scissor);
+
+    set_default_viewport_and_scissor(cmd, img);
 
     cmd.bindIndexBuffer(m_quad.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(m_quad.indices_count, 1, 0, 0, 0);

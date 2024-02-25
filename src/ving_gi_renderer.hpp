@@ -5,6 +5,7 @@
 #include "ving_core.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_scene.hpp"
+#include "ving_scene_object.hpp"
 
 namespace ving
 {
@@ -13,6 +14,7 @@ class GiRenderer : public BaseRenderer
     struct PushConstants
     {
         glm::mat4 pvm_transform;
+        vk::DeviceAddress vertex_buffer_address;
     };
 
     enum RenderResourceIds : uint32_t
@@ -35,5 +37,7 @@ class GiRenderer : public BaseRenderer
 
     RenderResources m_resources;
     Pipelines m_pipelines;
+
+    SceneObject m_cube;
 };
 } // namespace ving

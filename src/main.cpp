@@ -40,8 +40,9 @@ void run_application()
     // ving::SimpleCubeRenderer cube_renderer{core};
     // ving::SkyboxRenderer skybox_renderer{core, scene};
     // ving::WaterRenderer water_renderer{core, scene};
-    // ving::PathTracingRenderer path_tracing_renderer{core, scene};
+    ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
+
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
@@ -134,13 +135,13 @@ void run_application()
             // cube_renderer.render(frame, camera);
             // imgui_renderer.render(frame, []() {});
             {
-                auto trask = profiler.start_scoped_task("Recording");
+                auto task = profiler.start_scoped_task("Recording");
                 // skybox_renderer.render(frame, camera, scene);
                 // water_renderer.render(frame, camera, scene);
-                // path_tracing_renderer.render(frame, camera, scene);
-                gi_renderer.render(frame, camera, scene);
+                path_tracing_renderer.render(frame, camera, scene);
+                // gi_renderer.render(frame, camera, scene);
             }
-            imgui_renderer.render(frame, profiler, {});
+            imgui_renderer.render(frame, profiler, {path_tracing_renderer.get_imgui()});
         }
         frames.end_frame(profiler);
     }

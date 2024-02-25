@@ -6,6 +6,14 @@ layout (location = 1) in vec3 in_vpos;
 layout (location = 0) out vec4 out_color;
 
 const float infinite = 1.0 / 0.0;
+const float uint_max_float = 4294967295.0;
+
+struct Plane
+{
+    vec3 normal;
+    float height;
+    vec4 color;
+};
 
 struct Sphere 
 {
@@ -40,9 +48,17 @@ uint Hash(uint s)
     return s;
 }
 
-float Random(uint seed)
+uint pcg_hash(uint seed)
 {
-    return float(Hash(seed)) / 4294967295.0; // 2^32-1
+    uint state = seed * 747796405u + 2891336453u;
+    uint word = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
+
+float random_float(inout uint seed)
+{
+    seed = pcg_hash(seed); 
+    return float(pcg_hash(seed)) / uint_max_float;
 }
 
 
@@ -64,21 +80,21 @@ float length_squared(vec3 vec)
 {
     return vec.x*vec.x + vec.y*vec.y + vec.z*vec.z;
 }
-vec3 random_vec3(uvec3 seed)
+vec3 random_vec3(inout uint seed)
 {
-    return vec3(Random(seed.x), Random(seed.y), Random(seed.z));
+    return vec3(random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0);
 }
-vec3 random_vec3_unit_sphere(uvec3 seed)
+vec3 random_vec3_unit_sphere(inout uint seed)
 {
     vec3 p = vec3(1.0, 1.0, 1.0);
     while (length_squared(p) >= 1)
     {
         p = random_vec3(seed);
-        seed += 1;
+        seed = pcg_hash(seed);
     }
     return normalize(p);
 }
-vec3 random_on_hemisphere(vec3 normal, uvec3 seed)
+vec3 random_on_hemisphere(vec3 normal, inout uint seed)
 {
     vec3 unit = random_vec3_unit_sphere(seed);
     if (dot(unit, normal) > 0.0)
@@ -125,11 +141,33 @@ bool hit_sphere(Sphere s, Ray r, float min_t, float max_t , out HitRecord record
     record = HitRecord(position, normal, s.color, t, (dot(r.direction, normal) < 0));
     return true;
 }
-// NOTE: Probably could do it smarter
-bool hit_closest_sphere(Ray ray, out HitRecord record)
+bool hit_plane(Plane p, Ray r, float min_t, float max_t, out HitRecord record)
+{
+    // float t = 1.0 / dot(p.normal, r.direction);
+    // float t = dot(p.normal, r.direction);
+    vec3 p0 = p.normal * p.height;
+
+    float t = dot((p0 - r.position), p.normal)/dot(r.direction, p.normal);
+
+    record = HitRecord(ray_at(r, t), p.normal, p.color, t, true);
+   
+    if (t < min_t)
+    {
+        record.t = infinite;
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+
+    return t >= min_t;
+}
+bool hit_closest_object_on_scene(Ray ray, out HitRecord record, Plane plane)
 {
     HitRecord min_record;
     min_record.t = infinite;
+    
     bool hit_anything = false;
 
     for (int i = 0; i < pc.sphere_count; ++i)
@@ -143,6 +181,14 @@ bool hit_closest_sphere(Ray ray, out HitRecord record)
             hit_anything = true;
         }
     }
+    if (hit_plane(plane, ray, 0.001, infinite, record))
+    {
+        if (record.t < min_record.t)
+        {
+            min_record = record;
+        }
+        hit_anything = true;
+    }
     record = min_record;
 
     return hit_anything;
@@ -155,7 +201,10 @@ const vec3 sun_color = vec3(1.0, 1.0, 1.0);
 const int samples_per_pixel = 4;
 
 // Path tracing settings
-const int max_bounces = 2;
+const int max_bounces = 10;
+
+const vec3 plane_normal = vec3(0.0, 1.0, 0.0);
+const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0, 1.0));
 
 void main()
 {
@@ -169,22 +218,22 @@ void main()
 
     HitRecord record;
 
-    if (hit_closest_sphere(ray, record))
+    if (hit_closest_object_on_scene(ray, record, scene_plane))
     {
         vec4 ray_color = record.color;
         int num_bounces = 1;
 
         for (int i = 0; i < max_bounces; ++i)
         {
-            uvec3 seed = ivec3(i * in_vpos * record.normal * 4294967295.0);
+            uint seed = i * uint(gl_FragCoord.x * gl_FragCoord.y * uint_max_float);
 
             Ray bounce_ray = Ray(vec3(record.position), vec3(random_on_hemisphere(record.normal, seed)));
 
-            if (hit_closest_sphere(bounce_ray, record))
+            if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
             {
                 ray_color += record.color;
                 ++num_bounces;
-            }   
+            }
         }
 
         out_color = ray_color / num_bounces;

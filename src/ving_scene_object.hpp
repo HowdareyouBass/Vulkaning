@@ -37,8 +37,11 @@ struct Mesh
 class Core;
 struct SimpleMesh
 {
+    // Vulkan space i = {1, 0, 0} j = {0, -1, 0} k = {0, 0, -1}
     static Mesh flat_plane(const Core &core, uint32_t length, uint32_t width, float spacing, glm::vec4 color);
     static Mesh quad(const Core &core, glm::vec4 color);
+    // Engine space i = {1, 0, 0} j = {0, 1, 0} k = {0, 0, 1}
+    static Mesh cube_interpolated_normals(const Core &core, std::array<glm::vec4, 8> vertex_colors = {});
 };
 
 struct Transform
