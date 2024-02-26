@@ -41,6 +41,10 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
     m_spheres[0].color = {0.0f, 1.0f, 0.0f, 1.0f};
     m_spheres[0].position.z = 10.0f;
 
+    m_spheres[1].radius = 0.3f;
+    m_spheres[1].color = {0.0f, 0.0f, 1.0f, 1.0f};
+    m_spheres[1].position.z = 10.0f;
+
     m_camera_info_buffer =
         core.create_cpu_visible_gpu_buffer(sizeof(CameraInfo), vk::BufferUsageFlagBits::eUniformBuffer);
     m_camera_info_buffer.map_data();

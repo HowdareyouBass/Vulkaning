@@ -86,12 +86,7 @@ vec3 random_vec3(inout uint seed)
 }
 vec3 random_vec3_unit_sphere(inout uint seed)
 {
-    vec3 p = vec3(1.0, 1.0, 1.0);
-    while (length_squared(p) >= 1)
-    {
-        p = random_vec3(seed);
-        seed = pcg_hash(seed);
-    }
+    vec3 p = random_vec3(seed);
     return normalize(p);
 }
 vec3 random_on_hemisphere(vec3 normal, inout uint seed)
@@ -181,6 +176,7 @@ bool hit_closest_object_on_scene(Ray ray, out HitRecord record, Plane plane)
             hit_anything = true;
         }
     }
+
     if (hit_plane(plane, ray, 0.001, infinite, record))
     {
         if (record.t < min_record.t)
@@ -189,6 +185,7 @@ bool hit_closest_object_on_scene(Ray ray, out HitRecord record, Plane plane)
         }
         hit_anything = true;
     }
+
     record = min_record;
 
     return hit_anything;
@@ -208,9 +205,13 @@ const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0
 
 void main()
 {
+    vec3 rpos = vec3(0.0, 0.0, 0.0);
+
     Ray ray = Ray(in_vpos, vec3(0.0, 0.0, 1.0));
+    // Ray ray = Ray(rpos, vec3(gl_FragCoord.xy, -1.0));
     ray.position.y *= -1;
     vec3 uvw = normalize(ray.position + ray.direction);
+    // vec3 uvw = ray.direction;
     // ray.position += camera_info.position;
 
     // Skybox
@@ -218,28 +219,37 @@ void main()
 
     HitRecord record;
 
+    vec4 skybox_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
+
     if (hit_closest_object_on_scene(ray, record, scene_plane))
     {
         vec4 ray_color = record.color;
-        int num_bounces = 1;
+        // int num_bounces = 1;
+        //
+        // for (int i = 0; i < max_bounces; ++i)
+        // {
+        //     uint seed = i * uint(gl_FragCoord.x * gl_FragCoord.y * uint_max_float);
+        //
+        //     Ray bounce_ray = Ray(vec3(record.position), vec3(random_on_hemisphere(record.normal, seed)));
+        //
+        //     if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
+        //     {
+        //         ray_color += record.color;
+        //         ++num_bounces;
+        //     }
+        //     else
+        //     {
+        //         // ray_color += skybox_color;
+        //         break;
+        //     }
+        // }
+        //
+        // out_color = ray_color / num_bounces;
 
-        for (int i = 0; i < max_bounces; ++i)
-        {
-            uint seed = i * uint(gl_FragCoord.x * gl_FragCoord.y * uint_max_float);
-
-            Ray bounce_ray = Ray(vec3(record.position), vec3(random_on_hemisphere(record.normal, seed)));
-
-            if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
-            {
-                ray_color += record.color;
-                ++num_bounces;
-            }
-        }
-
-        out_color = ray_color / num_bounces;
+        out_color = ray_color;
     }
     else
     {
-        out_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
+        out_color = skybox_color;
     }
 }
