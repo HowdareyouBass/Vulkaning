@@ -21,7 +21,7 @@ SkyboxRenderer::SkyboxRenderer(const Core &core, const Scene &scene) : r_core{co
     // m_skybox_cubemap = load_cube_map("assets/textures/cubemap_yokohama_rgba.ktx");
 
     m_resources.get_resource(ResourceIds::Skybox)
-        .write_image(core.device(), 0, scene.skybox_cubemap, scene.skybox_sampler.get());
+        .write_image(core.device(), 0, scene.skybox_cubemap, scene.skybox_cubemap.layout(), scene.skybox_sampler.get());
 
     m_quad = SimpleMesh::quad(core, colors::red);
     m_push_constants.vertex_buffer_address = m_quad.gpu_buffers.vertex_buffer_address;

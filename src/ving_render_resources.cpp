@@ -22,11 +22,11 @@ void RenderResource::write_buffer(vk::Device device, uint32_t binding, const vin
     device.updateDescriptorSets(write, nullptr);
 }
 void RenderResource::write_image(vk::Device device, uint32_t binding, const ving::Image2D &image,
-                                 vk::Sampler sampler) const
+                                 vk::ImageLayout layout, vk::Sampler sampler) const
 {
     assert(m_bindings.find(binding) != m_bindings.end());
 
-    auto info = vk::DescriptorImageInfo{}.setImageView(image.view()).setImageLayout(image.layout());
+    auto info = vk::DescriptorImageInfo{}.setImageView(image.view()).setImageLayout(layout);
 
     if (sampler != nullptr)
         info.sampler = sampler;

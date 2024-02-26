@@ -247,6 +247,9 @@ void main()
         // out_color = ray_color / num_bounces;
 
         out_color = ray_color;
+
+        // NOTE: If you wanna see normals
+        // out_color = vec4((record.normal + 1.0) * 0.5, 1.0);
     }
     else
     {

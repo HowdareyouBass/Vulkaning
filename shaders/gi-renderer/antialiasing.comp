@@ -1,0 +1,35 @@
+#version 450
+
+layout (local_size_x = 16, local_size_y = 16) in;
+
+layout (rgba16f, set = 0, binding = 0) uniform image2D image;
+layout (rgba16f, set = 0, binding = 1) uniform image2D out_image;
+
+void main()
+{
+    ivec2 texel_coord = ivec2(gl_GlobalInvocationID.xy);
+    ivec2 img_size = imageSize(image);
+    
+    if (texel_coord.x < img_size.x && texel_coord.y < img_size.y)
+    {
+        vec4 sum = vec4(0.0, 0.0, 0.0, 0.0);
+
+        for (int offset_x = -1; offset_x <= 1; offset_x++)
+        {
+            for (int offset_y = -1; offset_y <= 1; offset_y++)
+            {
+                int sample_x = texel_coord.x + offset_x;
+                int sample_y = texel_coord.y + offset_y;
+
+                if (sample_x >= 0 && sample_x < img_size.x && sample_y >= 0 && sample_y < img_size.y)
+                {
+                    sum += imageLoad(image, ivec2(sample_x, sample_y));
+                }
+            }
+        }
+    
+        vec4 blur = sum / 9.0;
+
+        imageStore(out_image, texel_coord, blur);
+    }
+}

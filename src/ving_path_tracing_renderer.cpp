@@ -1,5 +1,3 @@
-#include <cmath>
-
 #include <imgui.h>
 
 #include "ving_camera.hpp"
@@ -11,7 +9,7 @@
 
 namespace ving
 {
-PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
+PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene, vk::ImageView render_target)
 {
     m_push_constants.sphere_count = sphere_count;
 
@@ -28,14 +26,9 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
     m_spheres = std::span<Sphere>{static_cast<Sphere *>(m_sphere_buffer.data()),
                                   static_cast<Sphere *>(m_sphere_buffer.data()) + sphere_count};
 
-    // m_spheres[0].radius = 0.3f;
-    // m_spheres[1].radius = 0.5f;
-    //
-    // m_spheres[0].color = {1.0f, 0.0f, 0.0f, 1.0f};
-    // m_spheres[1].color = {0.0f, 1.0f, 0.0f, 1.0f};
-    //
-    // m_spheres[0].position = {0.5f, 0.0f, 1.0f};
-    // m_spheres[1].position = {-0.5f, 0.0f, 1.0f};
+    m_antialiasing_image =
+        core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eR16G16B16A16Sfloat,
+                            vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
 
     m_spheres[0].radius = 0.5f;
     m_spheres[0].color = {0.0f, 1.0f, 0.0f, 1.0f};
@@ -63,7 +56,8 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
                                                  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
     m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 0, m_sphere_buffer);
     m_resources.get_resource(RenderResourceIds::PathTracing)
-        .write_image(core.device(), 1, scene.skybox_cubemap, scene.skybox_sampler.get());
+        .write_image(core.device(), 1, scene.skybox_cubemap, vk::ImageLayout::eShaderReadOnlyOptimal,
+                     scene.skybox_sampler.get());
     m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 2, m_camera_info_buffer);
 
     m_quad = SimpleMesh::quad(core, glm::vec4{0.1f, 0.1f, 0.1f, 1.0f});
@@ -72,6 +66,27 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/bin/path_tracing.vert.spv", "shaders/bin/path_tracing.frag.spv", m_resources.layouts(),
         vk::Format::eR16G16B16A16Sfloat, vk::Format::eUndefined);
+
+    // Antialiasing
+    auto antialiasing_resource_infos = std::vector<RenderResourceCreateInfo>{
+        RenderResourceCreateInfo{
+            RenderResourceIds::Antialiasing,
+            {
+                {0, vk::DescriptorType::eStorageImage},
+                {1, vk::DescriptorType::eStorageImage},
+            },
+        },
+    };
+    m_antialiasing_resources =
+        core.allocate_render_resources(antialiasing_resource_infos, vk::ShaderStageFlagBits::eCompute);
+
+    m_antialiasing_resources.get_resource(RenderResourceIds::Antialiasing)
+        .write_image(core.device(), 0, render_target, vk::ImageLayout::eGeneral);
+    m_antialiasing_resources.get_resource(RenderResourceIds::Antialiasing)
+        .write_image(core.device(), 1, m_antialiasing_image, vk::ImageLayout::eGeneral);
+
+    m_antialiasing_pipeline = core.create_compute_render_pipelines<PushConstants>(m_antialiasing_resources.layouts(),
+                                                                                  "shaders/bin/antialiasing.comp.spv");
 }
 
 void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
@@ -101,6 +116,21 @@ void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const Per
     cmd.drawIndexed(m_quad.indices_count, 1, 0, 0, 0);
 
     cmd.endRendering();
+
+    img.transition_layout(cmd, vk::ImageLayout::eGeneral);
+    m_antialiasing_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
+
+    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_antialiasing_pipeline.pipeline.get());
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_antialiasing_pipeline.layout.get(), 0,
+                           m_antialiasing_resources.descriptors(), nullptr);
+    cmd.pushConstants<PushConstants>(m_antialiasing_pipeline.layout.get(), vk::ShaderStageFlagBits::eCompute, 0,
+                                     m_push_constants);
+
+    cmd.dispatch(std::ceil(img.extent().width / 16.0), std::ceil(img.extent().height / 16.0), 1);
+
+    img.transition_layout(cmd, vk::ImageLayout::eTransferDstOptimal);
+    m_antialiasing_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
+    m_antialiasing_image.copy_to(cmd, img);
 }
 
 std::function<void()> PathTracingRenderer::get_imgui() const

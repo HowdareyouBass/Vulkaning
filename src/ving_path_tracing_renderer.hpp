@@ -18,6 +18,7 @@ class PathTracingRenderer : public BaseRenderer
     enum RenderResourceIds : uint32_t
     {
         PathTracing,
+        Antialiasing,
     };
 
     struct PushConstants
@@ -36,7 +37,7 @@ class PathTracingRenderer : public BaseRenderer
     };
 
   public:
-    PathTracingRenderer(const Core &core, const Scene &scene);
+    PathTracingRenderer(const Core &core, const Scene &scene, vk::ImageView render_target);
 
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene);
     std::function<void()> get_imgui() const;
@@ -56,5 +57,9 @@ class PathTracingRenderer : public BaseRenderer
 
     RenderResources m_resources;
     Pipelines m_pipelines;
+
+    Image2D m_antialiasing_image;
+    RenderResources m_antialiasing_resources;
+    Pipelines m_antialiasing_pipeline;
 };
 } // namespace ving
