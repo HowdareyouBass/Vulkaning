@@ -117,20 +117,23 @@ void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const Per
 
     cmd.endRendering();
 
-    img.transition_layout(cmd, vk::ImageLayout::eGeneral);
-    m_antialiasing_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
+    if constexpr (enable_blur)
+    {
+        img.transition_layout(cmd, vk::ImageLayout::eGeneral);
+        m_antialiasing_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
 
-    cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_antialiasing_pipeline.pipeline.get());
-    cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_antialiasing_pipeline.layout.get(), 0,
-                           m_antialiasing_resources.descriptors(), nullptr);
-    cmd.pushConstants<PushConstants>(m_antialiasing_pipeline.layout.get(), vk::ShaderStageFlagBits::eCompute, 0,
-                                     m_push_constants);
+        cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_antialiasing_pipeline.pipeline.get());
+        cmd.bindDescriptorSets(vk::PipelineBindPoint::eCompute, m_antialiasing_pipeline.layout.get(), 0,
+                               m_antialiasing_resources.descriptors(), nullptr);
+        cmd.pushConstants<PushConstants>(m_antialiasing_pipeline.layout.get(), vk::ShaderStageFlagBits::eCompute, 0,
+                                         m_push_constants);
 
-    cmd.dispatch(std::ceil(img.extent().width / 16.0), std::ceil(img.extent().height / 16.0), 1);
+        cmd.dispatch(std::ceil(img.extent().width / 16.0), std::ceil(img.extent().height / 16.0), 1);
 
-    img.transition_layout(cmd, vk::ImageLayout::eTransferDstOptimal);
-    m_antialiasing_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
-    m_antialiasing_image.copy_to(cmd, img);
+        img.transition_layout(cmd, vk::ImageLayout::eTransferDstOptimal);
+        m_antialiasing_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
+        m_antialiasing_image.copy_to(cmd, img);
+    }
 }
 
 std::function<void()> PathTracingRenderer::get_imgui() const

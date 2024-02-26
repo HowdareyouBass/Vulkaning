@@ -6,7 +6,8 @@ layout (location = 1) in vec3 in_vpos;
 layout (location = 0) out vec4 out_color;
 
 const float infinite = 1.0 / 0.0;
-const float uint_max_float = 4294967295.0;
+// const float uint_max_float = 4294967295.0;
+const float uint_max_float = float(uint(0xffffffff));
 
 struct Plane
 {
@@ -55,9 +56,8 @@ uint pcg_hash(uint seed)
     return (word >> 22u) ^ word;
 }
 
-float random_float(inout uint seed)
+float random_float(uint seed)
 {
-    seed = pcg_hash(seed); 
     return float(pcg_hash(seed)) / uint_max_float;
 }
 
@@ -80,16 +80,24 @@ float length_squared(vec3 vec)
 {
     return vec.x*vec.x + vec.y*vec.y + vec.z*vec.z;
 }
-vec3 random_vec3(inout uint seed)
+vec3 random_vec3(uint seed)
 {
-    return vec3(random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0);
+    float x = random_float(seed);
+    seed = pcg_hash(seed);
+    float y = random_float(seed);
+    seed = pcg_hash(seed);
+    float z = random_float(seed);
+    seed = pcg_hash(seed);
+
+    return vec3(x, y, z);
+    // return vec3(random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0);
 }
-vec3 random_vec3_unit_sphere(inout uint seed)
+vec3 random_vec3_unit_sphere(uint seed)
 {
     vec3 p = random_vec3(seed);
     return normalize(p);
 }
-vec3 random_on_hemisphere(vec3 normal, inout uint seed)
+vec3 random_on_hemisphere(vec3 normal, uint seed)
 {
     vec3 unit = random_vec3_unit_sphere(seed);
     if (dot(unit, normal) > 0.0)
@@ -198,7 +206,7 @@ const vec3 sun_color = vec3(1.0, 1.0, 1.0);
 const int samples_per_pixel = 4;
 
 // Path tracing settings
-const int max_bounces = 10;
+const int max_bounces = 15;
 
 const vec3 plane_normal = vec3(0.0, 1.0, 0.0);
 const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0, 1.0));
@@ -224,27 +232,23 @@ void main()
     if (hit_closest_object_on_scene(ray, record, scene_plane))
     {
         vec4 ray_color = record.color;
-        // int num_bounces = 1;
-        //
-        // for (int i = 0; i < max_bounces; ++i)
-        // {
-        //     uint seed = i * uint(gl_FragCoord.x * gl_FragCoord.y * uint_max_float);
-        //
-        //     Ray bounce_ray = Ray(vec3(record.position), vec3(random_on_hemisphere(record.normal, seed)));
-        //
-        //     if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
-        //     {
-        //         ray_color += record.color;
-        //         ++num_bounces;
-        //     }
-        //     else
-        //     {
-        //         // ray_color += skybox_color;
-        //         break;
-        //     }
-        // }
-        //
-        // out_color = ray_color / num_bounces;
+
+        vec2 e0to1vpos = (in_vpos.xy + 1.0) * 0.5;
+        e0to1vpos = normalize(e0to1vpos);
+
+        // ray_color.xyz = (random_vec3_unit_sphere(seed) + 1.0) * 0.5;
+
+        for (int i = 0; i < max_bounces; ++i)
+        {
+            uint seed = uint(e0to1vpos.x * e0to1vpos.y * uint_max_float);
+
+            Ray bounce_ray = Ray(vec3(record.position), random_on_hemisphere(record.normal, seed));
+
+            if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
+            {
+                ray_color *= 0.5;
+            }
+        }
 
         out_color = ray_color;
 

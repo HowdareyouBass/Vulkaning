@@ -44,6 +44,7 @@ class PathTracingRenderer : public BaseRenderer
 
   private:
     constexpr static uint32_t sphere_count = 2;
+    constexpr static bool enable_blur = false;
 
     PushConstants m_push_constants;
 
