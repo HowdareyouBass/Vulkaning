@@ -239,17 +239,19 @@ void main()
 
     // Ray position in camera space
     vec3 center_quad_pos = in_vpos.x * camera_info.right + -in_vpos.y * camera_info.up;
-    vec3 rpos = camera_info.position + center_quad_pos;
-
+    // vec3 rpos = camera_info.position + center_quad_pos;
+    vec3 rpos = camera_info.position;
     // vec3 rpos = in_vpos;
     // rpos.y *= -1;
 
     vec3 rdir = camera_info.forward;
     // vec3 rdir = vec3(0.0, 0.0, 1.0);
 
-    Ray ray = Ray(rpos, rdir);
+    // Ray ray = Ray(rpos, rdir);
 
-    vec3 uvw = normalize(center_quad_pos + ray.direction);
+    vec3 uvw = normalize(center_quad_pos + rdir);
+
+    Ray ray = Ray(rpos, uvw);
 
     // Skybox
     float sun_strength = clamp(0.0, 1.0, dot(uvw, scene_data.light_direction.xyz) - 1.0 + sun_radius) * scene_data.light_direction.w;
