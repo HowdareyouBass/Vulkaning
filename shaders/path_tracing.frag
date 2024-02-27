@@ -81,11 +81,17 @@ uint pcg_hash(uint seed)
     return (word >> 22u) ^ word;
 }
 
-float random_float(uint seed)
+// Uniform
+float random_float(inout uint seed)
 {
     return float(pcg_hash(seed)) / uint_max_float;
 }
-
+float random_float_normaldist(inout uint seed)
+{
+    float theta = 2 * 3.141252653 * random_float(seed);
+    float rho = sqrt(-2 * log(random_float(seed)));
+    return rho * cos(theta);
+}
 
 struct Ray
 {
@@ -105,24 +111,21 @@ float length_squared(vec3 vec)
 {
     return vec.x*vec.x + vec.y*vec.y + vec.z*vec.z;
 }
-vec3 random_vec3(uint seed)
+vec3 random_vec3(inout uint seed)
 {
-    float x = random_float(seed);
-    seed = pcg_hash(seed);
-    float y = random_float(seed);
-    seed = pcg_hash(seed);
-    float z = random_float(seed);
-    seed = pcg_hash(seed);
+    float x = random_float_normaldist(seed);
+    float y = random_float_normaldist(seed);
+    float z = random_float_normaldist(seed);
 
     return vec3(x, y, z);
     // return vec3(random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0);
 }
-vec3 random_vec3_unit_sphere(uint seed)
+vec3 random_vec3_unit_sphere(inout uint seed)
 {
     vec3 p = random_vec3(seed);
     return normalize(p);
 }
-vec3 random_on_hemisphere(vec3 normal, uint seed)
+vec3 random_on_hemisphere(vec3 normal, inout uint seed)
 {
     vec3 unit = random_vec3_unit_sphere(seed);
     if (dot(unit, normal) > 0.0)
@@ -229,10 +232,10 @@ const float sun_radius = 0.2;
 const vec3 sun_color = vec3(1.0, 1.0, 1.0);
 // Anti aliasing
 const int antialiasing_radius = 1;
-const int samples_per_pixel = 10;
+const int samples_per_pixel = 15;
 
 // Path tracing settings
-const int max_bounces = 15;
+const int max_bounces = 5;
 
 const vec3 plane_normal = vec3(0.0, 1.0, 0.0);
 const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0, 1.0));
@@ -240,11 +243,11 @@ const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0
 void main()
 {
     vec4 sampled_color = vec4(0.0);
-    float diffuse_light = 0.0;
     for (uint ray_sample = 0; ray_sample < samples_per_pixel; ++ray_sample)
     {
-        float random_sample_x = (random_float(ray_sample) * 2.0 - 1.0) * antialiasing_radius;
-        float random_sample_y = (random_float(ray_sample * ray_sample) * 2.0 - 1.0) * antialiasing_radius;
+        uint seed = ray_sample;
+        float random_sample_x = (random_float(seed) * 2.0 - 1.0) * antialiasing_radius;
+        float random_sample_y = (random_float(seed) * 2.0 - 1.0) * antialiasing_radius;
         
         vec2 frag_coord_0to1 = vec2((gl_FragCoord.x + random_sample_x) / pc.viewport_width, (gl_FragCoord.y + random_sample_y) / pc.viewport_height);
         // vec2 frag_coord = vec2(((gl_FragCoord.x + random_sample_x) / pc.viewport_width) * 2.0 - 1.0, ((gl_FragCoord.y + random_sample_y) / pc.viewport_height) * 2.0 - 1.0);
@@ -265,22 +268,24 @@ void main()
 
             // ray_color.xyz = (random_vec3_unit_sphere(seed) + 1.0) * 0.5;
 
-            // for (int i = 0; i < max_bounces; ++i)
-            // {
-            //     uint seed = uint(frag_coord_norm.y * frag_coord_norm.y * uint_max_float);
-            //
-            //     Ray bounce_ray = Ray(vec3(record.position), random_on_hemisphere(record.normal, seed));
-            //
-            //     if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
-            //     {
-            //         ray_color *= 0.5;
-            //     }
-            // }
+            for (uint i = 0; i < max_bounces; ++i)
+            {
+                uint seed = pcg_hash(i);
+
+                Ray bounce_ray = Ray(vec3(record.position), random_on_hemisphere(record.normal, seed));
+
+                if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
+                {
+                    ray_color *= record.color;
+                }
+                else
+                {
+                    break;
+                }
+            }
     
-            diffuse_light = dot(scene_data.light_direction.xyz, record.normal);
-
+            // float diffuse_light = dot(scene_data.light_direction.xyz, record.normal);
             sampled_color += ray_color;
-
         }
         else
         {
@@ -291,7 +296,14 @@ void main()
         }
     }
 
-    out_color = sampled_color / samples_per_pixel * diffuse_light;
+    vec4 average_sample_color = sampled_color / samples_per_pixel;
+    out_color = average_sample_color;
+
+    // vec2 frag_coord_0to1 = vec2(gl_FragCoord.x / pc.viewport_width, gl_FragCoord.y / pc.viewport_height);
+    // vec2 frag_coord_norm = normalize(frag_coord_0to1);
+    //
+    // uint seed = uint(frag_coord_norm.x * frag_coord_norm.y * uint_max_float);
+    // out_color = vec4(random_vec3_unit_sphere(seed), 1.0);
 
     // vec2 frag_coord = vec2((gl_FragCoord.x / pc.viewport_width) * 2.0 - 1.0, (gl_FragCoord.y / pc.viewport_height) * 2.0 - 1.0);
 }
