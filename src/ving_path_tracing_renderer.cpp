@@ -30,13 +30,13 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene, v
         core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eR16G16B16A16Sfloat,
                             vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
 
-    m_spheres[0].radius = 0.5f;
+    m_spheres[0].radius = 2.5f;
     m_spheres[0].color = {0.0f, 1.0f, 0.0f, 1.0f};
-    m_spheres[0].position.z = 10.0f;
+    m_spheres[0].position = {-2.0f, 3.0f, 10.0f};
 
-    m_spheres[1].radius = 0.3f;
+    m_spheres[1].radius = 1.3f;
     m_spheres[1].color = {0.0f, 0.0f, 1.0f, 1.0f};
-    m_spheres[1].position.z = 10.0f;
+    m_spheres[1].position = {4.0f, 3.0f, 10.0f};
 
     m_camera_info_buffer =
         core.create_cpu_visible_gpu_buffer(sizeof(CameraInfo), vk::BufferUsageFlagBits::eUniformBuffer);
@@ -152,8 +152,8 @@ std::function<void()> PathTracingRenderer::get_imgui() const
         {
             ImGui::Text("%s", std::format("Sphere #{}", i).c_str());
             ImGui::DragFloat3(std::format("Position ##{}", i).c_str(),
-                              reinterpret_cast<float *>(&m_spheres[i].position), 0.01f, -1.0f, 1.0f);
-            ImGui::DragFloat(std::format("Radius ##{}", i).c_str(), &m_spheres[i].radius, 0.005f, 0.0f, 1.0f);
+                              reinterpret_cast<float *>(&m_spheres[i].position), 0.01f);
+            ImGui::DragFloat(std::format("Radius ##{}", i).c_str(), &m_spheres[i].radius, 0.005f);
             ImGui::ColorEdit4(std::format("Color ##{}", i).c_str(), reinterpret_cast<float *>(&m_spheres[i].color));
         }
     };

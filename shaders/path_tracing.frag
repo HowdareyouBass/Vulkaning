@@ -240,13 +240,16 @@ const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0
 void main()
 {
     vec4 sampled_color = vec4(0.0);
+    float diffuse_light = 0.0;
     for (uint ray_sample = 0; ray_sample < samples_per_pixel; ++ray_sample)
     {
         float random_sample_x = (random_float(ray_sample) * 2.0 - 1.0) * antialiasing_radius;
         float random_sample_y = (random_float(ray_sample * ray_sample) * 2.0 - 1.0) * antialiasing_radius;
         
-        vec2 frag_coord = vec2(((gl_FragCoord.x + random_sample_x) / pc.viewport_width) * 2.0 - 1.0, ((gl_FragCoord.y + random_sample_y) / pc.viewport_height) * 2.0 - 1.0);
-        vec3 center_quad_pos = frag_coord.x * camera_info.right + -frag_coord.y * camera_info.up;
+        vec2 frag_coord_0to1 = vec2((gl_FragCoord.x + random_sample_x) / pc.viewport_width, (gl_FragCoord.y + random_sample_y) / pc.viewport_height);
+        // vec2 frag_coord = vec2(((gl_FragCoord.x + random_sample_x) / pc.viewport_width) * 2.0 - 1.0, ((gl_FragCoord.y + random_sample_y) / pc.viewport_height) * 2.0 - 1.0);
+        vec2 frag_coord_min1to1 = frag_coord_0to1 * 2.0 - 1.0;
+        vec3 center_quad_pos = frag_coord_min1to1.x * camera_info.right + -frag_coord_min1to1.y * camera_info.up;
         vec3 rpos = camera_info.position;
 
         vec3 rdir = camera_info.forward;
@@ -258,15 +261,13 @@ void main()
         if (hit_closest_object_on_scene(ray, record, scene_plane))
         {
             vec4 ray_color = record.color;
-
-            vec2 vpos0to1 = (in_vpos.xy + 1.0) * 0.5;
-            vpos0to1 = normalize(vpos0to1);
+            vec2 frag_coord_norm = normalize(frag_coord_0to1);
 
             // ray_color.xyz = (random_vec3_unit_sphere(seed) + 1.0) * 0.5;
 
             // for (int i = 0; i < max_bounces; ++i)
             // {
-            //     uint seed = uint(vpos0to1.x * vpos0to1.y * uint_max_float);
+            //     uint seed = uint(frag_coord_norm.y * frag_coord_norm.y * uint_max_float);
             //
             //     Ray bounce_ray = Ray(vec3(record.position), random_on_hemisphere(record.normal, seed));
             //
@@ -275,6 +276,8 @@ void main()
             //         ray_color *= 0.5;
             //     }
             // }
+    
+            diffuse_light = dot(scene_data.light_direction.xyz, record.normal);
 
             sampled_color += ray_color;
 
@@ -287,7 +290,8 @@ void main()
             sampled_color += skybox_color;
         }
     }
-    out_color = sampled_color / samples_per_pixel;
+
+    out_color = sampled_color / samples_per_pixel * diffuse_light;
 
     // vec2 frag_coord = vec2((gl_FragCoord.x / pc.viewport_width) * 2.0 - 1.0, (gl_FragCoord.y / pc.viewport_height) * 2.0 - 1.0);
 }
