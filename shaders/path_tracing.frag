@@ -7,7 +7,8 @@ layout (location = 0) out vec4 out_color;
 
 const float infinite = 1.0 / 0.0;
 // const float uint_max_float = 4294967295.0;
-const float uint_max_float = float(uint(0xffffffff));
+const uint uint_max = uint(0xffffffff);
+const float uint_max_float = float(uint_max);
 
 struct Plane
 {
@@ -33,7 +34,8 @@ layout (push_constant) uniform constants
 {
     int sphere_count;
     vec2 vertex_buffer; // WARN: Don't use it
-    vec2 dummy;
+    float viewport_width;
+    float viewport_height;
 } pc;
 
 struct CameraInfo
@@ -226,7 +228,8 @@ bool hit_closest_object_on_scene(Ray ray, out HitRecord record, Plane plane)
 const float sun_radius = 0.2;
 const vec3 sun_color = vec3(1.0, 1.0, 1.0);
 // Anti aliasing
-const int samples_per_pixel = 4;
+const int antialiasing_radius = 1;
+const int samples_per_pixel = 10;
 
 // Path tracing settings
 const int max_bounces = 15;
@@ -236,58 +239,55 @@ const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0
 
 void main()
 {
-
-    // Ray position in camera space
-    vec3 center_quad_pos = in_vpos.x * camera_info.right + -in_vpos.y * camera_info.up;
-    // vec3 rpos = camera_info.position + center_quad_pos;
-    vec3 rpos = camera_info.position;
-    // vec3 rpos = in_vpos;
-    // rpos.y *= -1;
-
-    vec3 rdir = camera_info.forward;
-    // vec3 rdir = vec3(0.0, 0.0, 1.0);
-
-    // Ray ray = Ray(rpos, rdir);
-
-    vec3 uvw = normalize(center_quad_pos + rdir);
-
-    Ray ray = Ray(rpos, uvw);
-
-    // Skybox
-    float sun_strength = clamp(0.0, 1.0, dot(uvw, scene_data.light_direction.xyz) - 1.0 + sun_radius) * scene_data.light_direction.w;
-
-    HitRecord record;
-
-    vec4 skybox_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
-
-    if (hit_closest_object_on_scene(ray, record, scene_plane))
+    vec4 sampled_color = vec4(0.0);
+    for (uint ray_sample = 0; ray_sample < samples_per_pixel; ++ray_sample)
     {
-        vec4 ray_color = record.color;
+        float random_sample_x = (random_float(ray_sample) * 2.0 - 1.0) * antialiasing_radius;
+        float random_sample_y = (random_float(ray_sample * ray_sample) * 2.0 - 1.0) * antialiasing_radius;
+        
+        vec2 frag_coord = vec2(((gl_FragCoord.x + random_sample_x) / pc.viewport_width) * 2.0 - 1.0, ((gl_FragCoord.y + random_sample_y) / pc.viewport_height) * 2.0 - 1.0);
+        vec3 center_quad_pos = frag_coord.x * camera_info.right + -frag_coord.y * camera_info.up;
+        vec3 rpos = camera_info.position;
 
-        vec2 vpos0to1 = (in_vpos.xy + 1.0) * 0.5;
-        vpos0to1 = normalize(vpos0to1);
+        vec3 rdir = camera_info.forward;
+        vec3 uvw = normalize(center_quad_pos + rdir);
 
-        // ray_color.xyz = (random_vec3_unit_sphere(seed) + 1.0) * 0.5;
+        Ray ray = Ray(rpos, uvw);
+        HitRecord record;
 
-        // for (int i = 0; i < max_bounces; ++i)
-        // {
-        //     uint seed = uint(vpos0to1.x * vpos0to1.y * uint_max_float);
-        //
-        //     Ray bounce_ray = Ray(vec3(record.position), random_on_hemisphere(record.normal, seed));
-        //
-        //     if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
-        //     {
-        //         ray_color *= 0.5;
-        //     }
-        // }
+        if (hit_closest_object_on_scene(ray, record, scene_plane))
+        {
+            vec4 ray_color = record.color;
 
-        out_color = ray_color;
+            vec2 vpos0to1 = (in_vpos.xy + 1.0) * 0.5;
+            vpos0to1 = normalize(vpos0to1);
 
-        // NOTE: If you wanna see normals
-        // out_color = vec4((record.normal + 1.0) * 0.5, 1.0);
+            // ray_color.xyz = (random_vec3_unit_sphere(seed) + 1.0) * 0.5;
+
+            // for (int i = 0; i < max_bounces; ++i)
+            // {
+            //     uint seed = uint(vpos0to1.x * vpos0to1.y * uint_max_float);
+            //
+            //     Ray bounce_ray = Ray(vec3(record.position), random_on_hemisphere(record.normal, seed));
+            //
+            //     if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
+            //     {
+            //         ray_color *= 0.5;
+            //     }
+            // }
+
+            sampled_color += ray_color;
+
+        }
+        else
+        {
+            // Skybox
+            float sun_strength = clamp(0.0, 1.0, dot(uvw, scene_data.light_direction.xyz) - 1.0 + sun_radius) * scene_data.light_direction.w;
+            vec4 skybox_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
+            sampled_color += skybox_color;
+        }
     }
-    else
-    {
-        out_color = skybox_color;
-    }
+    out_color = sampled_color / samples_per_pixel;
+
+    // vec2 frag_coord = vec2((gl_FragCoord.x / pc.viewport_width) * 2.0 - 1.0, (gl_FragCoord.y / pc.viewport_height) * 2.0 - 1.0);
 }

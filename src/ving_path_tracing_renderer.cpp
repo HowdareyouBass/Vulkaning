@@ -112,6 +112,9 @@ void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const Per
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors(),
                            nullptr);
 
+    m_push_constants.viewport_width = img.extent().width;
+    m_push_constants.viewport_height = img.extent().height;
+
     cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                      m_push_constants);

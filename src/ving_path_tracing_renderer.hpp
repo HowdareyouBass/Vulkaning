@@ -25,7 +25,8 @@ class PathTracingRenderer : public BaseRenderer
     {
         int sphere_count;
         vk::DeviceAddress vertex_buffer;
-        glm::vec2 dummy;
+        float viewport_width;
+        float viewport_height;
     };
 
     struct Sphere
