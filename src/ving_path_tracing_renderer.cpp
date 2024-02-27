@@ -43,12 +43,18 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene, v
     m_camera_info_buffer.map_data();
     m_camera_info = static_cast<CameraInfo *>(m_camera_info_buffer.data());
 
+    m_scene_data_buffer =
+        core.create_cpu_visible_gpu_buffer(sizeof(SceneData), vk::BufferUsageFlagBits::eUniformBuffer);
+    m_scene_data_buffer.map_data();
+    m_scene_data = static_cast<SceneData *>(m_scene_data_buffer.data());
+
     auto resource_infos = std::vector<RenderResourceCreateInfo>{
         RenderResourceCreateInfo{RenderResourceIds::PathTracing,
                                  {
                                      {0, vk::DescriptorType::eStorageBuffer},
                                      {1, vk::DescriptorType::eCombinedImageSampler},
                                      {2, vk::DescriptorType::eUniformBuffer},
+                                     {3, vk::DescriptorType::eUniformBuffer},
                                  }},
     };
 
@@ -59,6 +65,7 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene, v
         .write_image(core.device(), 1, scene.skybox_cubemap, vk::ImageLayout::eShaderReadOnlyOptimal,
                      scene.skybox_sampler.get());
     m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 2, m_camera_info_buffer);
+    m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 3, m_scene_data_buffer);
 
     m_quad = SimpleMesh::quad(core, glm::vec4{0.1f, 0.1f, 0.1f, 1.0f});
     m_push_constants.vertex_buffer = m_quad.gpu_buffers.vertex_buffer_address;
@@ -92,8 +99,7 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene, v
 void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
                                  const Scene &scene)
 {
-    m_push_constants.light_direction = scene.light_direction;
-
+    m_scene_data->light_direction = scene.light_direction;
     *m_camera_info = camera.camera_info();
 
     vk::CommandBuffer cmd = frame.cmd;

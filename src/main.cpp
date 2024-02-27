@@ -141,7 +141,7 @@ void run_application()
                 path_tracing_renderer.render(frame, camera, scene);
                 // gi_renderer.render(frame, camera, scene);
             }
-            imgui_renderer.render(frame, profiler, {path_tracing_renderer.get_imgui()});
+            imgui_renderer.render(frame, profiler, {scene.get_imgui(), path_tracing_renderer.get_imgui()});
         }
         frames.end_frame(profiler);
     }

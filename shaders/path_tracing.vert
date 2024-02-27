@@ -20,10 +20,9 @@ layout (buffer_reference, std430) readonly buffer VertexBuffer
 
 layout (push_constant) uniform constants
 {
+    int sphere_count;
     VertexBuffer vertex_buffer;
     vec2 dummy;
-    vec4 light_direction;
-    int sphere_count;
 } pc;
 
 struct CameraInfo

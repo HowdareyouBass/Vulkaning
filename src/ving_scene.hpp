@@ -2,8 +2,10 @@
 
 #include "glm/geometric.hpp"
 #include "ving_image.hpp"
+#include <functional>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
+#include <imgui.h>
 
 namespace ving
 {
@@ -14,5 +16,12 @@ struct Scene
 
     Image2D skybox_cubemap;
     vk::UniqueSampler skybox_sampler;
+
+    std::function<void()> get_imgui()
+    {
+        return [this]() {
+            ImGui::DragFloat3("Light Direction", reinterpret_cast<float *>(&light_direction), 0.01f, -1.0f, 1.0f);
+        };
+    }
 };
 } // namespace ving

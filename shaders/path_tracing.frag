@@ -31,12 +31,35 @@ layout (set = 0, binding = 1) uniform samplerCube sampler_cube_map;
 
 layout (push_constant) uniform constants
 {
+    int sphere_count;
     vec2 vertex_buffer; // WARN: Don't use it
     vec2 dummy;
-    vec4 light_direction;
-    int sphere_count;
 } pc;
 
+struct CameraInfo
+{
+    vec3 forward;
+    float dummy0;
+    vec3 up;
+    float dummy1;
+    vec3 right;
+    float dummy2;
+    vec3 position;
+    float dummy3;
+};
+layout (set = 0, binding = 2) uniform CameraInfoBuffer
+{
+    CameraInfo camera_info;
+};
+
+struct SceneData
+{
+    vec4 light_direction;
+};
+layout (set = 0, binding = 3) uniform SceneDataBuffer
+{
+    SceneData scene_data;
+};
 
 uint Hash(uint s)
 {
@@ -213,17 +236,23 @@ const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0
 
 void main()
 {
-    vec3 rpos = vec3(0.0, 0.0, 0.0);
 
-    Ray ray = Ray(in_vpos, vec3(0.0, 0.0, 1.0));
-    // Ray ray = Ray(rpos, vec3(gl_FragCoord.xy, -1.0));
-    ray.position.y *= -1;
-    vec3 uvw = normalize(ray.position + ray.direction);
-    // vec3 uvw = ray.direction;
-    // ray.position += camera_info.position;
+    // Ray position in camera space
+    vec3 center_quad_pos = in_vpos.x * camera_info.right + -in_vpos.y * camera_info.up;
+    vec3 rpos = camera_info.position + center_quad_pos;
+
+    // vec3 rpos = in_vpos;
+    // rpos.y *= -1;
+
+    vec3 rdir = camera_info.forward;
+    // vec3 rdir = vec3(0.0, 0.0, 1.0);
+
+    Ray ray = Ray(rpos, rdir);
+
+    vec3 uvw = normalize(center_quad_pos + ray.direction);
 
     // Skybox
-    float sun_strength = clamp(0.0, 1.0, dot(uvw, pc.light_direction.xyz) - 1.0 + sun_radius) * pc.light_direction.w;
+    float sun_strength = clamp(0.0, 1.0, dot(uvw, scene_data.light_direction.xyz) - 1.0 + sun_radius) * scene_data.light_direction.w;
 
     HitRecord record;
 
@@ -233,22 +262,22 @@ void main()
     {
         vec4 ray_color = record.color;
 
-        vec2 e0to1vpos = (in_vpos.xy + 1.0) * 0.5;
-        e0to1vpos = normalize(e0to1vpos);
+        vec2 vpos0to1 = (in_vpos.xy + 1.0) * 0.5;
+        vpos0to1 = normalize(vpos0to1);
 
         // ray_color.xyz = (random_vec3_unit_sphere(seed) + 1.0) * 0.5;
 
-        for (int i = 0; i < max_bounces; ++i)
-        {
-            uint seed = uint(e0to1vpos.x * e0to1vpos.y * uint_max_float);
-
-            Ray bounce_ray = Ray(vec3(record.position), random_on_hemisphere(record.normal, seed));
-
-            if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
-            {
-                ray_color *= 0.5;
-            }
-        }
+        // for (int i = 0; i < max_bounces; ++i)
+        // {
+        //     uint seed = uint(vpos0to1.x * vpos0to1.y * uint_max_float);
+        //
+        //     Ray bounce_ray = Ray(vec3(record.position), random_on_hemisphere(record.normal, seed));
+        //
+        //     if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
+        //     {
+        //         ray_color *= 0.5;
+        //     }
+        // }
 
         out_color = ray_color;
 

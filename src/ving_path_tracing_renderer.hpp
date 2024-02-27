@@ -23,10 +23,9 @@ class PathTracingRenderer : public BaseRenderer
 
     struct PushConstants
     {
+        int sphere_count;
         vk::DeviceAddress vertex_buffer;
         glm::vec2 dummy;
-        glm::vec4 light_direction;
-        int sphere_count;
     };
 
     struct Sphere
@@ -34,6 +33,10 @@ class PathTracingRenderer : public BaseRenderer
         glm::vec3 position;
         float radius;
         glm::vec4 color;
+    };
+    struct SceneData
+    {
+        glm::vec4 light_direction;
     };
 
   public:
@@ -55,6 +58,9 @@ class PathTracingRenderer : public BaseRenderer
 
     GPUBuffer m_camera_info_buffer;
     CameraInfo *m_camera_info;
+
+    GPUBuffer m_scene_data_buffer;
+    SceneData *m_scene_data;
 
     RenderResources m_resources;
     Pipelines m_pipelines;
