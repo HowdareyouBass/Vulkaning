@@ -4,11 +4,20 @@
 
 namespace ving
 {
-ScopedTask::ScopedTask(Profiler &profiler, std::string_view name) : r_profiler{profiler}, m_name{name}
+ScopedTask::ScopedTask(Profiler &profiler, std::string_view name) : m_task{profiler, name}
+{
+}
+ScopedTask::~ScopedTask()
+{
+    m_task.stop();
+}
+
+Task::Task(Profiler &profiler, std::string_view name) : r_profiler{profiler}, m_name{name}
 {
     m_start = clock::now();
 }
-ScopedTask::~ScopedTask()
+
+void Task::stop()
 {
     m_end = clock::now();
 

@@ -58,6 +58,9 @@ void run_application()
     {
         glm::vec3 camera_direction{0.0f, 0.0f, 0.0f};
         glm::vec3 camera_rotate_dir{0.0f, 0.0f, 0.0f};
+        float mouse_x = 0, mouse_y = 0;
+        Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+
         while (SDL_PollEvent(&event))
         {
             switch (event.type)
@@ -96,8 +99,6 @@ void run_application()
             camera_rotate_dir.y -= 1.0f;
 
         // NOTE: This method freaks out if you have too much fps
-        float mouse_x = 0, mouse_y = 0;
-        Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
         float halfwidth = static_cast<float>(core.get_window_extent().width) / 2.0f;
         float halfheight = static_cast<float>(core.get_window_extent().height) / 2.0f;
         if ((mouse_buttons & SDL_BUTTON_RMASK) != 0)
@@ -118,6 +119,7 @@ void run_application()
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame(profiler);
         {
+            auto task = profiler.start_scoped_task("Camera update");
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera.move_speed;
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera.move_speed;
             camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera.move_speed;

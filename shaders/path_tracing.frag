@@ -232,7 +232,7 @@ const float sun_radius = 0.2;
 const vec3 sun_color = vec3(1.0, 1.0, 1.0);
 // Anti aliasing
 const int antialiasing_radius = 1;
-const int samples_per_pixel = 15;
+const int samples_per_pixel = 5;
 
 // Path tracing settings
 const int max_bounces = 5;

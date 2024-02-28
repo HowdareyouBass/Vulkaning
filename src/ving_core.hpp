@@ -199,6 +199,45 @@ class Core
         return BaseRenderer::Pipelines{std::move(pipeline_res.value), std::move(layout)};
     }
 
+    BaseRenderer::Pipelines create_ray_tracing_pipelines(std::string_view closest_hit_shader_path,
+                                                         std::string_view miss_shader_path,
+                                                         std::string_view any_hit_shader_path,
+                                                         uint32_t max_ray_recursion)
+    {
+        auto closest_hit_shader = utils::create_shader_module(m_device.get(), closest_hit_shader_path);
+        auto miss_shader = utils::create_shader_module(m_device.get(), miss_shader_path);
+        auto any_hit_shader = utils::create_shader_module(m_device.get(), any_hit_shader_path);
+
+        auto shader_stages = std::vector<vk::PipelineShaderStageCreateInfo>{
+            vk::PipelineShaderStageCreateInfo{}
+                .setStage(vk::ShaderStageFlagBits::eAnyHitKHR)
+                .setModule(any_hit_shader.get())
+                .setPName("main"),
+
+            vk::PipelineShaderStageCreateInfo{}
+                .setStage(vk::ShaderStageFlagBits::eMissKHR)
+                .setModule(miss_shader.get())
+                .setPName("main"),
+
+            vk::PipelineShaderStageCreateInfo{}
+                .setStage(vk::ShaderStageFlagBits::eClosestHitKHR)
+                .setModule(closest_hit_shader.get())
+                .setPName("main"),
+        };
+
+        auto library_info = vk::PipelineLibraryCreateInfoKHR{};
+        auto shader_group = vk::RayTracingShaderGroupCreateInfoKHR{vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
+                                                                   vk::ShaderUnusedKHR, 2, 0, vk::ShaderUnusedKHR};
+
+        auto pipeline_info = vk::RayTracingPipelineCreateInfoKHR{{}, shader_stages, shader_group, max_ray_recursion};
+
+        auto deffered_operation = m_device->createDeferredOperationKHRUnique();
+
+        auto pipeline_res = m_device->createRayTracingPipelineKHRUnique(deffered_operation.get(), {}, pipeline_info);
+
+        // return BaseRenderer::Pipelines{std::move(pipeline_res), std::move(layout)};
+    }
+
   public:
     vk::PhysicalDeviceMemoryProperties memory_properties;
 

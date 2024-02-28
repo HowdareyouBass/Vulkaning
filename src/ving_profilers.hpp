@@ -6,6 +6,37 @@
 namespace ving
 {
 class Profiler;
+
+struct TaskInfo final
+{
+    std::string_view name;
+    std::chrono::duration<float> duration;
+};
+
+class Task final
+{
+    using clock = std::chrono::system_clock;
+
+  public:
+    Task(Profiler &profiler, std::string_view name);
+
+    ~Task() = default;
+    Task(const Task &) = delete;
+    Task &operator=(const Task &) = delete;
+    Task(Task &&) = delete;
+    Task &operator=(Task &&) = delete;
+
+    void stop();
+
+  private:
+    Profiler &r_profiler;
+
+    std::string_view m_name;
+
+    clock::time_point m_start;
+    clock::time_point m_end;
+};
+
 class ScopedTask final
 {
     using clock = std::chrono::system_clock;
@@ -20,24 +51,13 @@ class ScopedTask final
     ScopedTask &operator=(ScopedTask &&) = delete;
 
   private:
-    Profiler &r_profiler;
-
-    std::string_view m_name;
-
-    clock::time_point m_start;
-    clock::time_point m_end;
-};
-
-struct TaskInfo
-{
-    std::string_view name;
-    std::chrono::duration<float> duration;
+    Task m_task;
 };
 
 class Profiler final
 {
   public:
-    ScopedTask start_scoped_task(std::string_view name);
+    [[nodiscard]] ScopedTask start_scoped_task(std::string_view name);
 
     void end_task(TaskInfo info);
     void flush();

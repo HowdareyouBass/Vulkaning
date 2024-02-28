@@ -50,4 +50,8 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
 
     cmd.endRendering();
 }
+std::function<void()> GiRenderer::get_imgui()
+{
+    return []() {};
+}
 } // namespace ving

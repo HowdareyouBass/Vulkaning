@@ -26,6 +26,7 @@ class GiRenderer : public BaseRenderer
     GiRenderer(const Core &core);
 
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene);
+    std::function<void()> get_imgui();
 
   private:
     const Core &r_core;
