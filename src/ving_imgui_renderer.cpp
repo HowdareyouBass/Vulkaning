@@ -36,6 +36,9 @@ ImGuiRenderer::ImGuiRenderer(const Core &core, SDL_Window *window)
 
     ImGui_ImplVulkan_CreateFontsTexture();
     ImGui_ImplVulkan_DestroyFontsTexture();
+
+    ImGui_ImplVulkan_NewFrame();
+    ImGui_ImplSDL3_NewFrame();
 }
 
 ImGuiRenderer::~ImGuiRenderer()
@@ -45,8 +48,7 @@ ImGuiRenderer::~ImGuiRenderer()
 void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, Profiler &profiler,
                            const std::vector<std::function<void()>> &imgui_frames)
 {
-    ImGui_ImplVulkan_NewFrame();
-    ImGui_ImplSDL3_NewFrame();
+    Task imgui_render{profiler, "ImGui Render"};
     ImGui::NewFrame();
 
     ImGui::Begin("Profile");
@@ -90,6 +92,7 @@ void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, Profiler &profi
     cmd.beginRendering(render_info);
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
     cmd.endRendering();
+    imgui_render.stop();
 }
 
 void ImGuiRenderer::process_sdl_event(const SDL_Event &event)

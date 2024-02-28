@@ -47,6 +47,7 @@ class RenderFrames
     void end_frame(Profiler &profiler);
 
     vk::ImageView draw_image_view() { return m_draw_image.view(); }
+    [[nodiscard]] uint64_t frame_number() const noexcept { return m_frame_number; }
 
   private:
     // HACK: I don't need this to be copyable or movable for now so i will stick to reference

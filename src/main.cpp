@@ -58,8 +58,6 @@ void run_application()
     {
         glm::vec3 camera_direction{0.0f, 0.0f, 0.0f};
         glm::vec3 camera_rotate_dir{0.0f, 0.0f, 0.0f};
-        float mouse_x = 0, mouse_y = 0;
-        Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
         while (SDL_PollEvent(&event))
         {
@@ -99,6 +97,13 @@ void run_application()
             camera_rotate_dir.y -= 1.0f;
 
         // NOTE: This method freaks out if you have too much fps
+        // Because if you have too much fps mouse moves very little every frame
+        // And SDL doesn't have precision to calculate that
+        // FIXME: Fix it later
+
+        float mouse_x = 0, mouse_y = 0;
+        Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+
         float halfwidth = static_cast<float>(core.get_window_extent().width) / 2.0f;
         float halfheight = static_cast<float>(core.get_window_extent().height) / 2.0f;
         if ((mouse_buttons & SDL_BUTTON_RMASK) != 0)
@@ -106,6 +111,8 @@ void run_application()
             float mouse_x_relative_to_center = mouse_x - halfwidth;
             float mouse_y_relative_to_center = mouse_y - halfheight;
 
+            // camera_rotate_dir.y += (mouse_x_relative_to_center > 0) - (mouse_x_relative_to_center < 0);
+            // camera_rotate_dir.x += (mouse_y_relative_to_center > 0) - (mouse_y_relative_to_center < 0);
             camera_rotate_dir.y += mouse_x_relative_to_center;
             camera_rotate_dir.x += mouse_y_relative_to_center;
 
@@ -119,7 +126,8 @@ void run_application()
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame(profiler);
         {
-            auto task = profiler.start_scoped_task("Camera update");
+            ving::Task camera_update{profiler, "Camera Update"};
+
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera.move_speed;
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera.move_speed;
             camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera.move_speed;
@@ -133,17 +141,17 @@ void run_application()
                 camera.rotation.y = glm::mod(camera.rotation.y, glm::two_pi<float>());
             }
             camera.update();
+            camera_update.stop();
 
+            ving::Task recording{profiler, "Recording"};
             // cube_renderer.render(frame, camera);
             // imgui_renderer.render(frame, []() {});
-            {
-                auto task = profiler.start_scoped_task("Recording");
-                // skybox_renderer.render(frame, camera, scene);
-                // water_renderer.render(frame, camera, scene);
-                path_tracing_renderer.render(frame, camera, scene);
-                // gi_renderer.render(frame, camera, scene);
-            }
+            // skybox_renderer.render(frame, camera, scene);
+            // water_renderer.render(frame, camera, scene);
+            path_tracing_renderer.render(frame, camera, scene);
+            // gi_renderer.render(frame, camera, scene);
             imgui_renderer.render(frame, profiler, {scene.get_imgui(), path_tracing_renderer.get_imgui()});
+            recording.stop();
         }
         frames.end_frame(profiler);
     }
