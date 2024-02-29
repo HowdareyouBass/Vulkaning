@@ -15,6 +15,11 @@ Core::Core(SDL_Window *window)
     SDL_GetWindowSize(window, &width, &height);
     m_window_extent = vk::Extent2D{static_cast<uint32_t>(width), static_cast<uint32_t>(height)};
 
+    m_required_device_extensions = {
+        VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
+        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    };
+
     if constexpr (enable_validation_layers)
     {
         m_required_instance_layers.push_back("VK_LAYER_KHRONOS_validation");

@@ -32,10 +32,12 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene, v
 
     m_spheres[0].radius = 2.5f;
     m_spheres[0].color = {0.0f, 1.0f, 0.0f, 1.0f};
+    m_spheres[0].color = {1.0f, 1.0f, 1.0f, 1.0f};
     m_spheres[0].position = {-2.0f, 3.0f, 10.0f};
 
     m_spheres[1].radius = 1.3f;
     m_spheres[1].color = {0.0f, 0.0f, 1.0f, 1.0f};
+    m_spheres[1].color = {1.0f, 1.0f, 1.0f, 1.0f};
     m_spheres[1].position = {4.0f, 3.0f, 10.0f};
 
     m_camera_info_buffer =

@@ -151,6 +151,7 @@ vktypes::Swapchain create_swapchain(vk::PhysicalDevice physical_device, vk::Devi
 
     // HARD: Other present modes
     //
+    // vk::PresentModeKHR present_mode = vk::PresentModeKHR::eSharedDemandRefresh;
     vk::PresentModeKHR present_mode = vk::PresentModeKHR::eFifo;
     // vk::PresentModeKHR present_mode = vk::PresentModeKHR::eImmediate;
 

@@ -46,6 +46,7 @@ class Core
     Image2D create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
                            vk::ImageLayout layout = vk::ImageLayout::eUndefined, uint32_t mip = 1, uint32_t layers = 1,
                            vk::ImageCreateFlags flags = {}) const;
+    // TODO:
     // Image2D load_image2d(std::string_view filepath, vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
     //                      vk::ImageLayout layout, uint32_t mip, uint32_t layers, vk::ImageCreateFlags flags) const;
     vk::UniqueSampler create_sampler(uint32_t mip_levels) const;
@@ -225,11 +226,12 @@ class Core
                 .setPName("main"),
         };
 
-        auto library_info = vk::PipelineLibraryCreateInfoKHR{};
         auto shader_group = vk::RayTracingShaderGroupCreateInfoKHR{vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
                                                                    vk::ShaderUnusedKHR, 2, 0, vk::ShaderUnusedKHR};
+        auto raytracing_ingerface_info = vk::RayTracingPipelineInterfaceCreateInfoKHR{};
 
-        auto pipeline_info = vk::RayTracingPipelineCreateInfoKHR{{}, shader_stages, shader_group, max_ray_recursion};
+        auto pipeline_info =
+            vk::RayTracingPipelineCreateInfoKHR{{}, shader_stages, shader_group, max_ray_recursion, {}};
 
         auto deffered_operation = m_device->createDeferredOperationKHRUnique();
 
@@ -242,10 +244,9 @@ class Core
     vk::PhysicalDeviceMemoryProperties memory_properties;
 
   private:
-    std::vector<const char *> m_required_instance_layers{};
-    std::vector<const char *> m_required_instance_extensions{};
-    std::vector<const char *> m_required_device_extensions{VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
-                                                           VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    std::vector<const char *> m_required_instance_layers;
+    std::vector<const char *> m_required_instance_extensions;
+    std::vector<const char *> m_required_device_extensions;
 
     vk::Extent2D m_window_extent;
 

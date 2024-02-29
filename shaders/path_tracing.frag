@@ -84,7 +84,8 @@ uint pcg_hash(uint seed)
 // Uniform
 float random_float(inout uint seed)
 {
-    return float(pcg_hash(seed)) / uint_max_float;
+    seed = pcg_hash(seed);
+    return float(seed) / uint_max_float;
 }
 float random_float_normaldist(inout uint seed)
 {
@@ -113,17 +114,25 @@ float length_squared(vec3 vec)
 }
 vec3 random_vec3(inout uint seed)
 {
-    float x = random_float_normaldist(seed);
-    float y = random_float_normaldist(seed);
-    float z = random_float_normaldist(seed);
+    // float x = random_float_normaldist(seed);
+    // float y = random_float_normaldist(seed);
+    // float z = random_float_normaldist(seed);
+    float x = random_float(seed) * 2.0 - 1.0;
+    float y = random_float(seed) * 2.0 - 1.0;
+    float z = random_float(seed) * 2.0 - 1.0;
 
     return vec3(x, y, z);
     // return vec3(random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0, random_float(seed) * 2.0 - 1.0);
 }
 vec3 random_vec3_unit_sphere(inout uint seed)
 {
-    vec3 p = random_vec3(seed);
-    return normalize(p);
+    // vec3 p = random_vec3(seed);
+    // while (length_squared(p) >= 1.0)
+    // {
+    //     p = random_vec3(seed);
+    // }
+    // return p;
+    return normalize(random_vec3(seed));
 }
 vec3 random_on_hemisphere(vec3 normal, inout uint seed)
 {
@@ -213,14 +222,14 @@ bool hit_closest_object_on_scene(Ray ray, out HitRecord record, Plane plane)
         }
     }
 
-    if (hit_plane(plane, ray, 0.001, infinite, record))
-    {
-        if (record.t < min_record.t)
-        {
-            min_record = record;
-        }
-        hit_anything = true;
-    }
+    // if (hit_plane(plane, ray, 0.001, infinite, record))
+    // {
+    //     if (record.t < min_record.t)
+    //     {
+    //         min_record = record;
+    //     }
+    //     hit_anything = true;
+    // }
 
     record = min_record;
 
@@ -235,7 +244,7 @@ const int antialiasing_radius = 1;
 const int samples_per_pixel = 5;
 
 // Path tracing settings
-const int max_bounces = 5;
+const int max_bounces = 2;
 
 const vec3 plane_normal = vec3(0.0, 1.0, 0.0);
 const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0, 1.0));
@@ -253,12 +262,10 @@ void main()
         // vec2 frag_coord = vec2(((gl_FragCoord.x + random_sample_x) / pc.viewport_width) * 2.0 - 1.0, ((gl_FragCoord.y + random_sample_y) / pc.viewport_height) * 2.0 - 1.0);
         vec2 frag_coord_min1to1 = frag_coord_0to1 * 2.0 - 1.0;
         vec3 center_quad_pos = frag_coord_min1to1.x * camera_info.right + -frag_coord_min1to1.y * camera_info.up;
-        vec3 rpos = camera_info.position;
 
-        vec3 rdir = camera_info.forward;
-        vec3 uvw = normalize(center_quad_pos + rdir);
+        vec3 uvw = normalize(center_quad_pos + camera_info.forward);
 
-        Ray ray = Ray(rpos, uvw);
+        Ray ray = Ray(camera_info.position, uvw);
         HitRecord record;
 
         if (hit_closest_object_on_scene(ray, record, scene_plane))
@@ -276,7 +283,7 @@ void main()
 
                 if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
                 {
-                    ray_color *= record.color;
+                    ray_color *= 0.5;
                 }
                 else
                 {
@@ -284,7 +291,6 @@ void main()
                 }
             }
     
-            // float diffuse_light = dot(scene_data.light_direction.xyz, record.normal);
             sampled_color += ray_color;
         }
         else
@@ -298,12 +304,14 @@ void main()
 
     vec4 average_sample_color = sampled_color / samples_per_pixel;
     out_color = average_sample_color;
-
+    
+    // NOTE: To see random
     // vec2 frag_coord_0to1 = vec2(gl_FragCoord.x / pc.viewport_width, gl_FragCoord.y / pc.viewport_height);
     // vec2 frag_coord_norm = normalize(frag_coord_0to1);
     //
-    // uint seed = uint(frag_coord_norm.x * frag_coord_norm.y * uint_max_float);
-    // out_color = vec4(random_vec3_unit_sphere(seed), 1.0);
+    // uvec2 uifrag_coord = uvec2(gl_FragCoord);
+    // uint seed = pcg_hash(uifrag_coord.x) + pcg_hash(uifrag_coord.y);
+    // out_color = vec4(random_on_hemisphere(vec3(1.0, 0.0, 0.0), seed), 1.0);
 
     // vec2 frag_coord = vec2((gl_FragCoord.x / pc.viewport_width) * 2.0 - 1.0, (gl_FragCoord.y / pc.viewport_height) * 2.0 - 1.0);
 }

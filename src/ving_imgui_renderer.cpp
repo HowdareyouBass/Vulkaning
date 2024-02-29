@@ -48,7 +48,8 @@ ImGuiRenderer::~ImGuiRenderer()
 void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, Profiler &profiler,
                            const std::vector<std::function<void()>> &imgui_frames)
 {
-    Task imgui_render{profiler, "ImGui Render"};
+    auto imgui_render = profiler.start_scoped_task("ImGui Render");
+
     ImGui::NewFrame();
 
     ImGui::Begin("Profile");
@@ -92,7 +93,6 @@ void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, Profiler &profi
     cmd.beginRendering(render_info);
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), cmd);
     cmd.endRendering();
-    imgui_render.stop();
 }
 
 void ImGuiRenderer::process_sdl_event(const SDL_Event &event)
