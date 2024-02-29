@@ -3,14 +3,15 @@
 
 namespace ving
 {
-void BaseRenderer::start_rendering2d(vk::CommandBuffer cmd, const Image2D &render_image) const
+void BaseRenderer::start_rendering2d(vk::CommandBuffer cmd, const Image2D &render_image,
+                                     vk::AttachmentLoadOp attachment_load_op) const
 {
     auto clear = vk::ClearValue{}.setColor(vk::ClearColorValue{0.1f, 0.1f, 0.1f, 1.0f});
 
     auto color_attachment = vk::RenderingAttachmentInfo{}
                                 .setImageView(render_image.view())
                                 .setImageLayout(render_image.layout())
-                                .setLoadOp(vk::AttachmentLoadOp::eClear)
+                                .setLoadOp(attachment_load_op)
                                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                                 .setClearValue(clear);
 

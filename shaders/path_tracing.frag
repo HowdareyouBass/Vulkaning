@@ -36,6 +36,7 @@ layout (push_constant) uniform constants
     vec2 vertex_buffer; // WARN: Don't use it
     float viewport_width;
     float viewport_height;
+    uint time;
 } pc;
 
 struct CameraInfo
@@ -244,17 +245,24 @@ const int antialiasing_radius = 1;
 const int samples_per_pixel = 5;
 
 // Path tracing settings
-const int max_bounces = 2;
+const int max_bounces = 15;
 
 const vec3 plane_normal = vec3(0.0, 1.0, 0.0);
 const Plane scene_plane = Plane(normalize(plane_normal), 0.0, vec4(1.0, 1.0, 1.0, 1.0));
 
+uint global_seed = 39818882;
+
 void main()
 {
     vec4 sampled_color = vec4(0.0);
+    // uint seed = global_seed;
+
+    uvec2 uifrag_coord = uvec2(gl_FragCoord);
+    uint seed = pcg_hash(uifrag_coord.x) + pcg_hash(uifrag_coord.y) + pcg_hash(pc.time);
+
     for (uint ray_sample = 0; ray_sample < samples_per_pixel; ++ray_sample)
     {
-        uint seed = ray_sample;
+        // uint seed = ray_sample;
         float random_sample_x = (random_float(seed) * 2.0 - 1.0) * antialiasing_radius;
         float random_sample_y = (random_float(seed) * 2.0 - 1.0) * antialiasing_radius;
         
@@ -277,12 +285,11 @@ void main()
 
             for (uint i = 0; i < max_bounces; ++i)
             {
-                uint seed = pcg_hash(i);
-
-                Ray bounce_ray = Ray(vec3(record.position), random_on_hemisphere(record.normal, seed));
+                Ray bounce_ray = Ray(record.position, random_on_hemisphere(record.normal, seed));
 
                 if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
                 {
+                    // ray_color += vec4(bounce_ray.direction, 1.0);
                     ray_color *= 0.5;
                 }
                 else
@@ -291,7 +298,9 @@ void main()
                 }
             }
     
+            // sampled_color += vec4((record.normal + 1.0) * 0.5, 1.0);
             sampled_color += ray_color;
+            // sampled_color += 0.5 * vec4(random_on_hemisphere(record.normal, seed), 1.0) + 0.5;
         }
         else
         {

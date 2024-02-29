@@ -40,7 +40,7 @@ void run_application()
     // ving::SimpleCubeRenderer cube_renderer{core};
     // ving::SkyboxRenderer skybox_renderer{core, scene};
     // ving::WaterRenderer water_renderer{core, scene};
-    ving::PathTracingRenderer path_tracing_renderer{core, scene, frames.draw_image_view()};
+    ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
 
     ving::ImGuiRenderer imgui_renderer{core, window};

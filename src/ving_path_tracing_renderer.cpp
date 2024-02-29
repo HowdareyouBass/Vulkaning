@@ -9,7 +9,7 @@
 
 namespace ving
 {
-PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene, vk::ImageView render_target)
+PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
 {
     m_push_constants.sphere_count = sphere_count;
 
@@ -19,16 +19,16 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene, v
     //     sphere.radius = 0.5f;
     //     sphere.color = {1.0f, 0.0f, 0.0f, 1.0f};
     // }
+    m_render_image =
+        core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eR16G16B16A16Sfloat,
+                            vk::ImageUsageFlagBits::eColorAttachment | vk::ImageUsageFlagBits::eTransferDst |
+                                vk::ImageUsageFlagBits::eTransferSrc);
 
     m_sphere_buffer =
         core.create_cpu_visible_gpu_buffer(sizeof(Sphere) * sphere_count, vk::BufferUsageFlagBits::eStorageBuffer);
     m_sphere_buffer.map_data();
     m_spheres = std::span<Sphere>{static_cast<Sphere *>(m_sphere_buffer.data()),
                                   static_cast<Sphere *>(m_sphere_buffer.data()) + sphere_count};
-
-    m_antialiasing_image =
-        core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eR16G16B16A16Sfloat,
-                            vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
 
     m_spheres[0].radius = 2.5f;
     m_spheres[0].color = {0.0f, 1.0f, 0.0f, 1.0f};
@@ -76,26 +76,32 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene, v
         "shaders/bin/path_tracing.vert.spv", "shaders/bin/path_tracing.frag.spv", m_resources.layouts(),
         vk::Format::eR16G16B16A16Sfloat, vk::Format::eUndefined);
 
-    // Antialiasing
-    auto antialiasing_resource_infos = std::vector<RenderResourceCreateInfo>{
-        RenderResourceCreateInfo{
-            RenderResourceIds::Antialiasing,
-            {
-                {0, vk::DescriptorType::eStorageImage},
-                {1, vk::DescriptorType::eStorageImage},
+    // Blur
+    if constexpr (enable_blur)
+    {
+        auto antialiasing_resource_infos = std::vector<RenderResourceCreateInfo>{
+            RenderResourceCreateInfo{
+                RenderResourceIds::Antialiasing,
+                {
+                    {0, vk::DescriptorType::eStorageImage},
+                    {1, vk::DescriptorType::eStorageImage},
+                },
             },
-        },
-    };
-    m_antialiasing_resources =
-        core.allocate_render_resources(antialiasing_resource_infos, vk::ShaderStageFlagBits::eCompute);
+        };
+        m_antialiasing_image =
+            core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eR16G16B16A16Sfloat,
+                                vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferSrc);
+        m_antialiasing_resources =
+            core.allocate_render_resources(antialiasing_resource_infos, vk::ShaderStageFlagBits::eCompute);
 
-    m_antialiasing_resources.get_resource(RenderResourceIds::Antialiasing)
-        .write_image(core.device(), 0, render_target, vk::ImageLayout::eGeneral);
-    m_antialiasing_resources.get_resource(RenderResourceIds::Antialiasing)
-        .write_image(core.device(), 1, m_antialiasing_image, vk::ImageLayout::eGeneral);
+        m_antialiasing_resources.get_resource(RenderResourceIds::Antialiasing)
+            .write_image(core.device(), 0, m_render_image, vk::ImageLayout::eGeneral);
+        m_antialiasing_resources.get_resource(RenderResourceIds::Antialiasing)
+            .write_image(core.device(), 1, m_antialiasing_image, vk::ImageLayout::eGeneral);
 
-    m_antialiasing_pipeline = core.create_compute_render_pipelines<PushConstants>(m_antialiasing_resources.layouts(),
-                                                                                  "shaders/bin/antialiasing.comp.spv");
+        m_antialiasing_pipeline = core.create_compute_render_pipelines<PushConstants>(
+            m_antialiasing_resources.layouts(), "shaders/bin/antialiasing.comp.spv");
+    }
 }
 
 void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
@@ -106,22 +112,30 @@ void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const Per
 
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
-    img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
 
-    start_rendering2d(cmd, img);
+    m_render_image.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
+
+    auto load_op = vk::AttachmentLoadOp::eLoad;
+
+    if (m_previous_frame_camera_pos != camera.position)
+    {
+        load_op = vk::AttachmentLoadOp::eClear;
+    }
+    start_rendering2d(cmd, m_render_image, load_op);
 
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors(),
                            nullptr);
 
-    m_push_constants.viewport_width = img.extent().width;
-    m_push_constants.viewport_height = img.extent().height;
+    m_push_constants.viewport_width = m_render_image.extent().width;
+    m_push_constants.viewport_height = m_render_image.extent().height;
+    m_push_constants.time = frame.time;
 
     cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                      m_push_constants);
 
-    set_default_viewport_and_scissor(cmd, img);
+    set_default_viewport_and_scissor(cmd, m_render_image);
 
     cmd.bindIndexBuffer(m_quad.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(m_quad.indices_count, 1, 0, 0, 0);
@@ -130,7 +144,7 @@ void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const Per
 
     if constexpr (enable_blur)
     {
-        img.transition_layout(cmd, vk::ImageLayout::eGeneral);
+        m_render_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
         m_antialiasing_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
 
         cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_antialiasing_pipeline.pipeline.get());
@@ -139,12 +153,19 @@ void PathTracingRenderer::render(const RenderFrames::FrameInfo &frame, const Per
         cmd.pushConstants<PushConstants>(m_antialiasing_pipeline.layout.get(), vk::ShaderStageFlagBits::eCompute, 0,
                                          m_push_constants);
 
-        cmd.dispatch(std::ceil(img.extent().width / 16.0), std::ceil(img.extent().height / 16.0), 1);
+        cmd.dispatch(std::ceil(m_render_image.extent().width / 16.0), std::ceil(m_render_image.extent().height / 16.0),
+                     1);
 
-        img.transition_layout(cmd, vk::ImageLayout::eTransferDstOptimal);
+        m_render_image.transition_layout(cmd, vk::ImageLayout::eTransferDstOptimal);
         m_antialiasing_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
-        m_antialiasing_image.copy_to(cmd, img);
+        m_antialiasing_image.copy_to(cmd, m_render_image);
     }
+
+    m_render_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
+    img.transition_layout(cmd, vk::ImageLayout::eTransferDstOptimal);
+    m_render_image.copy_to(cmd, img);
+
+    m_previous_frame_camera_pos = camera.position;
 }
 
 std::function<void()> PathTracingRenderer::get_imgui() const

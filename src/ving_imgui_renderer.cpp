@@ -80,8 +80,8 @@ void ImGuiRenderer::render(const RenderFrames::FrameInfo &frame, Profiler &profi
 
     auto color_attachment = vk::RenderingAttachmentInfo{}
                                 .setImageLayout(vk::ImageLayout::eColorAttachmentOptimal)
-                                .setStoreOp(vk::AttachmentStoreOp::eStore)
                                 .setLoadOp(vk::AttachmentLoadOp::eLoad)
+                                .setStoreOp(vk::AttachmentStoreOp::eStore)
                                 .setImageView(frame.draw_image.view());
 
     auto render_info = vk::RenderingInfo{}

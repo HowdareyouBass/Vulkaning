@@ -27,6 +27,7 @@ class PathTracingRenderer : public BaseRenderer
         vk::DeviceAddress vertex_buffer;
         float viewport_width;
         float viewport_height;
+        uint32_t time;
     };
 
     struct Sphere
@@ -41,7 +42,7 @@ class PathTracingRenderer : public BaseRenderer
     };
 
   public:
-    PathTracingRenderer(const Core &core, const Scene &scene, vk::ImageView render_target);
+    PathTracingRenderer(const Core &core, const Scene &scene);
 
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene);
     std::function<void()> get_imgui() const;
@@ -53,6 +54,8 @@ class PathTracingRenderer : public BaseRenderer
     PushConstants m_push_constants;
 
     Mesh m_quad;
+
+    Image2D m_render_image;
 
     GPUBuffer m_sphere_buffer;
     std::span<Sphere> m_spheres;
@@ -69,5 +72,7 @@ class PathTracingRenderer : public BaseRenderer
     Image2D m_antialiasing_image;
     RenderResources m_antialiasing_resources;
     Pipelines m_antialiasing_pipeline;
+
+    glm::vec3 m_previous_frame_camera_pos;
 };
 } // namespace ving
