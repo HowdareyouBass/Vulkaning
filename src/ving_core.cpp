@@ -18,6 +18,21 @@ Core::Core(SDL_Window *window)
     m_required_device_extensions = {
         VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME,
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+
+        // VulkanRaytracer required extensions
+        VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
+        VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
+
+        // Required by acceleration structure
+        VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+        VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+        VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
+
+        // Required by ray tracing pipeline
+        VK_KHR_SPIRV_1_4_EXTENSION_NAME,
+
+        // Required by spirv 1.4
+        VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME,
     };
 
     if constexpr (enable_validation_layers)
@@ -85,8 +100,9 @@ Core::Core(SDL_Window *window)
                                          .setQueueFamilyIndex(queue_family));
     }
 
-    auto features2 = m_physical_device.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features,
-                                                    vk::PhysicalDeviceVulkan12Features>();
+    auto features2 = m_physical_device.getFeatures2<
+        vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features, vk::PhysicalDeviceVulkan12Features,
+        vk::PhysicalDeviceRayTracingPipelineFeaturesKHR, vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();
 
     m_device = utils::create_device(m_physical_device, device_queue_infos, m_required_device_extensions,
                                     features2.get<vk::PhysicalDeviceFeatures2>());

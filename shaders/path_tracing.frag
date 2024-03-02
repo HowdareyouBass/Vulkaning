@@ -213,7 +213,7 @@ bool hit_closest_object_on_scene(Ray ray, out HitRecord record, Plane plane)
 
     for (int i = 0; i < pc.sphere_count; ++i)
     {
-        if (hit_sphere(spheres[i], ray, 0.001, infinite, record))
+        if (hit_sphere(spheres[i], ray, 0.01, infinite, record))
         {
             if (record.t < min_record.t)
             {
@@ -258,7 +258,8 @@ void main()
     // uint seed = global_seed;
 
     uvec2 uifrag_coord = uvec2(gl_FragCoord);
-    uint seed = pcg_hash(uifrag_coord.x) + pcg_hash(uifrag_coord.y) + pcg_hash(pc.time);
+    // uint seed = pcg_hash(uifrag_coord.x) + pcg_hash(uifrag_coord.y) + pcg_hash(pc.time);
+    uint seed = pcg_hash(uifrag_coord.x) + pcg_hash(uifrag_coord.y);
 
     for (uint ray_sample = 0; ray_sample < samples_per_pixel; ++ray_sample)
     {
@@ -290,7 +291,8 @@ void main()
                 if (hit_closest_object_on_scene(bounce_ray, record, scene_plane))
                 {
                     // ray_color += vec4(bounce_ray.direction, 1.0);
-                    ray_color *= 0.5;
+                    // ray_color *= 0.2;
+                    ray_color *= 0.8 * record.color;
                 }
                 else
                 {

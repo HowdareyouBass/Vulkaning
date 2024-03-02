@@ -30,14 +30,13 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
     m_spheres = std::span<Sphere>{static_cast<Sphere *>(m_sphere_buffer.data()),
                                   static_cast<Sphere *>(m_sphere_buffer.data()) + sphere_count};
 
-    m_spheres[0].radius = 2.5f;
+    m_spheres[0].radius = 100.0f;
     m_spheres[0].color = {0.0f, 1.0f, 0.0f, 1.0f};
     m_spheres[0].color = {1.0f, 1.0f, 1.0f, 1.0f};
-    m_spheres[0].position = {-2.0f, 3.0f, 10.0f};
+    m_spheres[0].position = {-2.0f, -100.0f, 10.0f};
 
     m_spheres[1].radius = 1.3f;
     m_spheres[1].color = {0.0f, 0.0f, 1.0f, 1.0f};
-    m_spheres[1].color = {1.0f, 1.0f, 1.0f, 1.0f};
     m_spheres[1].position = {4.0f, 3.0f, 10.0f};
 
     m_camera_info_buffer =

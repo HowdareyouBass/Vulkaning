@@ -49,12 +49,22 @@ vk::PhysicalDevice pick_physical_device(std::span<vk::PhysicalDevice> devices)
 {
     for (auto &&d : devices)
     {
-        auto features2 = d.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features,
-                                        vk::PhysicalDeviceVulkan12Features>();
+        auto features2 =
+            d.getFeatures2<vk::PhysicalDeviceFeatures2, vk::PhysicalDeviceVulkan13Features,
+                           vk::PhysicalDeviceVulkan12Features, vk::PhysicalDeviceBufferDeviceAddressFeatures,
+                           vk::PhysicalDeviceRayTracingPipelineFeaturesKHR,
+                           vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();
 
         const vk::PhysicalDeviceVulkan13Features &features13 = features2.get<vk::PhysicalDeviceVulkan13Features>();
+        const vk::PhysicalDeviceVulkan12Features &features12 = features2.get<vk::PhysicalDeviceVulkan12Features>();
 
-        if (features13.dynamicRendering && features13.synchronization2)
+        const vk::PhysicalDeviceRayTracingPipelineFeaturesKHR &ray_tracing_features =
+            features2.get<vk::PhysicalDeviceRayTracingPipelineFeaturesKHR>();
+        const vk::PhysicalDeviceAccelerationStructureFeaturesKHR &acceleration_structure_feature =
+            features2.get<vk::PhysicalDeviceAccelerationStructureFeaturesKHR>();
+
+        if (features13.dynamicRendering && features13.synchronization2 && features12.bufferDeviceAddress &&
+            ray_tracing_features.rayTracingPipeline && acceleration_structure_feature.accelerationStructure)
         {
             return d;
         }
