@@ -52,10 +52,12 @@ class Core
     vk::UniqueSampler create_sampler(uint32_t mip_levels) const;
 
     GPUBuffer create_gpu_buffer(void *data, uint64_t size, vk::BufferUsageFlags usage) const;
+    GPUBuffer create_gpu_buffer(uint64_t size, vk::BufferUsageFlags usage) const;
     GPUBuffer create_cpu_visible_gpu_buffer(uint64_t size, vk::BufferUsageFlags usage) const;
     vktypes::Swapchain create_swapchain(uint32_t image_count) const;
     vk::UniqueSemaphore create_semaphore() const;
     vk::UniqueFence create_fence(bool state) const;
+    vk::DispatchLoaderDynamic create_dynamic_dispatch() const;
 
     GPUMeshBuffers allocate_gpu_mesh_buffers(std::span<uint32_t> indices, std::span<Vertex> vertices) const;
     std::vector<vk::UniqueCommandBuffer> allocate_command_buffers(uint32_t count) const;
@@ -79,6 +81,7 @@ class Core
     vk::Queue get_graphics_queue() const noexcept { return m_device->getQueue(m_queue_info.graphics_family, 0); }
     vk::Extent2D get_window_extent() const noexcept { return m_window_extent; }
     vk::CommandPool get_command_pool() const noexcept { return *m_command_pool; }
+
     vk::Device device() const noexcept { return *m_device; }
 
   public:

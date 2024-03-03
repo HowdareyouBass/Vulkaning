@@ -13,6 +13,7 @@
 #include "ving_simple_cube_renderer.hpp"
 #include "ving_skybox_renderer.hpp"
 #include "ving_slime_renderer.hpp"
+#include "ving_vulkan_raytracer.hpp"
 #include "ving_water_renderer.hpp"
 
 const Uint8 *keys;
@@ -42,6 +43,7 @@ void run_application()
     // ving::WaterRenderer water_renderer{core, scene};
     ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
+    ving::VulkanRaytracer vulkan_raytracer{core};
 
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /

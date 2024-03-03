@@ -1,3 +1,4 @@
+
 #include "ving_core.hpp"
 
 #include <SDL3/SDL_vulkan.h>
@@ -173,6 +174,11 @@ GPUBuffer Core::create_gpu_buffer(void *data, uint64_t size, vk::BufferUsageFlag
 
     return new_buffer;
 }
+GPUBuffer Core::create_gpu_buffer(uint64_t size, vk::BufferUsageFlags usage) const
+{
+    return GPUBuffer{m_device.get(), memory_properties, size, usage, vk::MemoryPropertyFlagBits::eDeviceLocal};
+}
+
 GPUBuffer Core::create_cpu_visible_gpu_buffer(uint64_t size, vk::BufferUsageFlags usage) const
 {
     GPUBuffer cpu_visible_buffer{m_device.get(), memory_properties, size, usage,
@@ -199,6 +205,11 @@ vk::UniqueFence Core::create_fence(bool state) const
 
     return m_device->createFenceUnique(info);
 }
+vk::DispatchLoaderDynamic Core::create_dynamic_dispatch() const
+{
+    return vk::DispatchLoaderDynamic{m_instance.get(), vkGetInstanceProcAddr, m_device.get(), vkGetDeviceProcAddr};
+}
+
 GPUMeshBuffers Core::allocate_gpu_mesh_buffers(std::span<uint32_t> indices, std::span<Vertex> vertices) const
 {
     GPUBuffer index_buffer =

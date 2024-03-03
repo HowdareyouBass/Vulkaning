@@ -34,6 +34,14 @@ struct Mesh
     uint32_t vertices_count;
 };
 
+struct RayTracedMesh
+{
+    GPUBuffer vertex_buffer;
+    GPUBuffer index_buffer;
+    GPUBuffer transform_buffer;
+    uint32_t vertices_count;
+};
+
 class Core;
 struct SimpleMesh
 {
@@ -42,6 +50,9 @@ struct SimpleMesh
     static Mesh quad(const Core &core, glm::vec4 color);
     // Engine space i = {1, 0, 0} j = {0, 1, 0} k = {0, 0, 1}
     static Mesh cube_interpolated_normals(const Core &core, std::array<glm::vec4, 8> vertex_colors = {});
+
+    static RayTracedMesh cube_raytraced(const Core &core, vk::TransformMatrixKHR &transform,
+                                        std::array<glm::vec4, 8> vertex_colors = {});
 };
 
 struct Transform

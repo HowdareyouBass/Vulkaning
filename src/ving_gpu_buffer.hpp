@@ -23,6 +23,13 @@ class GPUBuffer
     [[nodiscard]] vk::Buffer buffer() const noexcept { return *m_buffer; }
     [[nodiscard]] vk::DeviceSize size() const noexcept { return m_size; }
 
+    // NOTE: Can just store it in a class and get address on creation
+    [[nodiscard]] vk::DeviceAddress device_address() const
+    {
+        auto info = vk::BufferDeviceAddressInfo{m_buffer.get()};
+        return m_buffer.getOwner().getBufferAddress(&info);
+    }
+
   private:
     vk::UniqueBuffer m_buffer;
     vk::UniqueDeviceMemory m_memory;
