@@ -240,7 +240,7 @@ void Core::immediate_transfer(std::function<void(vk::CommandBuffer)> &&function)
     m_device->resetFences(*m_transfer_fence);
     m_transfer_commands->reset();
 
-    const vk::CommandBuffer &cmd = *m_transfer_commands;
+    vk::CommandBuffer cmd = *m_transfer_commands;
 
     auto cmd_begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
     cmd.begin(cmd_begin_info);

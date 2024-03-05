@@ -24,6 +24,7 @@ class GPUBuffer
     [[nodiscard]] vk::DeviceSize size() const noexcept { return m_size; }
 
     // NOTE: Can just store it in a class and get address on creation
+    // WARN: Only to be used when buffer created with ShaderDeviceMemory usage
     [[nodiscard]] vk::DeviceAddress device_address() const
     {
         auto info = vk::BufferDeviceAddressInfo{m_buffer.get()};

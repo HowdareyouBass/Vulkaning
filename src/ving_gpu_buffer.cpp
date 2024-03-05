@@ -36,9 +36,9 @@ GPUBuffer::GPUBuffer(vk::Device device, vk::PhysicalDeviceMemoryProperties devic
 }
 void GPUBuffer::set_memory(vk::Device device, void *data, vk::DeviceSize size)
 {
-    void *buffer_data = device.mapMemory(*m_memory, 0, size);
-    memcpy(buffer_data, data, size);
-    device.unmapMemory(*m_memory);
+    map_data();
+    memcpy(m_data, data, size);
+    unmap_data();
 }
 void GPUBuffer::map_data()
 {

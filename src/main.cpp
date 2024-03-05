@@ -43,7 +43,7 @@ void run_application()
     // ving::WaterRenderer water_renderer{core, scene};
     ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
-    ving::VulkanRaytracer vulkan_raytracer{core};
+    ving::VulkanRaytracer vulkan_raytracer{core, frames};
 
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /

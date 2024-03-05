@@ -13,12 +13,13 @@ class Core;
 
 namespace utils
 {
-
+// Core Creation
 vk::PhysicalDevice pick_physical_device(std::span<vk::PhysicalDevice> devices);
 uint32_t find_queue_family(std::span<vk::QueueFamilyProperties> queue_families, vk::QueueFlags flags);
 uint32_t find_present_queue(std::span<vk::QueueFamilyProperties> queue_families, vk::PhysicalDevice physical_device,
                             vk::SurfaceKHR surface);
 
+// Pipeline creation
 uint32_t find_memory_type(vk::PhysicalDeviceMemoryProperties mem_properties, uint32_t type_filter,
                           vk::MemoryPropertyFlags prop_flags);
 int get_format_size(vk::Format format);
@@ -52,5 +53,14 @@ void transition_image(vk::CommandBuffer cmd, vk::Image image, vk::ImageLayout cu
 void copy_image_to_image(vk::CommandBuffer cmd, vk::Image source, vk::Image dst, vk::Extent2D src_size,
                          vk::Extent2D dst_size);
 Image2D load_cube_map(std::string_view filepath, const Core &core);
+
+// Other
+
+// Taken from SaschaWillems Vulkan-Samples repository
+inline uint32_t aligned_size(uint32_t value, uint32_t alignment)
+{
+    return (value + alignment - 1) & ~(alignment - 1);
+}
+
 } // namespace utils
 } // namespace ving

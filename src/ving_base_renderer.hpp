@@ -15,6 +15,13 @@ class BaseRenderer
         vk::UniquePipelineLayout layout;
     };
 
+    struct RayTracingPipelines
+    {
+        vk::UniqueHandle<vk::Pipeline, vk::DispatchLoaderDynamic> pipeline;
+        vk::UniquePipelineLayout layout;
+        uint32_t shader_groups_count;
+    };
+
     void start_rendering2d(vk::CommandBuffer cmd, const Image2D &render_image,
                            vk::AttachmentLoadOp attachment_load_op = vk::AttachmentLoadOp::eClear) const;
     void start_rendering3d(vk::CommandBuffer cmd, const Image2D &render_image, const Image2D &depth_image) const;

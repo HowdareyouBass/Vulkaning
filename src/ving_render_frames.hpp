@@ -46,6 +46,8 @@ class RenderFrames
     FrameInfo begin_frame(Profiler &profiler);
     void end_frame(Profiler &profiler);
 
+    void immediate_submit(std::function<void(vk::CommandBuffer)> &&function);
+
     vk::ImageView draw_image_view() { return m_draw_image.view(); }
     [[nodiscard]] uint64_t frame_number() const noexcept { return m_frame_number; }
 
@@ -53,6 +55,8 @@ class RenderFrames
     // HACK: I don't need this to be copyable or movable for now so i will stick to reference
     // Maybe later use shared or weak ptr???
     const Core &r_core;
+
+    vk::Queue m_graphics_queue;
 
     Image2D m_draw_image;
     PresentQueue m_present_queue;
@@ -63,5 +67,8 @@ class RenderFrames
     std::chrono::time_point<std::chrono::high_resolution_clock> m_start_time;
     float m_delta_time{};
     float m_time{};
+
+    vk::UniqueFence m_immediate_submit_fence;
+    vk::UniqueCommandBuffer m_immediate_submit_commands;
 };
 } // namespace ving

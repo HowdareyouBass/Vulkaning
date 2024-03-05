@@ -5,6 +5,8 @@ namespace ving
 {
 RenderFrames::RenderFrames(const Core &core) : r_core{core}, m_present_queue{core, frames_in_flight}
 {
+    m_graphics_queue = core.get_graphics_queue();
+
     m_draw_image =
         core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eR16G16B16A16Sfloat,
                             vk::ImageUsageFlagBits::eStorage | vk::ImageUsageFlagBits::eTransferDst |
@@ -19,6 +21,11 @@ RenderFrames::RenderFrames(const Core &core) : r_core{core}, m_present_queue{cor
         frame.image_acquired_semaphore = core.create_semaphore();
         frame.render_finished_semaphore = core.create_semaphore();
     }
+
+    m_immediate_submit_fence = core.create_fence(true);
+
+    auto allocated_command_buffers = core.allocate_command_buffers(1);
+    m_immediate_submit_commands = std::move(allocated_command_buffers.front());
 }
 
 RenderFrames::FrameInfo RenderFrames::begin_frame(Profiler &profiler)
@@ -77,7 +84,7 @@ void RenderFrames::end_frame(Profiler &profiler)
 
     {
         auto task = profiler.start_scoped_task("Submit");
-        r_core.get_graphics_queue().submit2(submit, cur_frame.render_fence.get());
+        m_graphics_queue.submit2(submit, cur_frame.render_fence.get());
     }
     {
         auto task = profiler.start_scoped_task("Present");
@@ -91,5 +98,24 @@ void RenderFrames::end_frame(Profiler &profiler)
     m_start_time = end_time;
 
     ++m_frame_number;
+}
+void RenderFrames::immediate_submit(std::function<void(vk::CommandBuffer)> &&function)
+{
+    r_core.reset_fence(m_immediate_submit_fence.get());
+    m_immediate_submit_commands->reset();
+
+    vk::CommandBuffer cmd = m_immediate_submit_commands.get();
+
+    auto cmd_begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
+    cmd.begin(cmd_begin_info);
+    function(cmd);
+    cmd.end();
+
+    auto cmd_info = vk::CommandBufferSubmitInfo{}.setCommandBuffer(cmd);
+    auto submit = vk::SubmitInfo2{}.setCommandBufferInfos(cmd_info);
+
+    m_graphics_queue.submit2(submit, m_immediate_submit_fence.get());
+
+    r_core.wait_for_fence(m_immediate_submit_fence.get());
 }
 } // namespace ving

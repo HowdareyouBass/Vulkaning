@@ -11,6 +11,11 @@ file(GLOB_RECURSE GLSL_SOURCE_FILES
     "${PROJECT_SOURCE_DIR}/shaders/*.frag"
     "${PROJECT_SOURCE_DIR}/shaders/*.vert"
     "${PROJECT_SOURCE_DIR}/shaders/*.comp"
+    "${PROJECT_SOURCE_DIR}/shaders/*.rgen"
+    "${PROJECT_SOURCE_DIR}/shaders/*.rint"
+    "${PROJECT_SOURCE_DIR}/shaders/*.rahit"
+    "${PROJECT_SOURCE_DIR}/shaders/*.rchit"
+    "${PROJECT_SOURCE_DIR}/shaders/*.rmiss"
 )
 
 foreach (GLSL ${GLSL_SOURCE_FILES})
@@ -20,7 +25,8 @@ foreach (GLSL ${GLSL_SOURCE_FILES})
     message(STATUS ${GLSL})
     add_custom_command(
         OUTPUT ${SPIRV}
-        COMMAND ${GLSL_VALIDATOR} -V ${GLSL} -o ${SPIRV}
+        # Spirv 1.4 needed for vulkan raytracing
+        COMMAND ${GLSL_VALIDATOR} -V --target-env spirv1.4 ${GLSL} -o ${SPIRV}
         DEPENDS ${GLSL})
     list(APPEND SPIRV_BINARY_FILES ${SPIRV})
 endforeach()

@@ -83,6 +83,7 @@ class Core
     vk::CommandPool get_command_pool() const noexcept { return *m_command_pool; }
 
     vk::Device device() const noexcept { return *m_device; }
+    vk::PhysicalDevice gpu() const noexcept { return m_physical_device; }
 
   public:
     vk::PhysicalDeviceMemoryProperties memory_properties;
@@ -111,9 +112,8 @@ class Core
     vk::UniqueFence m_transfer_fence;
 
   public:
-    // TODO: More descriptor layouts??
     template <typename PushConstantsType>
-    BaseRenderer::Pipelines create_compute_render_pipelines(
+    [[nodiscard]] BaseRenderer::Pipelines create_compute_render_pipelines(
         const std::vector<vk::DescriptorSetLayout> &descriptor_layouts, std::string_view shader_path) const
     {
         auto push_range =
@@ -135,7 +135,7 @@ class Core
     }
     // HARD: Most of the settings are hardcoded
     template <typename PushConstantsType>
-    BaseRenderer::Pipelines create_graphics_render_pipelines(
+    [[nodiscard]] BaseRenderer::Pipelines create_graphics_render_pipelines(
         std::string_view vertex_shader_path, std::string_view fragment_shader_path,
         const std::vector<vk::DescriptorSetLayout> &descriptor_layouts, vk::Format color_attachment_format,
         vk::Format depth_attachment_format = vk::Format::eUndefined,
@@ -230,36 +230,81 @@ class Core
         return BaseRenderer::Pipelines{std::move(pipeline_res.value), std::move(layout)};
     }
 
-    BaseRenderer::Pipelines create_ray_tracing_pipelines(std::string_view ray_gen_shader_path,
-                                                         std::string_view any_hit_shader_path,
-                                                         std::string_view closest_hit_shader_path,
-                                                         std::string_view miss_shader_path, uint32_t max_ray_recursion)
+    // TODO: Use Intersection and Any Hit shader
+    template <typename PushConstantsType>
+    [[nodiscard]] BaseRenderer::RayTracingPipelines create_ray_tracing_pipelines(
+        std::string_view raygen_shader_path, std::string_view any_hit_shader_path,
+        std::string_view closest_hit_shader_path, std::string_view miss_shader_path,
+        std::string_view intersection_shader_path, uint32_t max_ray_recursion,
+        const std::vector<vk::DescriptorSetLayout> &layouts, vk::DispatchLoaderDynamic dispatch) const
     {
+        auto push_constant_range = vk::PushConstantRange{}
+                                       .setSize(sizeof(PushConstantsType))
+                                       .setStageFlags(vk::ShaderStageFlagBits::eRaygenKHR);
 
-        auto closest_hit_shader = utils::create_shader_module(m_device.get(), closest_hit_shader_path);
-        auto miss_shader = utils::create_shader_module(m_device.get(), miss_shader_path);
-        auto any_hit_shader = utils::create_shader_module(m_device.get(), any_hit_shader_path);
+        auto layout_info =
+            vk::PipelineLayoutCreateInfo{}.setSetLayouts(layouts).setPushConstantRanges(push_constant_range);
+
+        auto layout = m_device->createPipelineLayoutUnique(layout_info);
+
+        auto raygen_module = utils::create_shader_module(m_device.get(), raygen_shader_path);
+        auto miss_module = utils::create_shader_module(m_device.get(), miss_shader_path);
+        auto closest_hit_module = utils::create_shader_module(m_device.get(), closest_hit_shader_path);
+        // auto any_hit_module = utils::create_shader_module(m_device.get(), any_hit_shader_path);
+        // auto intersection_module = utils::create_shader_module(m_device.get(), intersection_shader_path);
 
         auto shader_stages = std::vector<vk::PipelineShaderStageCreateInfo>{
-
             vk::PipelineShaderStageCreateInfo{}
                 .setStage(vk::ShaderStageFlagBits::eRaygenKHR)
-                .setModule(any_hit_shader.get())
+                .setModule(raygen_module.get())
                 .setPName("main"),
+
+            vk::PipelineShaderStageCreateInfo{}
+                .setStage(vk::ShaderStageFlagBits::eMissKHR)
+                .setModule(miss_module.get())
+                .setPName("main"),
+
+            vk::PipelineShaderStageCreateInfo{}
+                .setStage(vk::ShaderStageFlagBits::eClosestHitKHR)
+                .setModule(closest_hit_module.get())
+                .setPName("main"),
+
+            // vk::PipelineShaderStageCreateInfo{}
+            //     .setStage(vk::ShaderStageFlagBits::eAnyHitKHR)
+            //     .setModule(any_hit_module.get())
+            //     .setPName("main"),
+
+            // vk::PipelineShaderStageCreateInfo{}
+            //     .setStage(vk::ShaderStageFlagBits::eIntersectionKHR)
+            //     .setModule(intersection_module.get())
+            //     .setPName("main"),
         };
 
-        auto shader_group = vk::RayTracingShaderGroupCreateInfoKHR{vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup,
-                                                                   vk::ShaderUnusedKHR, 2, 0, vk::ShaderUnusedKHR};
-        auto raytracing_interface_info = vk::RayTracingPipelineInterfaceCreateInfoKHR{};
+        auto raytracing_groups = std::vector<vk::RayTracingShaderGroupCreateInfoKHR>{
+            // Ray Gen Group
+            vk::RayTracingShaderGroupCreateInfoKHR{}
+                .setType(vk::RayTracingShaderGroupTypeKHR::eGeneral)
+                .setGeneralShader(0),
+            // Ray Miss Group
+            vk::RayTracingShaderGroupCreateInfoKHR{}
+                .setType(vk::RayTracingShaderGroupTypeKHR::eGeneral)
+                .setGeneralShader(1),
+            // Ray closest hit group
+            vk::RayTracingShaderGroupCreateInfoKHR{} // HARD: Procedural hit group
+                .setType(vk::RayTracingShaderGroupTypeKHR::eTrianglesHitGroup)
+                .setClosestHitShader(2),
+        };
 
-        auto pipeline_info =
-            vk::RayTracingPipelineCreateInfoKHR{{}, shader_stages, shader_group, max_ray_recursion, {}};
+        auto pipeline_info = vk::RayTracingPipelineCreateInfoKHR{}
+                                 .setStages(shader_stages)
+                                 .setGroups(raytracing_groups)
+                                 .setMaxPipelineRayRecursionDepth(max_ray_recursion)
+                                 .setLayout(layout.get());
 
-        auto deffered_operation = m_device->createDeferredOperationKHRUnique();
+        auto pipeline_res = m_device->createRayTracingPipelineKHRUnique({}, {}, pipeline_info, nullptr, dispatch);
 
-        auto pipeline = m_device->createRayTracingPipelineKHRUnique(deffered_operation.get(), {}, pipeline_info);
-
-        // return BaseRenderer::Pipelines{std::move(pipeline), std::move(layout)};
+        return BaseRenderer::RayTracingPipelines{std::move(pipeline_res.value), std::move(layout),
+                                                 static_cast<uint32_t>(raytracing_groups.size())};
     }
 };
 } // namespace ving
