@@ -22,8 +22,10 @@ VulkanRaytracer::VulkanRaytracer(const Core &core, RenderFrames &render_frames) 
             .setVertexStride(sizeof(Vertex))
             .setIndexType(vk::IndexType::eUint32)
             .setIndexData(m_cube.index_buffer.device_address())
-            .setTransformData(vk::DeviceOrHostAddressConstKHR{}.setHostAddress(nullptr).setDeviceAddress(
-                m_cube.transform_buffer.device_address())));
+            .setTransformData(m_cube.transform_buffer.device_address()));
+
+    // auto acceleration_structure_geometry_data =
+    // vk::AccelerationStructureGeometryDataKHR{}.setTriangles(vk::AccelerationStructureGeometryTrianglesDataKHR{}.setVertexFormat(vk::Format::eR);
 
     auto acceleration_structure_geomtery = vk::AccelerationStructureGeometryKHR{}
                                                .setFlags(vk::GeometryFlagBitsKHR::eOpaque)
@@ -217,10 +219,13 @@ void VulkanRaytracer::create_binding_table()
 void VulkanRaytracer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
 {
     m_ubo->view_inverse = glm::inverse(camera.view());
-    m_ubo->proj_inverse = glm::inverse(glm::mat4{1.0f});
+    m_ubo->proj_inverse = glm::inverse(camera.projection());
 
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
+
+    m_render_image.transition_layout(cmd, vk::ImageLayout::eGeneral);
+    img.transition_layout(cmd, vk::ImageLayout::eGeneral);
 
     const uint32_t handle_size_aligned =
         utils::aligned_size(m_raytracing_pipeline_properties.shaderGroupHandleSize,
@@ -239,10 +244,17 @@ void VulkanRaytracer::render(const RenderFrames::FrameInfo &frame, const Perspec
                                     .setStride(handle_size_aligned)
                                     .setSize(handle_size_aligned);
 
+    vk::StridedDeviceAddressRegionKHR callable_shader_sbt_entry{};
+
     cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, m_pipelines.pipeline.get());
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, m_pipelines.layout.get(), 0,
                            m_resources.descriptors(), nullptr);
-    cmd.traceRaysKHR(raygen_shader_sbt_entry, miss_shader_sbt_entry, hit_shader_sbt_entry, {},
+    cmd.traceRaysKHR(raygen_shader_sbt_entry, miss_shader_sbt_entry, hit_shader_sbt_entry, callable_shader_sbt_entry,
                      r_core.get_window_extent().width, r_core.get_window_extent().height, 1, m_dispatch);
+
+    m_render_image.transition_layout(cmd, vk::ImageLayout::eTransferSrcOptimal);
+    img.transition_layout(cmd, vk::ImageLayout::eTransferDstOptimal);
+
+    m_render_image.copy_to(cmd, img);
 }
 } // namespace ving
