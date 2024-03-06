@@ -150,9 +150,10 @@ void run_application()
             // imgui_renderer.render(frame, []() {});
             // skybox_renderer.render(frame, camera, scene);
             // water_renderer.render(frame, camera, scene);
-            path_tracing_renderer.render(frame, camera, scene);
+            // path_tracing_renderer.render(frame, camera, scene);
             // gi_renderer.render(frame, camera, scene);
-            imgui_renderer.render(frame, profiler, {scene.get_imgui(), path_tracing_renderer.get_imgui()});
+            vulkan_raytracer.render(frame, camera);
+            imgui_renderer.render(frame, profiler, {scene.get_imgui(), /* path_tracing_renderer.get_imgui() */});
             recording.stop();
         }
         frames.end_frame(profiler);

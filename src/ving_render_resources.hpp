@@ -30,6 +30,8 @@ class RenderResource
                      vk::Sampler sampler = nullptr) const;
     void write_image(vk::Device device, uint32_t binding, vk::ImageView image, vk::ImageLayout layout,
                      vk::Sampler sampler = nullptr) const;
+    void write_acceleration_structure(vk::Device device, uint32_t binding,
+                                      vk::AccelerationStructureKHR acceleration_structure) const;
 
   private:
     vk::DescriptorSet m_descriptor;

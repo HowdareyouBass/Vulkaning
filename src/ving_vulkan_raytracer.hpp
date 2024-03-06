@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ving_base_renderer.hpp"
+#include "ving_camera.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_scene_object.hpp"
 
@@ -13,6 +14,12 @@ class VulkanRaytracer : public BaseRenderer
         glm::vec4 light;
     };
 
+    struct Ubo
+    {
+        glm::mat4 view_inverse;
+        glm::mat4 proj_inverse;
+    };
+
     enum RenderResourceIds : uint32_t
     {
         Main,
@@ -21,7 +28,7 @@ class VulkanRaytracer : public BaseRenderer
   public:
     VulkanRaytracer(const Core &core, RenderFrames &render_frames);
 
-    void render(const RenderFrames::FrameInfo &frame);
+    void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera);
 
   private:
     const Core &r_core;
@@ -29,6 +36,10 @@ class VulkanRaytracer : public BaseRenderer
     RayTracedMesh m_cube;
 
     vk::DispatchLoaderDynamic m_dispatch;
+
+    Image2D m_render_image;
+    Ubo *m_ubo;
+    GPUBuffer m_ubo_buffer;
 
     vk::UniqueHandle<vk::AccelerationStructureKHR, vk::DispatchLoaderDynamic> m_bottom_accs;
     GPUBuffer m_bottom_accs_buffer;
@@ -42,6 +53,9 @@ class VulkanRaytracer : public BaseRenderer
 
     RenderResources m_resources;
     RayTracingPipelines m_pipelines;
+
+    vk::PhysicalDeviceRayTracingPipelinePropertiesKHR m_raytracing_pipeline_properties;
+    vk::PhysicalDeviceAccelerationStructureFeaturesKHR m_acceleration_structure_features;
 
     GPUBuffer m_raygen_sbt_buffer;
     GPUBuffer m_miss_sbt_buffer;

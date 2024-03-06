@@ -157,27 +157,42 @@ VulkanRaytracer::VulkanRaytracer(const Core &core, RenderFrames &render_frames) 
     };
 
     m_resources = RenderResources{core.device(), resource_create_infos, vk::ShaderStageFlagBits::eRaygenKHR};
+
+    m_resources.get_resource(RenderResourceIds::Main).write_acceleration_structure(core.device(), 0, m_top_accs.get());
+
+    m_render_image = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eR16G16B16A16Sfloat,
+                                         vk::ImageUsageFlagBits::eTransferSrc | vk::ImageUsageFlagBits::eStorage);
+    m_resources.get_resource(RenderResourceIds::Main)
+        .write_image(core.device(), 1, m_render_image, vk::ImageLayout::eGeneral);
+
+    m_ubo_buffer = core.create_cpu_visible_gpu_buffer(sizeof(Ubo), vk::BufferUsageFlagBits::eUniformBuffer);
+    m_ubo_buffer.map_data();
+    m_ubo = static_cast<Ubo *>(m_ubo_buffer.data());
+
+    m_resources.get_resource(RenderResourceIds::Main).write_buffer(core.device(), 2, m_ubo_buffer);
+
     m_pipelines = core.create_ray_tracing_pipelines<PushConstants>(
         "shaders/bin/basic.rgen.spv", "shaders/bin/basic.rahit.spv", "shaders/bin/basic.rchit.spv",
         "shaders/bin/basic.rmiss.spv", "shaders/bin/basic.rint.spv", 1, m_resources.layouts(), m_dispatch);
+
+    create_binding_table();
 }
 
 void VulkanRaytracer::create_binding_table()
 {
-    auto raytracing_pipeline_properties = vk::PhysicalDeviceRayTracingPipelinePropertiesKHR{};
     auto properties = vk::PhysicalDeviceProperties2{};
-    properties.pNext = &raytracing_pipeline_properties;
+    properties.pNext = &m_raytracing_pipeline_properties;
     r_core.gpu().getProperties2(&properties);
 
-    auto acceleration_structure_features = vk::PhysicalDeviceAccelerationStructureFeaturesKHR{};
-    auto features = vk::PhysicalDeviceFeatures2{}.setPNext(&acceleration_structure_features);
+    auto features = vk::PhysicalDeviceFeatures2{}.setPNext(&m_acceleration_structure_features);
     r_core.gpu().getFeatures2(&features);
 
     // TODO: Move it inside pipeline creation
-    const uint32_t handle_size = raytracing_pipeline_properties.shaderGroupHandleSize;
-    const uint32_t handle_size_aligned = utils::aligned_size(raytracing_pipeline_properties.shaderGroupHandleSize,
-                                                             raytracing_pipeline_properties.shaderGroupHandleAlignment);
-    const uint32_t handle_alignment = raytracing_pipeline_properties.shaderGroupHandleAlignment;
+    const uint32_t handle_size = m_raytracing_pipeline_properties.shaderGroupHandleSize;
+    const uint32_t handle_size_aligned =
+        utils::aligned_size(m_raytracing_pipeline_properties.shaderGroupHandleSize,
+                            m_raytracing_pipeline_properties.shaderGroupHandleAlignment);
+    const uint32_t handle_alignment = m_raytracing_pipeline_properties.shaderGroupHandleAlignment;
     const uint32_t group_count = m_pipelines.shader_groups_count;
     const uint32_t sbt_size = group_count * handle_size_aligned;
     const vk::BufferUsageFlags sbt_buffer_usage_flags = vk::BufferUsageFlagBits::eShaderBindingTableKHR |
@@ -199,7 +214,35 @@ void VulkanRaytracer::create_binding_table()
     m_hit_sbt_buffer.set_memory(r_core.device(), shader_handle_storage.data() + handle_size_aligned * 2, handle_size);
 }
 
-void VulkanRaytracer::render(const RenderFrames::FrameInfo &frame)
+void VulkanRaytracer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
 {
+    m_ubo->view_inverse = glm::inverse(camera.view());
+    m_ubo->proj_inverse = glm::inverse(glm::mat4{1.0f});
+
+    vk::CommandBuffer cmd = frame.cmd;
+    Image2D &img = frame.draw_image;
+
+    const uint32_t handle_size_aligned =
+        utils::aligned_size(m_raytracing_pipeline_properties.shaderGroupHandleSize,
+                            m_raytracing_pipeline_properties.shaderGroupHandleAlignment);
+
+    auto raygen_shader_sbt_entry = vk::StridedDeviceAddressRegionKHR{}
+                                       .setDeviceAddress(m_raygen_sbt_buffer.device_address())
+                                       .setStride(handle_size_aligned)
+                                       .setSize(handle_size_aligned);
+    auto miss_shader_sbt_entry = vk::StridedDeviceAddressRegionKHR{}
+                                     .setDeviceAddress(m_miss_sbt_buffer.device_address())
+                                     .setStride(handle_size_aligned)
+                                     .setSize(handle_size_aligned);
+    auto hit_shader_sbt_entry = vk::StridedDeviceAddressRegionKHR{}
+                                    .setDeviceAddress(m_hit_sbt_buffer.device_address())
+                                    .setStride(handle_size_aligned)
+                                    .setSize(handle_size_aligned);
+
+    cmd.bindPipeline(vk::PipelineBindPoint::eRayTracingKHR, m_pipelines.pipeline.get());
+    cmd.bindDescriptorSets(vk::PipelineBindPoint::eRayTracingKHR, m_pipelines.layout.get(), 0,
+                           m_resources.descriptors(), nullptr);
+    cmd.traceRaysKHR(raygen_shader_sbt_entry, miss_shader_sbt_entry, hit_shader_sbt_entry, {},
+                     r_core.get_window_extent().width, r_core.get_window_extent().height, 1, m_dispatch);
 }
 } // namespace ving

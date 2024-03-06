@@ -59,6 +59,22 @@ void RenderResource::write_image(vk::Device device, uint32_t binding, vk::ImageV
 
     device.updateDescriptorSets(write, nullptr);
 }
+void RenderResource::write_acceleration_structure(vk::Device device, uint32_t binding,
+                                                  vk::AccelerationStructureKHR acceleration_structure) const
+{
+    assert(m_bindings.find(binding) != m_bindings.end());
+
+    auto info = vk::WriteDescriptorSetAccelerationStructureKHR{}.setAccelerationStructures(acceleration_structure);
+
+    auto write = vk::WriteDescriptorSet{}
+                     .setDstBinding(binding)
+                     .setDescriptorCount(1)
+                     .setDescriptorType(m_bindings.find(binding)->second)
+                     .setPNext(&info)
+                     .setDstSet(m_descriptor);
+
+    device.updateDescriptorSets(write, nullptr);
+}
 RenderResources::RenderResources(vk::Device device, std::span<RenderResourceCreateInfo> infos,
                                  vk::ShaderStageFlags shader_stage)
     : m_device{device}
