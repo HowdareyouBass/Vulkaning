@@ -218,8 +218,8 @@ void VulkanRaytracer::create_binding_table()
 
 void VulkanRaytracer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera)
 {
-    m_ubo->view_inverse = glm::inverse(camera.view());
-    m_ubo->proj_inverse = glm::inverse(camera.projection());
+    m_ubo->view_inverse = camera.view();
+    m_ubo->proj_inverse = camera.projection();
 
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
