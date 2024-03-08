@@ -22,7 +22,7 @@ class PerspectiveCamera
   public:
     PerspectiveCamera(float aspect, float near, float far, float fov);
 
-    glm::vec3 position{0.0f, 0.0f, 0.0f};
+    glm::vec3 position{1.0f, 1.0f, 1.0f};
     glm::vec3 rotation{0.0f, 0.0f, 0.0f};
 
     float move_speed{0.01f};
@@ -57,8 +57,8 @@ class PerspectiveCamera
     glm::mat4 m_projection{1.0f};
     glm::mat4 m_view{1.0f};
 
-    glm::vec3 m_forward;
-    glm::vec3 m_right;
-    glm::vec3 m_up;
+    glm::vec3 m_forward{0.0f, 0.0f, 1.0f};
+    glm::vec3 m_right{1.0f, 0.0f, 0.0f};
+    glm::vec3 m_up{0.0f, 1.0f, 0.0f};
 };
 } // namespace ving

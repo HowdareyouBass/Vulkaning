@@ -36,6 +36,8 @@ class GiRenderer : public BaseRenderer
 
     Image2D m_depth_image;
 
+    std::vector<SceneObject> m_objects;
+
     RenderResources m_resources;
     Pipelines m_pipelines;
 

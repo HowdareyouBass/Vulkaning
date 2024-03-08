@@ -41,15 +41,15 @@ void run_application()
     // ving::SimpleCubeRenderer cube_renderer{core};
     // ving::SkyboxRenderer skybox_renderer{core, scene};
     // ving::WaterRenderer water_renderer{core, scene};
-    ving::PathTracingRenderer path_tracing_renderer{core, scene};
+    // ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
-    ving::VulkanRaytracer vulkan_raytracer{core, frames};
+    // ving::VulkanRaytracer vulkan_raytracer{core, frames};
 
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
                                    100.0f, 0.1f, glm::radians(60.0f)};
-    // camera.position = {0.0f, 5.5f, -5.0f};
+    camera.position += 1.0f;
 
     bool running = true;
     SDL_Event event;
@@ -128,7 +128,7 @@ void run_application()
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame(profiler);
         {
-            ving::Task camera_update{profiler, "Camera Update"};
+            ving::Task profile_camera_update{profiler, "Camera Update"};
 
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera.move_speed;
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera.move_speed;
@@ -143,18 +143,18 @@ void run_application()
                 camera.rotation.y = glm::mod(camera.rotation.y, glm::two_pi<float>());
             }
             camera.update();
-            camera_update.stop();
+            profile_camera_update.stop();
 
-            ving::Task recording{profiler, "Recording"};
+            ving::Task profile_recording{profiler, "Recording"};
             // cube_renderer.render(frame, camera);
             // imgui_renderer.render(frame, []() {});
             // skybox_renderer.render(frame, camera, scene);
             // water_renderer.render(frame, camera, scene);
             // path_tracing_renderer.render(frame, camera, scene);
-            // gi_renderer.render(frame, camera, scene);
-            vulkan_raytracer.render(frame, camera);
+            gi_renderer.render(frame, camera, scene);
+            // vulkan_raytracer.render(frame, camera);
             imgui_renderer.render(frame, profiler, {scene.get_imgui(), /* path_tracing_renderer.get_imgui() */});
-            recording.stop();
+            profile_recording.stop();
         }
         frames.end_frame(profiler);
     }
