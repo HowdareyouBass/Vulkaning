@@ -22,8 +22,8 @@ class PerspectiveCamera
   public:
     PerspectiveCamera(float aspect, float near, float far, float fov);
 
-    glm::vec3 position{1.0f, 1.0f, 1.0f};
-    glm::vec3 rotation{0.0f, 0.0f, 0.0f};
+    glm::vec3 position{0.0f};
+    glm::vec3 rotation{0.0f};
 
     float move_speed{0.01f};
     float mouse_look_speed{0.0002f};

@@ -30,11 +30,11 @@ layout (set = 0, binding = 0) uniform samplerCube sampler_cube_map;
 
 struct CameraInfo
 {
-    vec3 up;
-    float dummy;
-    vec3 right;
-    float dummy1;
     vec3 forward;
+    float dummy;
+    vec3 up;
+    float dummy1;
+    vec3 right;
     float dummy2;
     vec3 position;
     float dummy3;

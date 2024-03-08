@@ -39,7 +39,7 @@ void run_application()
     ving::RenderFrames frames{core};
     // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
     // ving::SimpleCubeRenderer cube_renderer{core};
-    // ving::SkyboxRenderer skybox_renderer{core, scene};
+    ving::SkyboxRenderer skybox_renderer{core, scene};
     // ving::WaterRenderer water_renderer{core, scene};
     // ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
@@ -49,7 +49,6 @@ void run_application()
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
                                    100.0f, 0.1f, glm::radians(60.0f)};
-    camera.position += 1.0f;
 
     bool running = true;
     SDL_Event event;
@@ -148,7 +147,7 @@ void run_application()
             ving::Task profile_recording{profiler, "Recording"};
             // cube_renderer.render(frame, camera);
             // imgui_renderer.render(frame, []() {});
-            // skybox_renderer.render(frame, camera, scene);
+            skybox_renderer.render(frame, camera, scene);
             // water_renderer.render(frame, camera, scene);
             // path_tracing_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);

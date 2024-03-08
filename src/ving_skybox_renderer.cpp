@@ -34,8 +34,8 @@ SkyboxRenderer::SkyboxRenderer(const Core &core, const Scene &scene) : r_core{co
     m_resources.get_resource(ResourceIds::Skybox).write_buffer(core.device(), 1, m_camera_info_buffer);
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/skybox.vert.spv", "shaders/skybox.frag.spv", m_resources.layouts(), vk::Format::eR16G16B16A16Sfloat,
-        vk::Format::eUndefined, vk::PolygonMode::eFill);
+        "shaders/bin/skybox.vert.spv", "shaders/bin/skybox.frag.spv", m_resources.layouts(),
+        vk::Format::eR16G16B16A16Sfloat, vk::Format::eUndefined, vk::PolygonMode::eFill);
 }
 void SkyboxRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene)
 {

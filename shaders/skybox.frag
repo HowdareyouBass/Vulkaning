@@ -17,11 +17,11 @@ layout (push_constant) uniform constants
 
 struct CameraInfo
 {
-    vec3 up;
-    float dummy;
-    vec3 right;
-    float dummy1;
     vec3 forward;
+    float dummy;
+    vec3 up;
+    float dummy1;
+    vec3 right;
     float dummy2;
     vec3 position;
 };

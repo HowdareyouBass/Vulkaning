@@ -20,10 +20,8 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
     m_cube = SceneObject{SimpleMesh::cube_interpolated_normals(core), {}};
 
     m_objects.push_back(SceneObject{SimpleMesh::cube_interpolated_normals(core), {}});
-
     m_objects.push_back(SceneObject{SimpleMesh::cube_interpolated_normals(core), {}});
-
-    m_objects[1].transform.translation.x += 5.0f;
+    m_objects[1].transform.translation.x += 3.0f;
 
     // m_push_constants.vertex_buffer_address = m_cube.mesh.gpu_buffers.vertex_buffer_address;
 
@@ -41,7 +39,7 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
     img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
     m_depth_image.transition_layout(cmd, vk::ImageLayout::eDepthAttachmentOptimal);
 
-    start_rendering3d(cmd, img, m_depth_image);
+    start_rendering3d(cmd, img, m_depth_image, vk::AttachmentLoadOp::eLoad);
 
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors(),

@@ -22,8 +22,8 @@ void BaseRenderer::start_rendering2d(vk::CommandBuffer cmd, const Image2D &rende
 
     cmd.beginRendering(render_info);
 }
-void BaseRenderer::start_rendering3d(vk::CommandBuffer cmd, const Image2D &render_image,
-                                     const Image2D &depth_image) const
+void BaseRenderer::start_rendering3d(vk::CommandBuffer cmd, const Image2D &render_image, const Image2D &depth_image,
+                                     vk::AttachmentLoadOp load_op) const
 {
     assert(render_image.extent() == depth_image.extent());
 
@@ -32,7 +32,7 @@ void BaseRenderer::start_rendering3d(vk::CommandBuffer cmd, const Image2D &rende
     auto color_attachment = vk::RenderingAttachmentInfo{}
                                 .setImageView(render_image.view())
                                 .setImageLayout(render_image.layout())
-                                .setLoadOp(vk::AttachmentLoadOp::eClear)
+                                .setLoadOp(load_op)
                                 .setStoreOp(vk::AttachmentStoreOp::eStore)
                                 .setClearValue(clear);
 
