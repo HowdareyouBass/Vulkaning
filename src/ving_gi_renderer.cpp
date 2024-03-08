@@ -19,9 +19,11 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
 
     m_cube = SceneObject{SimpleMesh::cube_interpolated_normals(core), {}};
 
-    m_objects.push_back(SceneObject{SimpleMesh::cube_interpolated_normals(core), {}});
-    m_objects.push_back(SceneObject{SimpleMesh::cube_interpolated_normals(core), {}});
-    m_objects[1].transform.translation.x += 3.0f;
+    // m_objects.push_back(SceneObject{SimpleMesh::cube_interpolated_normals(core), {}});
+    // m_objects.push_back(SceneObject{SimpleMesh::cube_interpolated_normals(core), {}});
+    // m_objects[1].transform.translation.x += 3.0f;
+    m_objects.push_back(SceneObject{Mesh::load_from_file(core, "assets/models/smooth_vase.obj"), {}});
+
 
     // m_push_constants.vertex_buffer_address = m_cube.mesh.gpu_buffers.vertex_buffer_address;
 

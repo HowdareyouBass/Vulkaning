@@ -11,6 +11,8 @@
 
 namespace ving
 {
+class Core;
+
 struct Vertex
 {
     glm::vec3 position;
@@ -32,6 +34,8 @@ struct Mesh
     GPUMeshBuffers gpu_buffers;
     uint32_t indices_count;
     uint32_t vertices_count;
+
+    static Mesh load_from_file(const Core &core, std::string_view filepath);
 };
 
 struct RayTracedMesh
