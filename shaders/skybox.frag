@@ -40,9 +40,9 @@ void main()
     // vec3 sun_color = vec3(0.9, 0.9, 0.9);
 
     vec3 uvw = normalize(in_UVW);
-    uvw.z *= -1;
+    // uvw.z *= -1;
 
     float sun_strength = clamp(0.0, 1.0, dot(uvw, pc.light_direction.xyz) - 1.0 + sun_radius) * pc.light_direction.w;
 
-    out_color = texture(sampler_cube_map, in_UVW) + vec4(sun_color * sun_strength, 1.0);
+    out_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
 }

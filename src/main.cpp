@@ -116,7 +116,7 @@ void run_application()
             // camera_rotate_dir.y += (mouse_x_relative_to_center > 0) - (mouse_x_relative_to_center < 0);
             // camera_rotate_dir.x += (mouse_y_relative_to_center > 0) - (mouse_y_relative_to_center < 0);
             camera_rotate_dir.y += mouse_x_relative_to_center;
-            camera_rotate_dir.x += mouse_y_relative_to_center;
+            camera_rotate_dir.x -= mouse_y_relative_to_center;
 
             SDL_WarpMouseInWindow(window, halfwidth, halfheight);
             SDL_HideCursor();
