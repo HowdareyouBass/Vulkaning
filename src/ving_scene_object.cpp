@@ -197,4 +197,12 @@ RayTracedMesh SimpleMesh::cube_raytraced(const Core &core, vk::TransformMatrixKH
 
     return {std::move(vertex_buffer), std::move(index_buffer), std::move(transform_buffer), vertices.size()};
 }
+glm::mat4 Transform::mat4() const noexcept
+{
+    glm::mat4 mtx{1.0f};
+
+    mtx[1][1] = -mtx[1][1];
+
+    return mtx;
+}
 } // namespace ving

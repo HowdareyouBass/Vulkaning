@@ -48,7 +48,7 @@ void run_application()
     ving::ImGuiRenderer imgui_renderer{core, window};
     ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
                                        static_cast<float>(core.get_window_extent().height),
-                                   100.0f, 0.1f, glm::radians(60.0f)};
+                                   1000.0f, 0.001f, glm::radians(60.0f)};
 
     bool running = true;
     SDL_Event event;
@@ -74,6 +74,7 @@ void run_application()
             imgui_renderer.process_sdl_event(event);
         }
 
+        // Camera Movement controls
         if (keys[SDL_SCANCODE_W])
             camera_direction.z = 1;
         if (keys[SDL_SCANCODE_S])

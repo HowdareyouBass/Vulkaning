@@ -17,6 +17,17 @@ class GiRenderer : public BaseRenderer
         vk::DeviceAddress vertex_buffer_address;
     };
 
+    struct SceneData
+    {
+        glm::vec4 light_direction;
+    };
+
+    struct UniformBufferObject
+    {
+        SceneData scene_data;
+        CameraInfo camera_info;
+    };
+
     enum RenderResourceIds : uint32_t
     {
         Global,
@@ -32,15 +43,15 @@ class GiRenderer : public BaseRenderer
     const Core &r_core;
 
     PushConstants m_push_constants;
-    CameraInfo m_camera_info;
 
     Image2D m_depth_image;
-
-    std::vector<SceneObject> m_objects;
 
     RenderResources m_resources;
     Pipelines m_pipelines;
 
-    SceneObject m_cube;
+    std::vector<SceneObject> m_objects;
+
+    GPUBuffer m_uniform_buffer;
+    UniformBufferObject *m_ubo;
 };
 } // namespace ving

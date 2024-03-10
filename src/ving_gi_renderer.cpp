@@ -11,21 +11,20 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
     auto render_resource_infos = std::vector<RenderResourceCreateInfo>{
         {RenderResourceIds::Global,
          {
-             {0, vk::DescriptorType::eUniformBuffer}, // Camera Info
+             {0, vk::DescriptorType::eUniformBuffer}, // Camera and Scene info
          }},
     };
     m_resources = core.allocate_render_resources(render_resource_infos,
                                                  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
-    m_cube = SceneObject{SimpleMesh::cube_interpolated_normals(core), {}};
+    m_uniform_buffer =
+        core.create_cpu_visible_gpu_buffer(sizeof(UniformBufferObject), vk::BufferUsageFlagBits::eUniformBuffer);
+    m_uniform_buffer.map_data();
+    m_ubo = static_cast<UniformBufferObject *>(m_uniform_buffer.data());
 
-    // m_objects.push_back(SceneObject{SimpleMesh::cube_interpolated_normals(core), {}});
-    // m_objects.push_back(SceneObject{SimpleMesh::cube_interpolated_normals(core), {}});
-    // m_objects[1].transform.translation.x += 3.0f;
+    m_resources.get_resource(RenderResourceIds::Global).write_buffer(core.device(), 0, m_uniform_buffer);
+
     m_objects.push_back(SceneObject{Mesh::load_from_file(core, "assets/models/smooth_vase.obj"), {}});
-
-
-    // m_push_constants.vertex_buffer_address = m_cube.mesh.gpu_buffers.vertex_buffer_address;
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/bin/test.vert.spv", "shaders/bin/test.frag.spv", m_resources.layouts(),
@@ -33,7 +32,8 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
 };
 void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene)
 {
-    m_camera_info = camera.camera_info();
+    m_ubo->camera_info = camera.camera_info();
+    m_ubo->scene_data.light_direction = scene.light_direction;
 
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
@@ -49,6 +49,10 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
 
     for (auto &&obj : m_objects)
     {
+        // obj.transform.rotation.x += 0.001f * frame.delta_time;
+        // obj.transform.rotation.y += 0.0005f * frame.delta_time;
+        // obj.transform.translation.z -= 0.0005f * frame.delta_time;
+
         m_push_constants.vertex_buffer_address = obj.mesh.gpu_buffers.vertex_buffer_address;
         m_push_constants.pvm_transform = camera.projection() * camera.view() * obj.transform.mat4();
 
