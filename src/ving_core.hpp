@@ -139,7 +139,8 @@ class Core
         std::string_view vertex_shader_path, std::string_view fragment_shader_path,
         const std::vector<vk::DescriptorSetLayout> &descriptor_layouts, vk::Format color_attachment_format,
         vk::Format depth_attachment_format = vk::Format::eUndefined,
-        vk::PolygonMode polygon_mode = vk::PolygonMode::eFill) const
+        vk::PolygonMode polygon_mode = vk::PolygonMode::eFill,
+        vk::CullModeFlags cull_mode = vk::CullModeFlagBits::eNone) const
     {
         auto fragment_shader = utils::create_shader_module(*m_device, fragment_shader_path);
         auto vertex_shader = utils::create_shader_module(*m_device, vertex_shader_path);
@@ -173,7 +174,7 @@ class Core
                               .setPolygonMode(polygon_mode)
                               // .setPolygonMode(vk::PolygonMode::eLine)
                               .setLineWidth(1.0f)
-                              .setCullMode(vk::CullModeFlagBits::eNone)
+                              .setCullMode(cull_mode)
                               .setFrontFace(vk::FrontFace::eClockwise);
         auto multisampling = vk::PipelineMultisampleStateCreateInfo{}
                                  .setSampleShadingEnable(vk::False)

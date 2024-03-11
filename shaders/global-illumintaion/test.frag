@@ -36,6 +36,7 @@ void main()
     // out_color = vec4(in_normal * 0.5 + 0.5, 1.0);
     
     float diffuse = dot(in_normal, ubo.scene.light_direction.xyz);
+    diffuse = 1.0;
 
     out_color = diffuse * frag_color;
 }

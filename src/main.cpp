@@ -18,6 +18,9 @@
 
 const Uint8 *keys;
 
+constexpr bool show_camera_vectors = true;
+constexpr bool show_cameras_as_cubes = false;
+
 void run_application()
 {
     if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
@@ -34,6 +37,28 @@ void run_application()
     scene.skybox_cubemap = ving::utils::load_cube_map("assets/textures/skies.ktx", core);
     scene.skybox_sampler = core.create_sampler(scene.skybox_cubemap.mip_levels());
 
+    scene.objects.push_back(
+        ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.5f, 0.5f, 0.5f, 1.0f}),
+                          {{}, glm::vec3{0.1f}, {}}});
+    scene.objects.push_back(
+        ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.9f, 0.9f, 0.9f, 1.0f}),
+                          {{}, glm::vec3{0.1f}, {}}});
+
+    if constexpr (show_camera_vectors)
+    {
+        scene.objects.push_back(
+            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {1.0f, 0.0f, 0.0f, 1.0f}),
+                              {{}, glm::vec3{0.03f}, {}}});
+        scene.objects.push_back(
+            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.0f, 1.0f, 0.0f, 1.0f}),
+                              {{}, glm::vec3{0.03f}, {}}});
+        scene.objects.push_back(
+            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.0f, 0.0f, 1.0f, 1.0f}),
+                              {{}, glm::vec3{0.03f}, {}}});
+    }
+
+    scene.objects.push_back(ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj"), {}});
+
     ving::Profiler profiler;
 
     ving::RenderFrames frames{core};
@@ -46,10 +71,17 @@ void run_application()
     // ving::VulkanRaytracer vulkan_raytracer{core, frames};
 
     ving::ImGuiRenderer imgui_renderer{core, window};
-    ving::PerspectiveCamera camera{static_cast<float>(core.get_window_extent().width) /
-                                       static_cast<float>(core.get_window_extent().height),
-                                   1000.0f, 0.001f, glm::radians(60.0f)};
 
+    ving::PerspectiveCamera camera_1{static_cast<float>(core.get_window_extent().width) /
+                                         static_cast<float>(core.get_window_extent().height),
+                                     1000.0f, 0.001f, glm::radians(60.0f)};
+    // ving::PerspectiveCamera camera_2{static_cast<float>(core.get_window_extent().width) /
+    //                                      static_cast<float>(core.get_window_extent().height),
+    //                                  1000.0f, 0.001f, glm::radians(90.0f)};
+
+    ving::PerspectiveCamera camera_2{static_cast<float>(core.get_window_extent().width) /
+                                         static_cast<float>(core.get_window_extent().height),
+                                     0.001f, 1000.0f, glm::radians(60.0f)};
     bool running = true;
     SDL_Event event;
 
@@ -76,17 +108,17 @@ void run_application()
 
         // Camera Movement controls
         if (keys[SDL_SCANCODE_W])
-            camera_direction.z = 1;
+            camera_direction.z += 1;
         if (keys[SDL_SCANCODE_S])
-            camera_direction.z = -1;
+            camera_direction.z += -1;
         if (keys[SDL_SCANCODE_D])
-            camera_direction.x = 1;
+            camera_direction.x += 1;
         if (keys[SDL_SCANCODE_A])
-            camera_direction.x = -1;
+            camera_direction.x += -1;
         if (keys[SDL_SCANCODE_SPACE])
-            camera_direction.y = 1;
+            camera_direction.y += 1;
         if (keys[SDL_SCANCODE_C])
-            camera_direction.y = -1;
+            camera_direction.y += -1;
 
         // Camera rotation controls
         if (keys[SDL_SCANCODE_UP])
@@ -126,6 +158,14 @@ void run_application()
             SDL_ShowCursor();
         }
 
+        ving::PerspectiveCamera *cameraptr = &camera_1;
+        static int e;
+        if (e == 1)
+        {
+            cameraptr = &camera_2;
+        }
+        ving::PerspectiveCamera &camera = *cameraptr;
+
         ving::RenderFrames::FrameInfo frame = frames.begin_frame(profiler);
         {
             ving::Task profile_camera_update{profiler, "Camera Update"};
@@ -143,17 +183,41 @@ void run_application()
                 camera.rotation.y = glm::mod(camera.rotation.y, glm::two_pi<float>());
             }
             camera.update();
+            if constexpr (show_cameras_as_cubes)
+            {
+                scene.objects[0].transform.translation = camera_1.position;
+                scene.objects[0].transform.rotation = camera_1.rotation;
+                scene.objects[1].transform.translation = camera_2.position;
+                scene.objects[1].transform.rotation = camera_2.rotation;
+            }
+
+            if constexpr (show_camera_vectors)
+            {
+
+                scene.objects[2].transform.translation = camera_1.position + camera_1.right();
+                scene.objects[3].transform.translation = camera_1.position + camera_1.up();
+                scene.objects[4].transform.translation = camera_1.position + camera_1.forward();
+            }
+
             profile_camera_update.stop();
 
             ving::Task profile_recording{profiler, "Recording"};
-            // cube_renderer.render(frame, camera);
-            // imgui_renderer.render(frame, []() {});
             skybox_renderer.render(frame, camera, scene);
-            // water_renderer.render(frame, camera, scene);
-            // path_tracing_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);
-            // vulkan_raytracer.render(frame, camera);
-            imgui_renderer.render(frame, profiler, {scene.get_imgui(), /* path_tracing_renderer.get_imgui() */});
+
+            imgui_renderer.render(
+                frame, profiler,
+                {scene.get_imgui(), gi_renderer.get_imgui(), [&camera, &scene]() {
+                     ImGui::RadioButton("Cam 1", &e, 0);
+                     ImGui::RadioButton("Cam 2", &e, 1);
+                     ImGui::Text("%d", e);
+
+                     ImGui::Spacing();
+
+                     ImGui::Text("%.3f %.3f %.3f", camera.position.x, camera.position.y, camera.position.z);
+                     ImGui::DragFloat3(
+                         "Object pos:", reinterpret_cast<float *>(&scene.objects[5].transform.translation), 0.01f);
+                 }});
             profile_recording.stop();
         }
         frames.end_frame(profiler);

@@ -1,6 +1,7 @@
 #include "ving_camera.hpp"
 
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/transform.hpp>
 
 namespace ving
 {
@@ -47,46 +48,8 @@ void PerspectiveCamera::set_view_direction(glm::vec3 direction, glm::vec3 up)
 }
 void PerspectiveCamera::update_view()
 {
-    // const float c3 = glm::cos(rotation.z);
-    // const float s3 = glm::sin(rotation.z);
-    // const float c2 = glm::cos(rotation.x);
-    // const float s2 = glm::sin(rotation.x);
-    // const float c1 = glm::cos(rotation.y);
-    // const float s1 = glm::sin(rotation.y);
-    // m_right = glm::vec3{(c1 * c3 + s1 * s2 * s3), (c2 * s3), (c1 * s2 * s3 - c3 * s1)};
-    // m_up = glm::vec3{(c3 * s1 * s2 - c1 * s3), (c2 * c3), (c1 * c3 * s2 + s1 * s3)};
-    // m_forward = glm::vec3{(c2 * s1), (-s2), (c1 * c2)};
-    // m_view = glm::mat4{1.f};
-    // m_view[0][0] = m_right.x;
-    // m_view[1][0] = m_right.y;
-    // m_view[2][0] = m_right.z;
-    // m_view[0][1] = m_up.x;
-    // m_view[1][1] = m_up.y;
-    // m_view[2][1] = m_up.z;
-    // m_view[0][2] = m_forward.x;
-    // m_view[1][2] = m_forward.y;
-    // m_view[2][2] = m_forward.z;
-    // m_view[3][0] = -glm::dot(m_right, position);
-    // m_view[3][1] = glm::dot(m_up, position);
-    // m_view[3][2] = -glm::dot(m_forward, position);
-
     m_view = glm::mat4{1.0f};
-
-    // NOTE: Negating y component to convert from vulkan space to engine space
-    glm::vec3 engine_space_pos = position;
-    engine_space_pos.y = -engine_space_pos.y;
-
-    // glm::mat4 translation_transform{1.0f};
-    //
-    // translation_transform[3][0] = -glm::dot(m_right, engine_space_pos);
-    // translation_transform[3][1] = -glm::dot(m_up, engine_space_pos);
-    // translation_transform[3][2] = -glm::dot(m_forward, engine_space_pos);
-
-    // glm::mat4 rotation_transform{1.0f};
-    // rotation_transform = glm::rotate(rotation_transform, -rotation.y, {0.0f, 1.0f, 0.0f}) *
-    //                      glm::rotate(rotation_transform, -rotation.x, {1.0f, 0.0f, 0.0f}) *
-    //                      glm::rotate(rotation_transform, -rotation.z, {0.0f, 0.0f, 1.0f});
-
+#if 0
     const float s1 = glm::sin(rotation.y);
     const float c1 = glm::cos(rotation.y);
     const float s2 = glm::sin(rotation.x);
@@ -94,23 +57,9 @@ void PerspectiveCamera::update_view()
     const float s3 = glm::sin(rotation.z);
     const float c3 = glm::cos(rotation.z);
 
-    // m_right = {c1 * c3 + s1 * s2 * s3, c2 * s3, c1 * s2 * s3 - c3 * s1};
-    // m_up = {c3 * s1 * s2 - c1 * s3, c2 * c3, c1 * c3 * s2 + s1 * s3};
-    // m_forward = {c2 * s1, -s2, c1 * c2};
-
     m_right = glm::vec3{(c1 * c3 + s1 * s2 * s3), (c2 * s3), (c1 * s2 * s3 - c3 * s1)};
     m_up = glm::vec3{(c3 * s1 * s2 - c1 * s3), (c2 * c3), (c1 * c3 * s2 + s1 * s3)};
     m_forward = glm::vec3{(c2 * s1), (-s2), (c1 * c2)};
-
-    // glm::mat4 rotation_transform = {
-    //     {m_right, 0.0f},
-    //     {m_up, 0.0f},
-    //     {m_forward, 0.0f},
-    //     {0.0f, 0.0f, 0.0f, 1.0f},
-    // };
-    // rotation_transform = glm::transpose(rotation_transform);
-    //
-    // m_view = rotation_transform * translation_transform;
 
     m_view[0][0] = m_right.x;
     m_view[1][0] = m_right.y;
@@ -122,8 +71,23 @@ void PerspectiveCamera::update_view()
     m_view[1][2] = m_forward.y;
     m_view[2][2] = m_forward.z;
 
-    m_view[3][0] = -glm::dot(m_right, engine_space_pos);
-    m_view[3][1] = -glm::dot(m_up, engine_space_pos);
-    m_view[3][2] = -glm::dot(m_forward, engine_space_pos);
+    m_view[3][0] = -glm::dot(m_right, position);
+    m_view[3][1] = -glm::dot(m_up, position);
+    m_view[3][2] = -glm::dot(m_forward, position);
+#else
+    glm::mat4 rot{1.0f};
+    rot = glm::rotate(rot, rotation.y, {0.0f, 1.0f, 0.0f});
+    rot = glm::rotate(rot, rotation.x, {1.0f, 0.0f, 0.0f});
+    rot = glm::rotate(rot, rotation.z, {0.0f, 0.0f, 1.0f});
+    m_right = rot[0];
+    m_up = rot[1];
+    m_forward = rot[2];
+    rot = glm::transpose(rot);
+
+    glm::mat4 trans = glm::translate(-glm::vec3{position.x, -position.y, position.z});
+
+    m_view = rot * trans;
+
+#endif
 }
 } // namespace ving

@@ -7,7 +7,7 @@
 
 namespace ving
 {
-Mesh Mesh::load_from_file(const Core &core, std::string_view filepath)
+Mesh Mesh::load_from_file(const Core &core, std::string_view filepath, glm::vec4 color)
 {
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
@@ -29,11 +29,8 @@ Mesh Mesh::load_from_file(const Core &core, std::string_view filepath)
 
     for (size_t i = 0; i < attrib.vertices.size(); i += 3)
     {
-        model_vertices.push_back(Vertex{{attrib.vertices[i + 0], attrib.vertices[i + 1], attrib.vertices[i + 2]},
-                                        0,
-                                        {},
-                                        0,
-                                        {1.0f, 1.0f, 1.0f, 1.0f}});
+        model_vertices.push_back(
+            Vertex{{attrib.vertices[i + 0], attrib.vertices[i + 1], attrib.vertices[i + 2]}, 0, {}, 0, color});
     }
 
     size_t total_mesh_indices = 0;
@@ -201,7 +198,13 @@ glm::mat4 Transform::mat4() const noexcept
 {
     glm::mat4 mtx{1.0f};
 
-    mtx[1][1] = -mtx[1][1];
+    // mtx[1][1] = -mtx[1][1];
+
+    mtx = glm::translate(mtx, translation);
+    mtx = glm::scale(mtx, scale);
+    mtx = glm::rotate(mtx, rotation.y, {0.0f, 1.0f, 0.0f});
+    mtx = glm::rotate(mtx, rotation.x, {1.0f, 0.0f, 0.0f});
+    mtx = glm::rotate(mtx, rotation.z, {0.0f, 0.0f, 1.0f});
 
     return mtx;
 }

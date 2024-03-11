@@ -47,7 +47,6 @@ layout (set = 0, binding = 1) uniform CameraInfoBuffer
 
 void main()
 {
-
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex];
 
     out_UVW = normalize(v.position.x * camera_info.right + v.position.y * camera_info.up + camera_info.forward);

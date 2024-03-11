@@ -35,7 +35,7 @@ struct Mesh
     uint32_t indices_count;
     uint32_t vertices_count;
 
-    static Mesh load_from_file(const Core &core, std::string_view filepath);
+    static Mesh load_from_file(const Core &core, std::string_view filepath, glm::vec4 color = {1.0f, 1.0f, 1.0f, 1.0f});
 };
 
 struct RayTracedMesh

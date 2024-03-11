@@ -2,6 +2,7 @@
 
 #include "glm/geometric.hpp"
 #include "ving_image.hpp"
+#include "ving_scene_object.hpp"
 #include <functional>
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
@@ -16,6 +17,8 @@ struct Scene
 
     Image2D skybox_cubemap;
     vk::UniqueSampler skybox_sampler;
+
+    std::vector<SceneObject> objects;
 
     std::function<void()> get_imgui()
     {

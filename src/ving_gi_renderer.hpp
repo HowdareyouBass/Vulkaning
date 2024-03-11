@@ -49,8 +49,6 @@ class GiRenderer : public BaseRenderer
     RenderResources m_resources;
     Pipelines m_pipelines;
 
-    std::vector<SceneObject> m_objects;
-
     GPUBuffer m_uniform_buffer;
     UniformBufferObject *m_ubo;
 };

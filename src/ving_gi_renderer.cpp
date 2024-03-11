@@ -24,11 +24,9 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
 
     m_resources.get_resource(RenderResourceIds::Global).write_buffer(core.device(), 0, m_uniform_buffer);
 
-    m_objects.push_back(SceneObject{Mesh::load_from_file(core, "assets/models/smooth_vase.obj"), {}});
-
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/bin/test.vert.spv", "shaders/bin/test.frag.spv", m_resources.layouts(),
-        RenderFrames::render_image_format, m_depth_image.format());
+        RenderFrames::render_image_format, m_depth_image.format(), vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
 };
 void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene)
 {
@@ -46,8 +44,12 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors(),
                            nullptr);
+    set_default_viewport_and_scissor(cmd, img);
 
-    for (auto &&obj : m_objects)
+    glm::mat4 vulkan_to_engine{1.0f};
+    vulkan_to_engine[1][1] = -vulkan_to_engine[1][1];
+
+    for (auto &&obj : scene.objects)
     {
         // obj.transform.rotation.x += 0.001f * frame.delta_time;
         // obj.transform.rotation.y += 0.0005f * frame.delta_time;
@@ -59,7 +61,6 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
         cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                          vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                          m_push_constants);
-        set_default_viewport_and_scissor(cmd, img);
         cmd.bindIndexBuffer(obj.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
         cmd.drawIndexed(obj.mesh.indices_count, 1, 0, 0, 0);
     }
