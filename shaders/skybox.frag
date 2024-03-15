@@ -45,4 +45,5 @@ void main()
     float sun_strength = clamp(0.0, 1.0, dot(uvw, pc.light_direction.xyz) - 1.0 + sun_radius) * pc.light_direction.w;
 
     out_color = texture(sampler_cube_map, uvw) + vec4(sun_color * sun_strength, 1.0);
+    // out_color = vec4(0.7f, 0.7f, 0.7f, 1.0f);
 }

@@ -18,7 +18,7 @@
 
 const Uint8 *keys;
 
-constexpr bool show_camera_vectors = true;
+constexpr bool show_camera_vectors = false;
 constexpr bool show_cameras_as_cubes = false;
 
 void run_application()
@@ -37,12 +37,15 @@ void run_application()
     scene.skybox_cubemap = ving::utils::load_cube_map("assets/textures/skies.ktx", core);
     scene.skybox_sampler = core.create_sampler(scene.skybox_cubemap.mip_levels());
 
-    scene.objects.push_back(
-        ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.5f, 0.5f, 0.5f, 1.0f}),
-                          {{}, glm::vec3{0.1f}, {}}});
-    scene.objects.push_back(
-        ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.9f, 0.9f, 0.9f, 1.0f}),
-                          {{}, glm::vec3{0.1f}, {}}});
+    if constexpr (show_cameras_as_cubes)
+    {
+        scene.objects.push_back(
+            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.5f, 0.5f, 0.5f, 1.0f}),
+                              {{}, glm::vec3{0.1f}, {}}});
+        scene.objects.push_back(
+            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.9f, 0.9f, 0.9f, 1.0f}),
+                              {{}, glm::vec3{0.1f}, {}}});
+    }
 
     if constexpr (show_camera_vectors)
     {
@@ -140,6 +143,7 @@ void run_application()
 
         float halfwidth = static_cast<float>(core.get_window_extent().width) / 2.0f;
         float halfheight = static_cast<float>(core.get_window_extent().height) / 2.0f;
+
         if ((mouse_buttons & SDL_BUTTON_RMASK) != 0)
         {
             float mouse_x_relative_to_center = mouse_x - halfwidth;
@@ -148,7 +152,7 @@ void run_application()
             // camera_rotate_dir.y += (mouse_x_relative_to_center > 0) - (mouse_x_relative_to_center < 0);
             // camera_rotate_dir.x += (mouse_y_relative_to_center > 0) - (mouse_y_relative_to_center < 0);
             camera_rotate_dir.y += mouse_x_relative_to_center;
-            camera_rotate_dir.x -= mouse_y_relative_to_center;
+            camera_rotate_dir.x += mouse_y_relative_to_center;
 
             SDL_WarpMouseInWindow(window, halfwidth, halfheight);
             SDL_HideCursor();
@@ -171,6 +175,7 @@ void run_application()
             ving::Task profile_camera_update{profiler, "Camera Update"};
 
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera.move_speed;
+            // NOTE: Camera Position is in vulkan space
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera.move_speed;
             camera.position += camera.forward() * camera_direction.z * frame.delta_time * camera.move_speed;
 
@@ -193,7 +198,6 @@ void run_application()
 
             if constexpr (show_camera_vectors)
             {
-
                 scene.objects[2].transform.translation = camera_1.position + camera_1.right();
                 scene.objects[3].transform.translation = camera_1.position + camera_1.up();
                 scene.objects[4].transform.translation = camera_1.position + camera_1.forward();

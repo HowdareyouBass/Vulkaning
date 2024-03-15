@@ -49,7 +49,7 @@ void main()
 {
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex];
 
-    out_UVW = normalize(v.position.x * camera_info.right + v.position.y * camera_info.up + camera_info.forward);
+    out_UVW = normalize(v.position.x * camera_info.right + -v.position.y * camera_info.up + camera_info.forward);
 
     gl_Position = pc.render_mtx * vec4(v.position, 1.0);
 

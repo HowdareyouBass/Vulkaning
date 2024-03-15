@@ -19,7 +19,7 @@ void PerspectiveCamera::update_projection()
     const float tan_half_fov = tan(m_fov / 2.0f);
 
     m_projection[0][0] = 1.0f / (m_aspect * tan_half_fov);
-    m_projection[1][1] = 1.0f / tan_half_fov;
+    m_projection[1][1] = -1.0f / tan_half_fov;
     m_projection[2][2] = m_far / (m_far - m_near);
     m_projection[3][2] = -m_far * m_near / (m_far - m_near);
     m_projection[2][3] = 1.0f;
@@ -72,7 +72,7 @@ void PerspectiveCamera::update_view()
     m_view[2][2] = m_forward.z;
 
     m_view[3][0] = -glm::dot(m_right, position);
-    m_view[3][1] = -glm::dot(m_up, position);
+    m_view[3][1] = glm::dot(m_up, position);
     m_view[3][2] = -glm::dot(m_forward, position);
 #else
     glm::mat4 rot{1.0f};
@@ -84,7 +84,7 @@ void PerspectiveCamera::update_view()
     m_forward = rot[2];
     rot = glm::transpose(rot);
 
-    glm::mat4 trans = glm::translate(-glm::vec3{position.x, -position.y, position.z});
+    glm::mat4 trans = glm::translate(glm::vec3{-position.x, -position.y, -position.z});
 
     m_view = rot * trans;
 
