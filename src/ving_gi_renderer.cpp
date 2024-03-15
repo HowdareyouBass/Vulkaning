@@ -51,10 +51,6 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
 
     for (auto &&obj : scene.objects)
     {
-        // obj.transform.rotation.x += 0.001f * frame.delta_time;
-        // obj.transform.rotation.y += 0.0005f * frame.delta_time;
-        // obj.transform.translation.z -= 0.0005f * frame.delta_time;
-
         m_push_constants.vertex_buffer_address = obj.mesh.gpu_buffers.vertex_buffer_address;
         m_push_constants.pvm_transform = camera.projection() * camera.view() * obj.transform.mat4();
 

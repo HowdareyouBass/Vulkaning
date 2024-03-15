@@ -220,7 +220,7 @@ void run_application()
 
                      ImGui::Text("%.3f %.3f %.3f", camera.position.x, camera.position.y, camera.position.z);
                      ImGui::DragFloat3(
-                         "Object pos:", reinterpret_cast<float *>(&scene.objects[5].transform.translation), 0.01f);
+                         "Object pos:", reinterpret_cast<float *>(&scene.objects.back().transform.translation), 0.01f);
                  }});
             profile_recording.stop();
         }
