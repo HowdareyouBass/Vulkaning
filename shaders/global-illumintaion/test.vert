@@ -4,6 +4,7 @@
 layout (location = 0) out vec4 out_color;
 layout (location = 1) out vec3 out_normal;
 layout (location = 2) out vec2 out_uv;
+layout (location = 3) out vec3 out_vpos;
 
 struct Vertex
 {
@@ -31,4 +32,5 @@ void main()
     out_color = v.color;
     out_normal = v.normal;
     out_uv = vec2(v.uv_x, v.uv_y);
+    out_vpos = gl_Position.xyz;
 }

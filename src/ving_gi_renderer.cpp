@@ -25,7 +25,7 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
     m_resources.get_resource(RenderResourceIds::Global).write_buffer(core.device(), 0, m_uniform_buffer);
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/bin/test.vert.spv", "shaders/bin/test.frag.spv", m_resources.layouts(),
+        "shaders/bin/test.vert.spv", "shaders/bin/gooch_shading.frag.spv", m_resources.layouts(),
         RenderFrames::render_image_format, m_depth_image.format(), vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
 };
 void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene)
