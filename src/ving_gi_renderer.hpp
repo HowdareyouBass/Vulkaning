@@ -27,6 +27,12 @@ class GiRenderer : public BaseRenderer
         SceneData scene_data;
         CameraInfo camera_info;
     };
+    struct PointLight
+    {
+        glm::vec3 position;
+        float intencity;
+        glm::vec4 color;
+    };
 
     enum RenderResourceIds : uint32_t
     {
@@ -51,5 +57,8 @@ class GiRenderer : public BaseRenderer
 
     GPUBuffer m_uniform_buffer;
     UniformBufferObject *m_ubo;
+
+    GPUBuffer m_point_lights_buffer;
+    std::span<PointLight> m_point_lights;
 };
 } // namespace ving

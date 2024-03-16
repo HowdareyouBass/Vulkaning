@@ -2,6 +2,9 @@
 
 namespace ving
 {
+
+constexpr uint32_t point_light_count = 1;
+
 GiRenderer::GiRenderer(const Core &core) : r_core{core}
 {
 
@@ -12,6 +15,7 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
         {RenderResourceIds::Global,
          {
              {0, vk::DescriptorType::eUniformBuffer}, // Camera and Scene info
+             {1, vk::DescriptorType::eStorageBuffer},
          }},
     };
     m_resources = core.allocate_render_resources(render_resource_infos,
@@ -24,8 +28,15 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
 
     m_resources.get_resource(RenderResourceIds::Global).write_buffer(core.device(), 0, m_uniform_buffer);
 
+    m_point_lights_buffer = core.create_cpu_visible_gpu_buffer(sizeof(PointLight) * point_light_count,
+                                                               vk::BufferUsageFlagBits::eStorageBuffer),
+    m_point_lights_buffer.map_data();
+    m_point_lights = std::span<PointLight>{static_cast<PointLight *>(m_point_lights_buffer.data()), point_light_count};
+
+    m_resources.get_resource(RenderResourceIds::Global).write_buffer(core.device(), 1, m_point_lights_buffer);
+
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/bin/test.vert.spv", "shaders/bin/gooch_shading.frag.spv", m_resources.layouts(),
+        "shaders/bin/test.vert.spv", "shaders/bin/lambertian_shading.frag.spv", m_resources.layouts(),
         RenderFrames::render_image_format, m_depth_image.format(), vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
 };
 void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene)
@@ -46,9 +57,6 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
                            nullptr);
     set_default_viewport_and_scissor(cmd, img);
 
-    glm::mat4 vulkan_to_engine{1.0f};
-    vulkan_to_engine[1][1] = -vulkan_to_engine[1][1];
-
     for (auto &&obj : scene.objects)
     {
         m_push_constants.vertex_buffer_address = obj.mesh.gpu_buffers.vertex_buffer_address;
@@ -65,6 +73,13 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
 }
 std::function<void()> GiRenderer::get_imgui()
 {
-    return []() {};
+    return [this]() {
+        for (uint32_t i = 0; auto &&light : m_point_lights)
+        {
+            ImGui::Text("Light #%d:", i + 1);
+            ImGui::DragFloat3("pos:", reinterpret_cast<float *>(&light.position), 0.01f);
+            ++i;
+        }
+    };
 }
 } // namespace ving

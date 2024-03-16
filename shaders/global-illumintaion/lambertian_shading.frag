@@ -1,5 +1,6 @@
 #version 460
 
+layout (location = 0) in vec4 frag_color;
 layout (location = 1) in vec3 in_normal;
 layout (location = 3) in vec3 in_vpos;
 
@@ -33,12 +34,14 @@ layout (binding = 0, set = 0) uniform Ubo
     UniformBufferObject ubo;
 };
 
+vec4 unlit(vec3 normal, vec3 view)
+{
+    return vec4(0.1, 0.1, 0.1, 1.0);
+}
+
 void main()
 {
     vec3 view = normalize(ubo.camera_info.position - in_vpos);
-    vec3 reflect = 2.0 * dot(in_normal, ubo.scene.light_direction.xyz) * in_normal - ubo.scene.light_direction.xyz;
-    float specular = clamp(100 * dot(reflect, view) - 98, 0.0, 1.0); 
-    float t = (dot(in_normal, ubo.scene.light_direction.xyz) + 1.0) / 2.0;
-
-    out_color = specular * highlight_color + (1 - specular) * (t * warm_color + (1 - t) * cool_color);
+    
+    out_color = unlit(in_normal, view) + clamp(dot(ubo.scene.light_direction.xyz, in_normal), 0.0, 1.0) * frag_color;
 }
