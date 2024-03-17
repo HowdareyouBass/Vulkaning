@@ -22,6 +22,7 @@ layout (push_constant) uniform constants
 {
     mat4 pvm_transform;
     VertexBuffer vertex_buffer;
+    int point_lights_count;
 } pc;
 
 void main()

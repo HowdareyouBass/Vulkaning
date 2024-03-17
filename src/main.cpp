@@ -78,13 +78,7 @@ void run_application()
     ving::PerspectiveCamera camera_1{static_cast<float>(core.get_window_extent().width) /
                                          static_cast<float>(core.get_window_extent().height),
                                      1000.0f, 0.001f, glm::radians(60.0f)};
-    // ving::PerspectiveCamera camera_2{static_cast<float>(core.get_window_extent().width) /
-    //                                      static_cast<float>(core.get_window_extent().height),
-    //                                  1000.0f, 0.001f, glm::radians(90.0f)};
 
-    ving::PerspectiveCamera camera_2{static_cast<float>(core.get_window_extent().width) /
-                                         static_cast<float>(core.get_window_extent().height),
-                                     0.001f, 1000.0f, glm::radians(60.0f)};
     bool running = true;
     SDL_Event event;
 
@@ -162,13 +156,7 @@ void run_application()
             SDL_ShowCursor();
         }
 
-        ving::PerspectiveCamera *cameraptr = &camera_1;
-        static int e;
-        if (e == 1)
-        {
-            cameraptr = &camera_2;
-        }
-        ving::PerspectiveCamera &camera = *cameraptr;
+        ving::PerspectiveCamera &camera = camera_1;
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame(profiler);
         {
@@ -192,8 +180,6 @@ void run_application()
             {
                 scene.objects[0].transform.translation = camera_1.position;
                 scene.objects[0].transform.rotation = camera_1.rotation;
-                scene.objects[1].transform.translation = camera_2.position;
-                scene.objects[1].transform.rotation = camera_2.rotation;
             }
 
             if constexpr (show_camera_vectors)
@@ -209,19 +195,8 @@ void run_application()
             skybox_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);
 
-            imgui_renderer.render(
-                frame, profiler,
-                {scene.get_imgui(), gi_renderer.get_imgui(), [&camera, &scene]() {
-                     ImGui::RadioButton("Cam 1", &e, 0);
-                     ImGui::RadioButton("Cam 2", &e, 1);
-                     ImGui::Text("%d", e);
+            imgui_renderer.render(frame, profiler, {scene.get_imgui(), gi_renderer.get_imgui()});
 
-                     ImGui::Spacing();
-
-                     ImGui::Text("%.3f %.3f %.3f", camera.position.x, camera.position.y, camera.position.z);
-                     ImGui::DragFloat3(
-                         "Object pos:", reinterpret_cast<float *>(&scene.objects.back().transform.translation), 0.01f);
-                 }});
             profile_recording.stop();
         }
         frames.end_frame(profiler);

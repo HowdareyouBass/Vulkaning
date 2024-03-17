@@ -15,6 +15,7 @@ class GiRenderer : public BaseRenderer
     {
         glm::mat4 pvm_transform;
         vk::DeviceAddress vertex_buffer_address;
+        uint32_t point_lights_count;
     };
 
     struct SceneData
@@ -46,6 +47,8 @@ class GiRenderer : public BaseRenderer
     std::function<void()> get_imgui();
 
   private:
+    static constexpr uint32_t point_light_count = 1;
+
     const Core &r_core;
 
     PushConstants m_push_constants;

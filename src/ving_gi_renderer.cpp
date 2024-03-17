@@ -2,9 +2,6 @@
 
 namespace ving
 {
-
-constexpr uint32_t point_light_count = 1;
-
 GiRenderer::GiRenderer(const Core &core) : r_core{core}
 {
 
@@ -15,7 +12,7 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
         {RenderResourceIds::Global,
          {
              {0, vk::DescriptorType::eUniformBuffer}, // Camera and Scene info
-             {1, vk::DescriptorType::eStorageBuffer},
+             // {1, vk::DescriptorType::eUniformBuffer}, // Point light buffer
          }},
     };
     m_resources = core.allocate_render_resources(render_resource_infos,
@@ -29,11 +26,11 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
     m_resources.get_resource(RenderResourceIds::Global).write_buffer(core.device(), 0, m_uniform_buffer);
 
     m_point_lights_buffer = core.create_cpu_visible_gpu_buffer(sizeof(PointLight) * point_light_count,
-                                                               vk::BufferUsageFlagBits::eStorageBuffer),
+                                                               vk::BufferUsageFlagBits::eUniformBuffer);
     m_point_lights_buffer.map_data();
     m_point_lights = std::span<PointLight>{static_cast<PointLight *>(m_point_lights_buffer.data()), point_light_count};
 
-    m_resources.get_resource(RenderResourceIds::Global).write_buffer(core.device(), 1, m_point_lights_buffer);
+    // m_resources.get_resource(RenderResourceIds::Global).write_buffer(core.device(), 1, m_point_lights_buffer);
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/bin/test.vert.spv", "shaders/bin/lambertian_shading.frag.spv", m_resources.layouts(),
@@ -61,6 +58,7 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
     {
         m_push_constants.vertex_buffer_address = obj.mesh.gpu_buffers.vertex_buffer_address;
         m_push_constants.pvm_transform = camera.projection() * camera.view() * obj.transform.mat4();
+        m_push_constants.point_lights_count = point_light_count;
 
         cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                          vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
