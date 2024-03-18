@@ -1,5 +1,4 @@
 #version 460
-#extension GL_EXT_buffer_reference : enable
 
 layout (location = 0) in vec4 frag_color;
 layout (location = 1) in vec3 in_normal;
@@ -7,16 +6,16 @@ layout (location = 3) in vec3 in_vpos;
 
 layout (location = 0) out vec4 out_color;
 
-layout (push_constant) uniform PushCosntants
-{
-    mat4 pvm_transform;
-    vec2 segfault;
-    uint pcount;
-} pc;
+// layout (push_constant) uniform PushCosntants
+// {
+//     mat4 pvm_transform;
+//     vec2 segfault;
+// } pushc;
 
 struct SceneData
 {
     vec4 light_direction;
+    uint point_lights_count;
 };
 struct CameraInfo
 {
@@ -27,11 +26,12 @@ struct CameraInfo
     vec3 right;
     float dummy2;
     vec3 position;
+    float dummy3;
 };
 struct UniformBufferObject
 {
-    SceneData scene;
     CameraInfo camera_info;
+    SceneData scene;
 };
 layout (binding = 0, set = 0) uniform Ubo
 {
@@ -59,18 +59,15 @@ void main()
 {
     vec3 view = normalize(ubo.camera_info.position - in_vpos);
    
-    float directional = clamp(dot(ubo.scene.light_direction.xyz, in_normal), 0.0, 1.0);
+    float directional = clamp(dot(ubo.scene.light_direction.xyz, in_normal), 0.0, 1.0) * ubo.scene.light_direction.w;
 
-    float p = 0.0;
+    float pp = 0.0;
 
-    uint a = 0;
-    a += pc.pcount;
-
-    for (int i = 0; i < a; ++i)
+    for (int i = 0; i < ubo.scene.point_lights_count; ++i)
     {
-        p += 0.01;
+        pp += 1.0;
     }
 
-
-    out_color = unlit(in_normal, view) + (directional + p) * frag_color;
+    // out_color = unlit(in_normal, view) + (directional + pp) * frag_color;
+    out_color = unlit(in_normal, view) + (directional+pp) * frag_color;
 }

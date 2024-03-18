@@ -15,18 +15,18 @@ class GiRenderer : public BaseRenderer
     {
         glm::mat4 pvm_transform;
         vk::DeviceAddress vertex_buffer_address;
-        uint32_t point_lights_count;
     };
 
     struct SceneData
     {
         glm::vec4 light_direction;
+        uint32_t point_lights_count;
     };
 
     struct UniformBufferObject
     {
-        SceneData scene_data;
         CameraInfo camera_info;
+        SceneData scene_data;
     };
     struct PointLight
     {
@@ -47,7 +47,7 @@ class GiRenderer : public BaseRenderer
     std::function<void()> get_imgui();
 
   private:
-    static constexpr uint32_t point_light_count = 1;
+    static const uint32_t point_lights_count = 1;
 
     const Core &r_core;
 
