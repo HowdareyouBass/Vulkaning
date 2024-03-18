@@ -80,7 +80,7 @@ Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width, f
     {
         for (int z = -int(length / 2); z <= int(length / 2); ++z)
         {
-            vertices.push_back(Vertex{{x * spacing, 0.0f, z * spacing}, 0, {}, 0, color});
+            vertices.push_back(Vertex{{x * spacing, 0.0f, z * spacing}, 0, {0.0f, 1.0f, 0.0f}, 0, color});
         }
     }
     assert(vertices.size() == (length + 1) * (width + 1));

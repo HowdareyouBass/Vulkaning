@@ -54,13 +54,16 @@ vec4 unlit(vec3 normal, vec3 view)
 {
     return vec4(0.1, 0.1, 0.1, 1.0);
 }
+// HARD: Pass it from vertex shader maybe?
+const vec4 light_color = vec4(1.0, 1.0, 1.0, 1.0);
 
 void main()
 {
     vec3 view = normalize(ubo.camera_info.position - in_vpos);
    
-    float directional = clamp(dot(ubo.scene.light_direction.xyz, in_normal), 0.0, 1.0) * ubo.scene.light_direction.w;
+    float directional = clamp(dot(ubo.scene.light_direction.xyz, normalize(in_normal)), 0.0, 1.0) * ubo.scene.light_direction.w;
 
     // out_color = unlit(in_normal, view) + (directional+point) * frag_color;
-    out_color = unlit(in_normal, view) + frag_color * in_point;
+    out_color = frag_color + light_color * in_point;
+    // out_color = vec4(0.5 * normalize(in_normal) + 0.5, 1.0);
 }

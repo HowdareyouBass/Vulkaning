@@ -62,6 +62,8 @@ layout (binding = 1, set = 0) readonly buffer PointLightsBuffer
     PointLight point_lights[];
 };
 
+const float epsilon = 0.0001;
+
 void main()
 {
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex]; 
@@ -71,7 +73,7 @@ void main()
     for (int i = 0; i < ubo.scene.point_lights_count; ++i)
     {
         vec3 to_light = point_lights[i].position - v.position;
-        point += point_lights[i].intencity / dot(to_light, to_light);
+        point += point_lights[i].intencity / (dot(to_light, to_light) + epsilon);
     }
 
     gl_Position = pc.pvm_transform * vec4(v.position, 1.0);

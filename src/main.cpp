@@ -61,6 +61,7 @@ void run_application()
     }
 
     scene.objects.push_back(ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj"), {}});
+    scene.objects.push_back(ving::SceneObject{ving::SimpleMesh::flat_plane(core, 100, 100, 0.05f, {}), {}});
 
     ving::Profiler profiler;
 
@@ -83,6 +84,15 @@ void run_application()
     SDL_Event event;
 
     keys = SDL_GetKeyboardState(NULL);
+
+    auto moving_scene_objects_imgui = [&scene]() {
+        for (int i = 0; auto &&obj : scene.objects)
+        {
+            ImGui::DragFloat3(std::format("Position ##obj{}: ", i).data(),
+                              reinterpret_cast<float *>(&obj.transform.translation), 0.01f);
+            ++i;
+        }
+    };
 
     while (running)
     {
@@ -195,7 +205,8 @@ void run_application()
             skybox_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);
 
-            imgui_renderer.render(frame, profiler, {scene.get_imgui(), gi_renderer.get_imgui()});
+            imgui_renderer.render(frame, profiler,
+                                  {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui});
 
             profile_recording.stop();
         }
