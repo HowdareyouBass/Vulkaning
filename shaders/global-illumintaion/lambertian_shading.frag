@@ -6,11 +6,11 @@ layout (location = 3) in vec3 in_vpos;
 
 layout (location = 0) out vec4 out_color;
 
-// layout (push_constant) uniform PushCosntants
-// {
-//     mat4 pvm_transform;
-//     vec2 segfault;
-// } pushc;
+layout (push_constant) uniform PushCosntants
+{
+    mat4 pvm_transform;
+    vec2 segfault;
+} pc;
 
 struct SceneData
 {
@@ -44,11 +44,10 @@ struct PointLight
     float intencity;
     vec4 color;
 };
-
-// layout (binding = 1, set = 0) uniform PointLightsBuffer
-// {
-//     PointLight point_lights[];
-// };
+layout (binding = 1, set = 0) readonly buffer PointLightsBuffer
+{
+    PointLight point_lights[];
+};
 
 vec4 unlit(vec3 normal, vec3 view)
 {
@@ -61,13 +60,16 @@ void main()
    
     float directional = clamp(dot(ubo.scene.light_direction.xyz, in_normal), 0.0, 1.0) * ubo.scene.light_direction.w;
 
-    float pp = 0.0;
+    float point = 0.0;
 
     for (int i = 0; i < ubo.scene.point_lights_count; ++i)
     {
-        pp += 1.0;
+        vec4 plwp = pc.pvm_transform * vec4(point_lights[i].position, 1.0);
+        vec3 point_light_world_position = plwp.xyz;
+        vec3 to_light = point_light_world_position - in_vpos;
+        point += point_lights[i].intencity * (1.0 / dot(to_light, to_light));
     }
 
-    // out_color = unlit(in_normal, view) + (directional + pp) * frag_color;
-    out_color = unlit(in_normal, view) + (directional+pp) * frag_color;
+    // out_color = unlit(in_normal, view) + (directional+point) * frag_color;
+    out_color = unlit(in_normal, view) + point * frag_color;
 }
