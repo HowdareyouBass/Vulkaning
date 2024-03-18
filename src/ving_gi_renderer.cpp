@@ -35,7 +35,7 @@ GiRenderer::GiRenderer(const Core &core) : r_core{core}
     m_resources.get_resource(RenderResourceIds::Global).write_buffer(core.device(), 1, m_point_lights_buffer);
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
-        "shaders/bin/test.vert.spv", "shaders/bin/lambertian_shading.frag.spv", m_resources.layouts(),
+        "shaders/bin/lambertian_shading.vert.spv", "shaders/bin/lambertian_shading.frag.spv", m_resources.layouts(),
         RenderFrames::render_image_format, m_depth_image.format(), vk::PolygonMode::eFill, vk::CullModeFlagBits::eBack);
 
     m_ubo->scene_data.point_lights_count = point_lights_count;
@@ -60,8 +60,8 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
 
     for (auto &&obj : scene.objects)
     {
-        m_push_constants.vertex_buffer_address = obj.mesh.gpu_buffers.vertex_buffer_address;
         m_push_constants.pvm_transform = camera.projection() * camera.view() * obj.transform.mat4();
+        m_push_constants.vertex_buffer_address = obj.mesh.gpu_buffers.vertex_buffer_address;
 
         cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                          vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
