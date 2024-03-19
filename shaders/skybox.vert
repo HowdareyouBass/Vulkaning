@@ -30,6 +30,7 @@ layout (set = 0, binding = 0) uniform samplerCube sampler_cube_map;
 
 struct CameraInfo
 {
+    mat4 perspective_view_transform;
     vec3 forward;
     float dummy;
     vec3 up;

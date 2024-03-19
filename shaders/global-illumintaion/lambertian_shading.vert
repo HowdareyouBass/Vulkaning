@@ -5,7 +5,6 @@ layout (location = 0) out vec4 out_color;
 layout (location = 1) out vec3 out_normal;
 layout (location = 2) out vec2 out_uv;
 layout (location = 3) out vec3 out_vpos;
-layout (location = 4) out float out_point;
 
 struct Vertex
 {
@@ -21,7 +20,7 @@ layout (buffer_reference, std430) readonly buffer VertexBuffer
 };
 layout (push_constant) uniform constants
 {
-    mat4 pvm_transform;
+    mat4 model_transform;
     VertexBuffer vertex_buffer;
 } pc;
 
@@ -32,6 +31,7 @@ struct SceneData
 };
 struct CameraInfo
 {
+    mat4 perspective_view_transform;
     vec3 forward;
     float dummy;
     vec3 up;
@@ -68,18 +68,10 @@ void main()
 {
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex]; 
 
-    float point = 0.0;
-
-    for (int i = 0; i < ubo.scene.point_lights_count; ++i)
-    {
-        vec3 to_light = point_lights[i].position - v.position;
-        point += point_lights[i].intencity / (dot(to_light, to_light) + epsilon);
-    }
-
-    gl_Position = pc.pvm_transform * vec4(v.position, 1.0);
+    gl_Position = ubo.camera_info.perspective_view_transform * pc.model_transform * vec4(v.position, 1.0);
     out_normal = v.normal;
     out_uv = vec2(v.uv_x, v.uv_y);
     out_color = v.color;
-    out_vpos = vec3(gl_Position);
-    out_point = point;
+    // out_vpos = vec3(vec4(v.position, 1.0) * pc.model_transform);
+    out_vpos = v.position;
 }

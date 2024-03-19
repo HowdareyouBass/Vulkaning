@@ -13,7 +13,7 @@ class GiRenderer : public BaseRenderer
 {
     struct PushConstants
     {
-        glm::mat4 pvm_transform;
+        glm::mat4 model_transform;
         vk::DeviceAddress vertex_buffer_address;
     };
 

@@ -60,7 +60,7 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
 
     for (auto &&obj : scene.objects)
     {
-        m_push_constants.pvm_transform = camera.projection() * camera.view() * obj.transform.mat4();
+        m_push_constants.model_transform = obj.transform.mat4();
         m_push_constants.vertex_buffer_address = obj.mesh.gpu_buffers.vertex_buffer_address;
 
         cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
@@ -78,8 +78,11 @@ std::function<void()> GiRenderer::get_imgui()
         for (uint32_t i = 0; auto &&light : m_point_lights)
         {
             ImGui::Text("Light #%d:", i + 1);
-            ImGui::DragFloat3("Position: ", reinterpret_cast<float *>(&light.position), 0.01f);
-            ImGui::DragFloat("Intencity: ", &light.intencity, 0.01f, 0.05f);
+            ImGui::DragFloat3(std::format("Position ##{}: ", i).data(), reinterpret_cast<float *>(&light.position),
+                              0.01f);
+            ImGui::DragFloat(std::format("Intencity ##{}: ", i).data(), &light.intencity, 0.01f, 0.05f);
+            ImGui::DragFloat3(std::format("Color ##{}: ", i).data(), reinterpret_cast<float *>(&light.color), 0.01f,
+                              0.0f, 1.0f);
             ++i;
         }
     };

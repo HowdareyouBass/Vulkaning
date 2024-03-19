@@ -2,15 +2,14 @@
 
 layout (location = 0) in vec4 frag_color;
 layout (location = 1) in vec3 in_normal;
-layout (location = 3) in vec3 in_vpos;
-layout (location = 4) in float in_point;
+layout (location = 3) in vec3 in_vpos; // NOTE: World space vertex pos
 
 layout (location = 0) out vec4 out_color;
 
-layout (push_constant) uniform PushCosntants
+layout (push_constant) uniform constants
 {
-    mat4 pvm_transform;
-    vec2 segfault;
+    mat4 model_transform;
+    vec2 program_crash; // WARN: Don't use it
 } pc;
 
 struct SceneData
@@ -20,6 +19,7 @@ struct SceneData
 };
 struct CameraInfo
 {
+    mat4 perspective_view_transform;
     vec3 forward;
     float dummy;
     vec3 up;
@@ -54,8 +54,10 @@ vec4 unlit(vec3 normal, vec3 view)
 {
     return vec4(0.1, 0.1, 0.1, 1.0);
 }
-// HARD: Pass it from vertex shader maybe?
-const vec4 light_color = vec4(1.0, 1.0, 1.0, 1.0);
+
+const vec4 light_color = vec4(1, 1, 1, 1);
+
+const float epsilon = 0.0001;
 
 void main()
 {
@@ -63,7 +65,15 @@ void main()
    
     float directional = clamp(dot(ubo.scene.light_direction.xyz, normalize(in_normal)), 0.0, 1.0) * ubo.scene.light_direction.w;
 
+    float point = 0.0;
+
+    for (int i = 0; i < ubo.scene.point_lights_count; ++i)
+    {
+        vec3 to_light = point_lights[i].position - vec3(pc.model_transform * vec4(in_vpos, 1.0));
+        point += point_lights[i].intencity / (dot(to_light, to_light) + epsilon);
+    }
+
     // out_color = unlit(in_normal, view) + (directional+point) * frag_color;
-    out_color = frag_color + light_color * in_point;
+    out_color = frag_color + light_color * point;
     // out_color = vec4(0.5 * normalize(in_normal) + 0.5, 1.0);
 }

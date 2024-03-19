@@ -60,7 +60,8 @@ void run_application()
                               {{}, glm::vec3{0.03f}, {}}});
     }
 
-    scene.objects.push_back(ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj"), {}});
+    scene.objects.push_back(ving::SceneObject{
+        ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj", {0.1f, 0.1f, 0.1f, 1.0f}), {}});
     scene.objects.push_back(ving::SceneObject{ving::SimpleMesh::flat_plane(core, 100, 100, 0.05f, {}), {}});
 
     ving::Profiler profiler;
@@ -88,6 +89,7 @@ void run_application()
     auto moving_scene_objects_imgui = [&scene]() {
         for (int i = 0; auto &&obj : scene.objects)
         {
+            ImGui::Text("Obj #%d", i);
             ImGui::DragFloat3(std::format("Position ##obj{}: ", i).data(),
                               reinterpret_cast<float *>(&obj.transform.translation), 0.01f);
             ++i;

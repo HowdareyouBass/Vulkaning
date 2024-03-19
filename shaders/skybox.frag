@@ -17,6 +17,7 @@ layout (push_constant) uniform constants
 
 struct CameraInfo
 {
+    mat4 perspective_view_transform;
     vec3 forward;
     float dummy;
     vec3 up;

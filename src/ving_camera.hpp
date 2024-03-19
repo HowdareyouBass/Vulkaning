@@ -7,6 +7,7 @@ namespace ving
 // Shader aligned camera information
 struct CameraInfo
 {
+    glm::mat4 perspective_view_transform;
     glm::vec3 forward;
     float dummy0;
     glm::vec3 up;
@@ -40,7 +41,7 @@ class PerspectiveCamera
 
     [[nodiscard]] CameraInfo camera_info() const noexcept
     {
-        return CameraInfo{m_forward, 0.0f, m_up, 0.0f, m_right, 0.0f, position, 0.0f};
+        return CameraInfo{m_projection * m_view, m_forward, 0.0f, m_up, 0.0f, m_right, 0.0f, position, 0.0f};
     }
 
   private:
