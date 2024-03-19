@@ -152,6 +152,9 @@ Mesh SimpleMesh::cube_interpolated_normals(const Core &core, std::array<glm::vec
                 static_cast<uint32_t>(vertices.size())};
 }
 
+Mesh SimpleMesh::sphere(const Core &core, float radius, glm::vec4 color)
+{
+}
 RayTracedMesh SimpleMesh::cube_raytraced(const Core &core, vk::TransformMatrixKHR &transform,
                                          std::array<glm::vec4, 8> vertex_colors)
 {

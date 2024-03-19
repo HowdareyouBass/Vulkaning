@@ -54,6 +54,7 @@ struct SimpleMesh
     static Mesh quad(const Core &core, glm::vec4 color);
     // Engine space i = {1, 0, 0} j = {0, 1, 0} k = {0, 0, 1}
     static Mesh cube_interpolated_normals(const Core &core, std::array<glm::vec4, 8> vertex_colors = {});
+    static Mesh sphere(const Core &core, float radius, glm::vec4 color);
 
     static RayTracedMesh cube_raytraced(const Core &core, vk::TransformMatrixKHR &transform,
                                         std::array<glm::vec4, 8> vertex_colors = {});

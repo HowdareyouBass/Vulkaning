@@ -31,7 +31,7 @@ class GiRenderer : public BaseRenderer
     struct PointLight
     {
         glm::vec3 position;
-        float intencity;
+        float radius;
         glm::vec4 color;
     };
 

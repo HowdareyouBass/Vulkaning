@@ -42,7 +42,7 @@ layout (binding = 0, set = 0) uniform Ubo
 struct PointLight
 {
     vec3 position;
-    float intencity;
+    float radius;
     vec4 color;
 };
 layout (binding = 1, set = 0) readonly buffer PointLightsBuffer
@@ -59,6 +59,14 @@ const vec4 light_color = vec4(1, 1, 1, 1);
 
 const float epsilon = 0.0001;
 
+const float maximum_radius = 3.0;
+
+float point_light_distance_function(float distance_squared, float radius)
+{
+    float res = clamp(1.0 - (distance_squared * distance_squared / pow(radius, 4)), 0.0, 100.0);
+    return res * res;
+}
+
 void main()
 {
     vec3 view = normalize(ubo.camera_info.position - in_vpos);
@@ -70,7 +78,8 @@ void main()
     for (int i = 0; i < ubo.scene.point_lights_count; ++i)
     {
         vec3 to_light = point_lights[i].position - vec3(pc.model_transform * vec4(in_vpos, 1.0));
-        point_lights_color += (point_lights[i].intencity / (dot(to_light, to_light) + epsilon)) * point_lights[i].color;
+        // point_lights_color += (point_lights[i].radius / (dot(to_light, to_light) + epsilon)) * point_lights[i].color;
+        point_lights_color += point_light_distance_function(dot(to_light, to_light), point_lights[i].radius) * point_lights[i].color;
     }
 
     // out_color = unlit(in_normal, view) + (directional+point) * frag_color;

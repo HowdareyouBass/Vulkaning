@@ -80,7 +80,7 @@ std::function<void()> GiRenderer::get_imgui()
             ImGui::Text("Light #%d:", i + 1);
             ImGui::DragFloat3(std::format("Position ##{}: ", i).data(), reinterpret_cast<float *>(&light.position),
                               0.01f);
-            ImGui::DragFloat(std::format("Intencity ##{}: ", i).data(), &light.intencity, 0.01f, 0.05f);
+            ImGui::DragFloat(std::format("Radius ##{}: ", i).data(), &light.radius, 0.01f, 0.05f);
             ImGui::DragFloat3(std::format("Color ##{}: ", i).data(), reinterpret_cast<float *>(&light.color), 0.01f,
                               0.0f, 1.0f);
             ++i;
