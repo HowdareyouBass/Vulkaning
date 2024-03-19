@@ -65,15 +65,15 @@ void main()
    
     float directional = clamp(dot(ubo.scene.light_direction.xyz, normalize(in_normal)), 0.0, 1.0) * ubo.scene.light_direction.w;
 
-    float point = 0.0;
+    vec4 point_lights_color = vec4(0);
 
     for (int i = 0; i < ubo.scene.point_lights_count; ++i)
     {
         vec3 to_light = point_lights[i].position - vec3(pc.model_transform * vec4(in_vpos, 1.0));
-        point += point_lights[i].intencity / (dot(to_light, to_light) + epsilon);
+        point_lights_color += (point_lights[i].intencity / (dot(to_light, to_light) + epsilon)) * point_lights[i].color;
     }
 
     // out_color = unlit(in_normal, view) + (directional+point) * frag_color;
-    out_color = frag_color + light_color * point;
+    out_color = frag_color + point_lights_color;
     // out_color = vec4(0.5 * normalize(in_normal) + 0.5, 1.0);
 }
