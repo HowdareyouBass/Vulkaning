@@ -31,11 +31,6 @@ class Core
     };
 
   public:
-    struct DescriptorBinding
-    {
-        uint32_t binding;
-        vk::DescriptorType type;
-    };
     // HARD: Let the user enable or disable layers
     static constexpr bool enable_validation_layers = true;
 

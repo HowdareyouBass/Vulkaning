@@ -55,11 +55,8 @@ vec4 unlit(vec3 normal, vec3 view)
     return vec4(0.1, 0.1, 0.1, 1.0);
 }
 
-const vec4 light_color = vec4(1, 1, 1, 1);
-
 const float epsilon = 0.0001;
-
-const float maximum_radius = 3.0;
+const float model_color_percentage = 0.7;
 
 float point_light_distance_function(float distance_squared, float radius)
 {
@@ -83,6 +80,6 @@ void main()
     }
 
     // out_color = unlit(in_normal, view) + (directional+point) * frag_color;
-    out_color = frag_color + point_lights_color;
+    out_color = model_color_percentage * frag_color + (1.0 - model_color_percentage) * point_lights_color;
     // out_color = vec4(0.5 * normalize(in_normal) + 0.5, 1.0);
 }

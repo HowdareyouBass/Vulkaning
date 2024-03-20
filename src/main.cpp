@@ -6,6 +6,7 @@
 #include "ving_camera.hpp"
 #include "ving_core.hpp"
 #include "ving_gi_renderer.hpp"
+#include "ving_gizmo_renderer.hpp"
 #include "ving_imgui_renderer.hpp"
 #include "ving_path_tracing_renderer.hpp"
 #include "ving_profilers.hpp"
@@ -73,6 +74,7 @@ void run_application()
     // ving::WaterRenderer water_renderer{core, scene};
     // ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
+    ving::GizmoRenderer gizmo_renderer{core};
     // ving::VulkanRaytracer vulkan_raytracer{core, frames};
 
     ving::ImGuiRenderer imgui_renderer{core, window};
@@ -155,8 +157,6 @@ void run_application()
             float mouse_x_relative_to_center = mouse_x - halfwidth;
             float mouse_y_relative_to_center = mouse_y - halfheight;
 
-            // camera_rotate_dir.y += (mouse_x_relative_to_center > 0) - (mouse_x_relative_to_center < 0);
-            // camera_rotate_dir.x += (mouse_y_relative_to_center > 0) - (mouse_y_relative_to_center < 0);
             camera_rotate_dir.y += mouse_x_relative_to_center;
             camera_rotate_dir.x += mouse_y_relative_to_center;
 
