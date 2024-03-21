@@ -43,7 +43,7 @@ class SlimeRenderer : public BaseRenderer
     PushConstants m_constants{0.0f, 0.0f, 0.0f, agent_count};
 
     RenderResources m_resources;
-    Pipelines m_pipelines;
+    Core::Pipelines m_pipelines;
 
     GPUBuffer m_agents_buffer;
     std::array<Agent, agent_count> m_agents;

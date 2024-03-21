@@ -52,7 +52,7 @@ class VulkanRaytracer : public BaseRenderer
     GPUBuffer m_instances_buffer;
 
     RenderResources m_resources;
-    RayTracingPipelines m_pipelines;
+    Core::RayTracingPipelines m_pipelines;
 
     vk::PhysicalDeviceRayTracingPipelinePropertiesKHR m_raytracing_pipeline_properties;
     vk::PhysicalDeviceAccelerationStructureFeaturesKHR m_acceleration_structure_features;

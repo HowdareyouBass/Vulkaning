@@ -206,6 +206,7 @@ void run_application()
             ving::Task profile_recording{profiler, "Recording"};
             skybox_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);
+            gizmo_renderer.render(frame, camera, scene.objects[0]);
 
             imgui_renderer.render(frame, profiler,
                                   {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui});

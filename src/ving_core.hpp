@@ -4,7 +4,6 @@
 
 #include <vulkan/vulkan.hpp>
 
-#include "ving_base_renderer.hpp"
 #include "ving_descriptors.hpp"
 #include "ving_gpu_buffer.hpp"
 #include "ving_image.hpp"
@@ -31,6 +30,18 @@ class Core
     };
 
   public:
+    struct Pipelines
+    {
+        vk::UniquePipeline pipeline;
+        vk::UniquePipelineLayout layout;
+    };
+    struct RayTracingPipelines
+    {
+        vk::UniqueHandle<vk::Pipeline, vk::DispatchLoaderDynamic> pipeline;
+        vk::UniquePipelineLayout layout;
+        uint32_t shader_groups_count;
+    };
+
     // HARD: Let the user enable or disable layers
     static constexpr bool enable_validation_layers = true;
 
@@ -108,7 +119,7 @@ class Core
 
   public:
     template <typename PushConstantsType>
-    [[nodiscard]] BaseRenderer::Pipelines create_compute_render_pipelines(
+    [[nodiscard]] Pipelines create_compute_render_pipelines(
         const std::vector<vk::DescriptorSetLayout> &descriptor_layouts, std::string_view shader_path) const
     {
         auto push_range =
@@ -130,12 +141,13 @@ class Core
     }
     // HARD: Most of the settings are hardcoded
     template <typename PushConstantsType>
-    [[nodiscard]] BaseRenderer::Pipelines create_graphics_render_pipelines(
+    [[nodiscard]] Pipelines create_graphics_render_pipelines(
         std::string_view vertex_shader_path, std::string_view fragment_shader_path,
         const std::vector<vk::DescriptorSetLayout> &descriptor_layouts, vk::Format color_attachment_format,
         vk::Format depth_attachment_format = vk::Format::eUndefined,
         vk::PolygonMode polygon_mode = vk::PolygonMode::eFill,
-        vk::CullModeFlags cull_mode = vk::CullModeFlagBits::eNone) const
+        vk::CullModeFlags cull_mode = vk::CullModeFlagBits::eNone,
+        vk::PrimitiveTopology primitive_type = vk::PrimitiveTopology::eTriangleList) const
     {
         auto fragment_shader = utils::create_shader_module(*m_device, fragment_shader_path);
         auto vertex_shader = utils::create_shader_module(*m_device, vertex_shader_path);
@@ -161,8 +173,7 @@ class Core
                 .setPName("main"),
         };
 
-        auto input_assembly =
-            vk::PipelineInputAssemblyStateCreateInfo{}.setTopology(vk::PrimitiveTopology::eTriangleList);
+        auto input_assembly = vk::PipelineInputAssemblyStateCreateInfo{}.setTopology(primitive_type);
         auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
         auto viewport_state = vk::PipelineViewportStateCreateInfo{}.setViewportCount(1).setScissorCount(1);
         auto rasterizer = vk::PipelineRasterizationStateCreateInfo{}
@@ -223,12 +234,12 @@ class Core
         auto pipeline_res = m_device->createGraphicsPipelineUnique({}, pipeline_info);
         vk::resultCheck(pipeline_res.result, "Failed to create graphics pipeline");
 
-        return BaseRenderer::Pipelines{std::move(pipeline_res.value), std::move(layout)};
+        return Pipelines{std::move(pipeline_res.value), std::move(layout)};
     }
 
     // TODO: Use Intersection and Any Hit shader
     template <typename PushConstantsType>
-    [[nodiscard]] BaseRenderer::RayTracingPipelines create_ray_tracing_pipelines(
+    [[nodiscard]] RayTracingPipelines create_ray_tracing_pipelines(
         std::string_view raygen_shader_path, std::string_view any_hit_shader_path,
         std::string_view closest_hit_shader_path, std::string_view miss_shader_path,
         std::string_view intersection_shader_path, uint32_t max_ray_recursion,
@@ -299,8 +310,8 @@ class Core
 
         auto pipeline_res = m_device->createRayTracingPipelineKHRUnique({}, {}, pipeline_info, nullptr, dispatch);
 
-        return BaseRenderer::RayTracingPipelines{std::move(pipeline_res.value), std::move(layout),
-                                                 static_cast<uint32_t>(raytracing_groups.size())};
+        return RayTracingPipelines{std::move(pipeline_res.value), std::move(layout),
+                                   static_cast<uint32_t>(raytracing_groups.size())};
     }
 };
 } // namespace ving

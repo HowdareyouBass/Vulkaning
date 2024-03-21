@@ -244,7 +244,7 @@ const vec3 sun_color = vec3(1.0, 1.0, 1.0);
 const int antialiasing_radius = 1;
 const int samples_per_pixel = 5;
 
-// Path tracing settings
+//vk::PrimitiveTopology::eTriangleList Path tracing settings
 const int max_bounces = 15;
 
 const vec3 plane_normal = vec3(0.0, 1.0, 0.0);

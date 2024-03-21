@@ -2,6 +2,7 @@
 
 #include <glm/mat4x4.hpp>
 
+#include "ving_base_renderer.hpp"
 #include "ving_render_frames.hpp"
 #include "ving_render_resources.hpp"
 #include "ving_scene_object.hpp"
@@ -42,6 +43,6 @@ class SimpleCubeRenderer : public BaseRenderer
     SceneData m_scene_data;
     GPUBuffer m_scene_data_buffer;
 
-    Pipelines m_pipelines;
+    Core::Pipelines m_pipelines;
 };
 } // namespace ving

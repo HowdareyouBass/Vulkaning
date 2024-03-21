@@ -42,6 +42,6 @@ class SkyboxRenderer : public BaseRenderer
     GPUBuffer m_camera_info_buffer;
 
     RenderResources m_resources;
-    Pipelines m_pipelines;
+    Core::Pipelines m_pipelines;
 };
 } // namespace ving

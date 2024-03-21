@@ -72,6 +72,6 @@ class WaterRenderer : public BaseRenderer
     SceneData *m_scene_data;
     GPUBuffer m_scene_data_buffer;
 
-    Pipelines m_pipelines;
+    Core::Pipelines m_pipelines;
 };
 } // namespace ving

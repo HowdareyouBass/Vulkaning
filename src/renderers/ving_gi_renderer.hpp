@@ -56,7 +56,7 @@ class GiRenderer : public BaseRenderer
     Image2D m_depth_image;
 
     RenderResources m_resources;
-    Pipelines m_pipelines;
+    Core::Pipelines m_pipelines;
 
     GPUBuffer m_uniform_buffer;
     UniformBufferObject *m_ubo;

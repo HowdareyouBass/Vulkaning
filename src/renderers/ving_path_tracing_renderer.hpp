@@ -67,11 +67,11 @@ class PathTracingRenderer : public BaseRenderer
     SceneData *m_scene_data;
 
     RenderResources m_resources;
-    Pipelines m_pipelines;
+    Core::Pipelines m_pipelines;
 
     Image2D m_antialiasing_image;
     RenderResources m_antialiasing_resources;
-    Pipelines m_antialiasing_pipeline;
+    Core::Pipelines m_antialiasing_pipeline;
 
     glm::vec3 m_previous_frame_camera_pos;
 };
