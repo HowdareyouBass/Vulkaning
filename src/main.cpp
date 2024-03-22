@@ -3,6 +3,8 @@
 #include <SDL3/SDL.h>
 #include <imgui.h>
 
+#include "ving_aabb_generator.hpp"
+#include "ving_aabb_renderer.hpp"
 #include "ving_camera.hpp"
 #include "ving_core.hpp"
 #include "ving_gi_renderer.hpp"
@@ -75,6 +77,8 @@ void run_application()
     // ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
     ving::GizmoRenderer gizmo_renderer{core};
+    ving::AABBGenerator aabb_generator{core};
+    ving::AABBRenderer aabb_renderer{core};
     // ving::VulkanRaytracer vulkan_raytracer{core, frames};
 
     ving::ImGuiRenderer imgui_renderer{core, window};
@@ -172,8 +176,6 @@ void run_application()
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame(profiler);
         {
-            ving::Task profile_camera_update{profiler, "Camera Update"};
-
             camera.position += camera.right() * camera_direction.x * frame.delta_time * camera.move_speed;
             // NOTE: Camera Position is in vulkan space
             camera.position += camera.up() * camera_direction.y * frame.delta_time * camera.move_speed;
@@ -201,15 +203,17 @@ void run_application()
                 scene.objects[4].transform.translation = camera_1.position + camera_1.forward();
             }
 
-            profile_camera_update.stop();
+            aabb_generator.generate(frames, scene);
 
             ving::Task profile_recording{profiler, "Recording"};
             skybox_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);
             gizmo_renderer.render(frame, camera, scene.objects[0]);
+            aabb_renderer.render(frame, camera, scene);
 
-            imgui_renderer.render(frame, profiler,
-                                  {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui});
+            imgui_renderer.render(
+                frame, profiler,
+                {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui, aabb_renderer.get_imgui()});
 
             profile_recording.stop();
         }

@@ -126,5 +126,12 @@ RenderResources::~RenderResources()
     if (m_pool != nullptr)
         m_device.destroyDescriptorPool(m_pool);
 }
+void RenderResources::reallocate(vk::Device device)
+{
+    // device.resetDescriptorPool(m_pool);
+    //
+    // auto alloc_info = vk::DescriptorSetAllocateInfo{}.setSetLayouts(m_layouts).setDescriptorPool(m_pool);
+    // m_descriptors = device.allocateDescriptorSets(alloc_info);
+}
 
 } // namespace ving

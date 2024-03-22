@@ -69,6 +69,13 @@ struct Transform
     [[nodiscard]] glm::mat4 mat4() const noexcept;
 };
 
+struct AABB
+{
+    float max_x, min_x;
+    float max_y, min_y;
+    float max_z, min_z;
+};
+
 struct SceneObject
 {
     Mesh mesh;

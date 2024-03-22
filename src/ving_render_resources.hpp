@@ -61,6 +61,7 @@ class RenderResources
         return *this;
     }
 
+    void reallocate(vk::Device device);
     void reset();
 
     [[nodiscard]] std::vector<vk::DescriptorSetLayout> layouts() const noexcept { return m_layouts; }
