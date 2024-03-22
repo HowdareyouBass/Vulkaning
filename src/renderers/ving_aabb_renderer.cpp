@@ -16,27 +16,15 @@ AABBRenderer::AABBRenderer(const Core &core) : r_core{core}
                                                  vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment);
 
     m_aabb_positions_buffer =
-        core.create_cpu_visible_gpu_buffer(sizeof(glm::vec3) * 8, vk::BufferUsageFlagBits::eUniformBuffer);
+        core.create_cpu_visible_gpu_buffer(sizeof(glm::vec4) * 8, vk::BufferUsageFlagBits::eUniformBuffer);
 
     m_resources.get_resource(0).write_buffer(core.device(), 0, m_aabb_positions_buffer);
 
     m_pipeline = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/bin/aabb_draw.vert.spv", "shaders/bin/aabb_draw.frag.spv", m_resources.layouts(),
-        RenderFrames::render_image_format, {}, vk::PolygonMode::eLine);
+        RenderFrames::render_image_format, {}, vk::PolygonMode::eFill, {}, vk::PrimitiveTopology::eLineList);
 
-    // std::array<uint32_t, 36> indices{
-    //     0, 4, 5, 5, 1, 0, 2, 6, 7, 7, 3, 2, 1, 5, 6, 6, 2, 1, 0, 3, 7, 7, 4, 0, 4, 7, 6, 6, 5, 4, 0, 1, 2, 2, 3, 0,
-    // };
-    // clang-format off
-    std::array<uint32_t, 36> indices{
-        0,4,5,5,1,0,
-        2,6,7,7,3,2,
-        1,5,6,6,2,1,
-        0,3,7,7,4,0,
-        4,7,6,6,5,4,
-        0,1,2,2,3,0,
-    };
-    // clang-format on
+    std::array<uint32_t, 24> indices{0, 1, 0, 4, 0, 3, 1, 5, 1, 2, 5, 4, 5, 6, 2, 6, 2, 3, 7, 4, 7, 6, 7, 3};
 
     // clang-format off
     // std::array<uint32_t, 36> indices{
@@ -77,16 +65,17 @@ void AABBRenderer::render(const RenderFrames::FrameInfo &frame, const Perspectiv
     // m_push_constants.pvm_transform = camera.projection() * camera.view() * scene.objects[0].transform.mat4();
 
     m_push_constants.pvm_transform = camera.projection() * camera.view() * scene.objects[0].transform.mat4();
-    // AABB aabb = scene.aabbs[0];
-    // m_aabb_positions[0] = glm::vec3{aabb.min_x, aabb.min_y, aabb.min_z};
-    // m_aabb_positions[1] = glm::vec3{aabb.min_x, aabb.max_y, aabb.min_z};
-    // m_aabb_positions[2] = glm::vec3{aabb.max_x, aabb.max_y, aabb.min_z};
-    // m_aabb_positions[3] = glm::vec3{aabb.max_x, aabb.min_y, aabb.min_z};
-    //
-    // m_aabb_positions[4] = glm::vec3{aabb.min_x, aabb.min_y, aabb.max_z};
-    // m_aabb_positions[5] = glm::vec3{aabb.min_x, aabb.max_y, aabb.max_z};
-    // m_aabb_positions[6] = glm::vec3{aabb.max_x, aabb.max_y, aabb.max_z};
-    // m_aabb_positions[7] = glm::vec3{aabb.max_x, aabb.min_y, aabb.max_z};
+    AABB aabb = scene.aabbs[0];
+    m_aabb_positions[0] = glm::vec4{aabb.min_x, aabb.min_y, aabb.min_z, 1.0f};
+    m_aabb_positions[1] = glm::vec4{aabb.min_x, aabb.max_y, aabb.min_z, 1.0f};
+    m_aabb_positions[2] = glm::vec4{aabb.max_x, aabb.max_y, aabb.min_z, 1.0f};
+    m_aabb_positions[3] = glm::vec4{aabb.max_x, aabb.min_y, aabb.min_z, 1.0f};
+
+    m_aabb_positions[4] = glm::vec4{aabb.min_x, aabb.min_y, aabb.max_z, 1.0f};
+    m_aabb_positions[5] = glm::vec4{aabb.min_x, aabb.max_y, aabb.max_z, 1.0f};
+    m_aabb_positions[6] = glm::vec4{aabb.max_x, aabb.max_y, aabb.max_z, 1.0f};
+    m_aabb_positions[7] = glm::vec4{aabb.max_x, aabb.min_y, aabb.max_z, 1.0f};
+
     // AABB aabb = {1.0, -1.0, 1.0, -1.0, 1.0, -1.0};
     // m_aabb_positions[0] = glm::vec3{aabb.min_x, aabb.min_y, aabb.min_z};
     // m_aabb_positions[1] = glm::vec3{aabb.min_x, aabb.max_y, aabb.min_z};
@@ -98,28 +87,6 @@ void AABBRenderer::render(const RenderFrames::FrameInfo &frame, const Perspectiv
     // m_aabb_positions[6] = glm::vec3{aabb.max_x, aabb.max_y, aabb.max_z};
     // m_aabb_positions[7] = glm::vec3{aabb.max_x, aabb.min_y, aabb.max_z};
 
-    // m_aabb_positions[0] = {-1.0f, -1.0f, 0.0f};
-    // m_aabb_positions[1] = {-1.0f, 1.0f, 0.0f};
-    // m_aabb_positions[2] = {1.0f, 1.0f, 0.0f};
-    // m_aabb_positions[3] = {1.0f, -1.0f, 0.0f};
-
-    // m_aabb_positions[0] = {-0.5f, -0.5f, -0.5f};
-    // m_aabb_positions[1] = {0.5f, -0.5f, -0.5f};
-    // m_aabb_positions[2] = {0.5f, -0.5f, 0.5f};
-    // m_aabb_positions[3] = {-0.5f, -0.5f, 0.5f};
-    //
-    // m_aabb_positions[4] = {-0.5f, 0.5f, -0.5f};
-    // m_aabb_positions[5] = {0.5f, 0.5f, -0.5f};
-    // m_aabb_positions[6] = {0.5f, 0.5f, 0.5f};
-    // m_aabb_positions[7] = {-0.5f, 0.5f, 0.5f};
-
-    // m_aabb_positions[5].z += 1.0f;
-
-    // for (auto &&p : m_aabb_positions)
-    // {
-    //     p.y *= -1;
-    // }
-
     m_aabb_positions_buffer.set_memory(r_core.device(), m_aabb_positions.data(), sizeof(glm::vec4) * 8);
 
     cmd.pushConstants<PushConstants>(m_pipeline.layout.get(),
@@ -127,7 +94,7 @@ void AABBRenderer::render(const RenderFrames::FrameInfo &frame, const Perspectiv
                                      m_push_constants);
 
     cmd.bindIndexBuffer(m_aabb_indices.buffer(), 0, vk::IndexType::eUint32);
-    cmd.drawIndexed(36, 1, 0, 0, 0);
+    cmd.drawIndexed(m_aabb_indices.size() / sizeof(uint32_t), 1, 0, 0, 0);
 
     cmd.endRendering();
 }
@@ -135,12 +102,12 @@ void AABBRenderer::render(const RenderFrames::FrameInfo &frame, const Perspectiv
 std::function<void()> AABBRenderer::get_imgui()
 {
     return [this]() {
-        ImGui::Spacing();
-        for (int i = 0; auto &&p : m_aabb_positions)
-        {
-            ImGui::DragFloat3(std::format("Pos {}:", i).data(), reinterpret_cast<float *>(&p), 0.01f);
-            ++i;
-        }
+        // ImGui::Spacing();
+        // for (int i = 0; auto &&p : m_aabb_positions)
+        // {
+        //     ImGui::DragFloat3(std::format("Pos {}:", i).data(), reinterpret_cast<float *>(&p), 0.01f);
+        //     ++i;
+        // }
     };
 }
 } // namespace ving

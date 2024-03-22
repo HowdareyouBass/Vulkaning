@@ -102,6 +102,7 @@ void run_application()
         }
     };
 
+    aabb_generator.generate(frames, scene);
     while (running)
     {
         glm::vec3 camera_direction{0.0f, 0.0f, 0.0f};
@@ -202,8 +203,6 @@ void run_application()
                 scene.objects[3].transform.translation = camera_1.position + camera_1.up();
                 scene.objects[4].transform.translation = camera_1.position + camera_1.forward();
             }
-
-            aabb_generator.generate(frames, scene);
 
             ving::Task profile_recording{profiler, "Recording"};
             skybox_renderer.render(frame, camera, scene);

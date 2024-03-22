@@ -39,6 +39,6 @@ void AABBGenerator::generate(RenderFrames &frames, Scene &scene)
     m_generated_aabbs.map_data();
     scene.aabbs = std::span<AABB>{static_cast<AABB *>(m_generated_aabbs.data()),
                                   static_cast<AABB *>(m_generated_aabbs.data()) + scene.objects.size()};
-    m_generated_aabbs.unmap_data();
+    // m_generated_aabbs.unmap_data();
 }
 } // namespace ving
