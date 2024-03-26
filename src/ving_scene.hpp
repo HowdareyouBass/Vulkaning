@@ -19,7 +19,7 @@ struct Scene
     vk::UniqueSampler skybox_sampler;
 
     std::vector<SceneObject> objects;
-    std::span<AABB> aabbs;
+    // std::span<AABB> aabbs;
 
     std::function<void()> get_imgui()
     {

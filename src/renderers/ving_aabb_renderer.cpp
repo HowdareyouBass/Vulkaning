@@ -65,7 +65,7 @@ void AABBRenderer::render(const RenderFrames::FrameInfo &frame, const Perspectiv
     // m_push_constants.pvm_transform = camera.projection() * camera.view() * scene.objects[0].transform.mat4();
 
     m_push_constants.pvm_transform = camera.projection() * camera.view() * scene.objects[0].transform.mat4();
-    AABB aabb = scene.aabbs[0];
+    AABB aabb = scene.objects[0].aabb;
     m_aabb_positions[0] = glm::vec4{aabb.min_x, aabb.min_y, aabb.min_z, 1.0f};
     m_aabb_positions[1] = glm::vec4{aabb.min_x, aabb.max_y, aabb.min_z, 1.0f};
     m_aabb_positions[2] = glm::vec4{aabb.max_x, aabb.max_y, aabb.min_z, 1.0f};

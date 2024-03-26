@@ -35,8 +35,8 @@ class SimpleCubeRenderer : public BaseRenderer
   private:
     PushConstants m_push_constants;
 
-    SceneObject m_cube;
-    SceneObject m_model;
+    // SceneObject m_cube;
+    // SceneObject m_model;
     Image2D m_depth_img;
     RenderResources m_resources;
 

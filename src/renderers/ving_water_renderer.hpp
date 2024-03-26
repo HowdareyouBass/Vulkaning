@@ -63,7 +63,7 @@ class WaterRenderer : public BaseRenderer
 
     Image2D m_depth_img;
     RenderResources m_resources;
-    SceneObject m_plane;
+    // SceneObject m_plane;
 
     // std::vector<Wave> m_waves;
     std::span<Wave> m_waves;

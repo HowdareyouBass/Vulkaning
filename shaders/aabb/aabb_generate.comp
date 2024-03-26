@@ -43,9 +43,9 @@ void main()
 
     // TODO: Clamp the vaules so aabb always has area
     aabbs[pc.object_index].max_x = max(aabbs[pc.object_index].max_x, v.position.x);
-    aabbs[pc.object_index].min_x= min(aabbs[pc.object_index].min_x, v.position.x);
+    aabbs[pc.object_index].min_x = min(aabbs[pc.object_index].min_x, v.position.x);
     aabbs[pc.object_index].max_y = max(aabbs[pc.object_index].max_y, v.position.y);
-    aabbs[pc.object_index].min_y= min(aabbs[pc.object_index].min_y, v.position.y);
+    aabbs[pc.object_index].min_y = min(aabbs[pc.object_index].min_y, v.position.y);
     aabbs[pc.object_index].max_z = max(aabbs[pc.object_index].max_z, v.position.z);
-    aabbs[pc.object_index].min_z= min(aabbs[pc.object_index].min_z, v.position.z);
+    aabbs[pc.object_index].min_z = min(aabbs[pc.object_index].min_z, v.position.z);
 }

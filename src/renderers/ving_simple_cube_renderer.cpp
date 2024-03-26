@@ -10,6 +10,7 @@
 
 namespace ving
 {
+// FIXME: Mesh refactor boke it
 SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
 {
     m_depth_img = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eD32Sfloat,
@@ -84,14 +85,14 @@ SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
     GPUMeshBuffers model_mesh_buffers = core.allocate_gpu_mesh_buffers(model_indices, model_vertices);
     Mesh model_mesh = Mesh{std::move(model_mesh_buffers), static_cast<uint32_t>(model_indices.size()),
                            static_cast<uint32_t>(model_vertices.size())};
-    m_model = {std::move(model_mesh), {}};
-    m_push_constants.vertex_buffer_address = m_model.mesh.gpu_buffers.vertex_buffer_address;
+    // m_model = {std::move(model_mesh), {}};
+    // m_push_constants.vertex_buffer_address = m_model.mesh.gpu_buffers.vertex_buffer_address;
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/mesh.vert.spv", "shaders/triangle.frag.spv", m_resources.layouts(), vk::Format::eR16G16B16A16Sfloat,
         m_depth_img.format(), vk::PolygonMode::eFill);
 
-    m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};
+    // m_cube.transform.translation = glm::vec3{0.0f, 0.0f, 7.0f};
 
     // m_model.transform.scale = glm::vec3{0.1f};
 }
@@ -129,14 +130,14 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const Pers
     static float phi = 0.0f;
     phi += glm::quarter_pi<float>() * frame.delta_time / 1000.0f;
 
-    m_cube.transform.rotation.x = phi;
-    m_cube.transform.rotation.y = phi / 2.0f;
+    // m_cube.transform.rotation.x = phi;
+    // m_cube.transform.rotation.y = phi / 2.0f;
 
     auto projection_view = camera.projection() * camera.view();
     // m_push_constants.render_mtx = projection_view * m_cube.transform.mat4();
     // m_model.transform.rotation.x = phi;
     // m_model.transform.rotation.y = phi / 2.0f;
-    m_push_constants.render_mtx = projection_view * m_model.transform.mat4();
+    // m_push_constants.render_mtx = projection_view * m_model.transform.mat4();
 
     cmd.beginRendering(render_info);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
@@ -156,7 +157,7 @@ void SimpleCubeRenderer::render(const RenderFrames::FrameInfo &frame, const Pers
     // cmd.bindIndexBuffer(m_cube.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
     // cmd.drawIndexed(m_cube.mesh.indices_count, 1, 0, 0, 0);
 
-    cmd.draw(m_model.mesh.vertices_count, 1, 0, 0);
+    // cmd.draw(m_model.mesh.vertices_count, 1, 0, 0);
 
     // cmd.bindIndexBuffer(m_model.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
     // cmd.drawIndexed(m_model.mesh.indices_count, 1, 0, 0, 0);

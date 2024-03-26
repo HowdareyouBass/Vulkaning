@@ -10,14 +10,24 @@ AABBGenerator::AABBGenerator(const Core &core) : r_core{core}
                                                                               "shaders/bin/aabb_generate.comp.spv");
 }
 
-// TODO: Generate with compute
 void AABBGenerator::generate(RenderFrames &frames, Scene &scene)
 {
     // WARN: Very bad optimize this
     // Allocating buffer for every frame is very bad
     m_generated_aabbs = r_core.create_cpu_visible_gpu_buffer(sizeof(AABB) * scene.objects.size(),
                                                              vk::BufferUsageFlagBits::eStorageBuffer);
+
     m_resources.get_resource(0).write_buffer(r_core.device(), 0, m_generated_aabbs);
+    m_generated_aabbs.map_data();
+    // scene.aabbs = std::span<AABB>{static_cast<AABB *>(m_generated_aabbs.data()),
+    //                               static_cast<AABB *>(m_generated_aabbs.data()) + scene.objects.size()};
+
+    // for (auto &&aabb : scene.aabbs)
+    // {
+    //     aabb = AABB{std::numeric_limits<float>::min(), std::numeric_limits<float>::max(),
+    //                 std::numeric_limits<float>::min(), std::numeric_limits<float>::max(),
+    //                 std::numeric_limits<float>::min(), std::numeric_limits<float>::max()};
+    // }
 
     frames.immediate_submit([&scene, this](vk::CommandBuffer cmd) {
         cmd.bindPipeline(vk::PipelineBindPoint::eCompute, m_generate_pipeline.pipeline.get());
@@ -35,10 +45,5 @@ void AABBGenerator::generate(RenderFrames &frames, Scene &scene)
             ++i;
         }
     });
-
-    m_generated_aabbs.map_data();
-    scene.aabbs = std::span<AABB>{static_cast<AABB *>(m_generated_aabbs.data()),
-                                  static_cast<AABB *>(m_generated_aabbs.data()) + scene.objects.size()};
-    // m_generated_aabbs.unmap_data();
 }
 } // namespace ving

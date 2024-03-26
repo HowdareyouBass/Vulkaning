@@ -3,7 +3,6 @@
 #include <SDL3/SDL.h>
 #include <imgui.h>
 
-#include "ving_aabb_generator.hpp"
 #include "ving_aabb_renderer.hpp"
 #include "ving_camera.hpp"
 #include "ving_core.hpp"
@@ -15,9 +14,6 @@
 #include "ving_render_frames.hpp"
 #include "ving_simple_cube_renderer.hpp"
 #include "ving_skybox_renderer.hpp"
-#include "ving_slime_renderer.hpp"
-#include "ving_vulkan_raytracer.hpp"
-#include "ving_water_renderer.hpp"
 
 const Uint8 *keys;
 
@@ -29,7 +25,7 @@ void run_application()
     if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
         throw std::runtime_error(std::format("Couldn't initialize SDL: {}", SDL_GetError()));
 
-    SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1000, 1000, SDL_WINDOW_VULKAN);
+    SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1080, 1080, SDL_WINDOW_VULKAN);
     // SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1280, 720, SDL_WINDOW_VULKAN);
     if (!window)
         throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
@@ -39,6 +35,11 @@ void run_application()
     ving::Scene scene;
     scene.skybox_cubemap = ving::utils::load_cube_map("assets/textures/skies.ktx", core);
     scene.skybox_sampler = core.create_sampler(scene.skybox_cubemap.mip_levels());
+
+    std::unordered_map<uint32_t, ving::Mesh> meshes;
+
+    meshes[0] = ving::Mesh::load_from_file(core, "assets/models/cube.obj");
+    meshes[1] = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
 
     if constexpr (show_cameras_as_cubes)
     {
@@ -63,23 +64,16 @@ void run_application()
                               {{}, glm::vec3{0.03f}, {}}});
     }
 
-    scene.objects.push_back(ving::SceneObject{
-        ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj", {0.1f, 0.1f, 0.1f, 1.0f}), {}});
+    scene.objects.push_back(ving::SceneObject{meshes[1], {}});
     scene.objects.push_back(ving::SceneObject{ving::SimpleMesh::flat_plane(core, 100, 100, 0.05f, {}), {}});
 
     ving::Profiler profiler;
 
     ving::RenderFrames frames{core};
-    // ving::SlimeRenderer slime_renderer{core, frames.draw_image_view()};
-    // ving::SimpleCubeRenderer cube_renderer{core};
     ving::SkyboxRenderer skybox_renderer{core, scene};
-    // ving::WaterRenderer water_renderer{core, scene};
-    // ving::PathTracingRenderer path_tracing_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
     ving::GizmoRenderer gizmo_renderer{core};
-    ving::AABBGenerator aabb_generator{core};
-    ving::AABBRenderer aabb_renderer{core};
-    // ving::VulkanRaytracer vulkan_raytracer{core, frames};
+    // ving::AABBRenderer aabb_renderer{core};
 
     ving::ImGuiRenderer imgui_renderer{core, window};
 
@@ -93,16 +87,18 @@ void run_application()
     keys = SDL_GetKeyboardState(NULL);
 
     auto moving_scene_objects_imgui = [&scene]() {
-        for (int i = 0; auto &&obj : scene.objects)
+        for (size_t i = 0; i < scene.objects.size(); ++i)
         {
-            ImGui::Text("Obj #%d", i);
+            ImGui::Text("Obj #%zu", i);
             ImGui::DragFloat3(std::format("Position ##obj{}: ", i).data(),
-                              reinterpret_cast<float *>(&obj.transform.translation), 0.01f);
-            ++i;
+                              reinterpret_cast<float *>(&scene.objects[i].transform.translation), 0.01f);
+            // ImGui::Text("X:%f %f\n Y:%f %f\n Z:%f %f", scene.aabbs[i].min_x, scene.aabbs[i].max_x,
+            // scene.aabbs[i].min_y,
+            //             scene.aabbs[i].max_y, scene.aabbs[i].min_z, scene.aabbs[i].max_z);
         }
     };
 
-    aabb_generator.generate(frames, scene);
+    // aabb_generator.generate(frames, scene);
     while (running)
     {
         glm::vec3 camera_direction{0.0f, 0.0f, 0.0f};
@@ -208,11 +204,10 @@ void run_application()
             skybox_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);
             gizmo_renderer.render(frame, camera, scene.objects[0]);
-            aabb_renderer.render(frame, camera, scene);
+            // aabb_renderer.render(frame, camera, scene);
 
-            imgui_renderer.render(
-                frame, profiler,
-                {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui, aabb_renderer.get_imgui()});
+            imgui_renderer.render(frame, profiler,
+                                  {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui});
 
             profile_recording.stop();
         }

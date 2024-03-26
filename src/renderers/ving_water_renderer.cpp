@@ -8,7 +8,7 @@
 
 namespace ving
 {
-
+// FIXME: Mesh Refactor broke it
 WaterRenderer::WaterRenderer(const Core &core, const Scene &scene) : r_core{core}
 {
     m_depth_img = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eD32Sfloat,
@@ -40,8 +40,8 @@ WaterRenderer::WaterRenderer(const Core &core, const Scene &scene) : r_core{core
     m_resources.get_resource(ResourceIds::Waves).write_buffer(core.device(), 1, m_scene_data_buffer);
 
     Mesh plane = SimpleMesh::flat_plane(core, 1000, 1000, 0.1f, colors::cool_blue);
-    m_plane = SceneObject{std::move(plane), {}};
-    m_push_constants.vertex_buffer_address = m_plane.mesh.gpu_buffers.vertex_buffer_address;
+    // m_plane = SceneObject{std::move(plane), {}};
+    // m_push_constants.vertex_buffer_address = m_plane.mesh.gpu_buffers.vertex_buffer_address;
     m_push_constants.wave_count = wave_count;
 
     // Write skybox
@@ -92,8 +92,8 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
                            .setPDepthAttachment(&depth_attachment);
 
     auto projection_view = camera.projection() * camera.view();
-    m_push_constants.render_mtx = projection_view * m_plane.transform.mat4();
-
+    // m_push_constants.render_mtx = projection_view * m_plane.transform.mat4();
+    //
     cmd.beginRendering(render_info);
     cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipelines.pipeline.get());
     cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipelines.layout.get(), 0, m_resources.descriptors(),
@@ -108,8 +108,8 @@ std::function<void()> WaterRenderer::render(const RenderFrames::FrameInfo &frame
     cmd.setScissor(0, scissor);
 
     // cmd.draw(m_plane.mesh.vertices_count, 1, 0, 0);
-    cmd.bindIndexBuffer(m_plane.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
-    cmd.drawIndexed(m_plane.mesh.indices_count, 1, 0, 0, 0);
+    // cmd.bindIndexBuffer(m_plane.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
+    // cmd.drawIndexed(m_plane.mesh.indices_count, 1, 0, 0, 0);
 
     cmd.endRendering();
 

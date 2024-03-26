@@ -71,14 +71,19 @@ struct Transform
 
 struct AABB
 {
-    float max_x, min_x;
-    float max_y, min_y;
-    float max_z, min_z;
+    // float max_x{std::numeric_limits<float>::max()}, min_x{std::numeric_limits<float>::min()};
+    // float max_y{std::numeric_limits<float>::max()}, min_y{std::numeric_limits<float>::min()};
+    // float max_z{std::numeric_limits<float>::max()}, min_z{std::numeric_limits<float>::min()};
+    float max_x{}, min_x{};
+    float max_y{}, min_y{};
+    float max_z{}, min_z{};
 };
 
 struct SceneObject
 {
-    Mesh mesh;
+    const Mesh &mesh;
     Transform transform;
+    // TODO: Find better method to compute
+    AABB aabb;
 };
 } // namespace ving
