@@ -38,7 +38,9 @@ void run_application()
 
     std::unordered_map<uint32_t, ving::Mesh> meshes;
 
-    meshes[0] = ving::Mesh::load_from_file(core, "assets/models/cube.obj");
+    ving::Mesh m = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
+
+    meshes[0] = ving::SimpleMesh::flat_plane(core, 100, 100, 0.05f, {});
     meshes[1] = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
 
     if constexpr (show_cameras_as_cubes)
@@ -64,8 +66,8 @@ void run_application()
                               {{}, glm::vec3{0.03f}, {}}});
     }
 
-    scene.objects.push_back(ving::SceneObject{meshes[1], {}});
-    scene.objects.push_back(ving::SceneObject{ving::SimpleMesh::flat_plane(core, 100, 100, 0.05f, {}), {}});
+    scene.objects.push_back(ving::SceneObject{meshes[1], {}, {}});
+    scene.objects.push_back(ving::SceneObject{meshes[0], {}});
 
     ving::Profiler profiler;
 
