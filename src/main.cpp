@@ -40,7 +40,7 @@ void run_application()
 
     ving::Mesh m = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
 
-    meshes[0] = ving::SimpleMesh::flat_plane(core, 100, 100, 0.05f, {});
+    meshes[0] = ving::Mesh::flat_plane(core, 100, 100, 0.05f, {});
     meshes[1] = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
 
     if constexpr (show_cameras_as_cubes)
@@ -66,7 +66,7 @@ void run_application()
                               {{}, glm::vec3{0.03f}, {}}});
     }
 
-    scene.objects.push_back(ving::SceneObject{meshes[1], {}, {}});
+    scene.objects.push_back(ving::SceneObject{meshes[1], {}});
     scene.objects.push_back(ving::SceneObject{meshes[0], {}});
 
     ving::Profiler profiler;
@@ -75,7 +75,7 @@ void run_application()
     ving::SkyboxRenderer skybox_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
     ving::GizmoRenderer gizmo_renderer{core};
-    // ving::AABBRenderer aabb_renderer{core};
+    ving::AABBRenderer aabb_renderer{core};
 
     ving::ImGuiRenderer imgui_renderer{core, window};
 
@@ -206,7 +206,7 @@ void run_application()
             skybox_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);
             gizmo_renderer.render(frame, camera, scene.objects[0]);
-            // aabb_renderer.render(frame, camera, scene);
+            aabb_renderer.render(frame, camera, scene);
 
             imgui_renderer.render(frame, profiler,
                                   {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui});

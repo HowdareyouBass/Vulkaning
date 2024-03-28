@@ -10,6 +10,7 @@ namespace ving
 Mesh Mesh::load_from_file(const Core &core, std::string_view filepath, glm::vec4 color)
 {
     tinyobj::attrib_t attrib;
+    AABB aabb;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
     std::string err, warn;
@@ -31,7 +32,21 @@ Mesh Mesh::load_from_file(const Core &core, std::string_view filepath, glm::vec4
     {
         model_vertices.push_back(
             Vertex{{attrib.vertices[i + 0], attrib.vertices[i + 1], attrib.vertices[i + 2]}, 0, {}, 0, color});
+
+        aabb.max_x = std::max(aabb.max_x, model_vertices.back().position.x);
+        aabb.min_x = std::min(aabb.min_x, model_vertices.back().position.x);
+        aabb.max_y = std::max(aabb.max_y, model_vertices.back().position.y);
+        aabb.min_y = std::min(aabb.min_y, model_vertices.back().position.y);
+        aabb.max_z = std::max(aabb.max_z, model_vertices.back().position.z);
+        aabb.min_z = std::min(aabb.min_z, model_vertices.back().position.z);
     }
+
+    aabb.max_x = std::clamp(aabb.max_x, AABB::minimum_value, aabb.max_x);
+    aabb.min_x = std::clamp(aabb.min_x, -AABB::minimum_value, aabb.min_x);
+    aabb.max_y = std::clamp(aabb.max_y, AABB::minimum_value, aabb.max_y);
+    aabb.min_y = std::clamp(aabb.min_y, -AABB::minimum_value, aabb.min_y);
+    aabb.max_z = std::clamp(aabb.max_z, AABB::minimum_value, aabb.max_z);
+    aabb.min_z = std::clamp(aabb.min_z, -AABB::minimum_value, aabb.min_z);
 
     size_t total_mesh_indices = 0;
     for (auto &&shape : shapes)
@@ -66,15 +81,22 @@ Mesh Mesh::load_from_file(const Core &core, std::string_view filepath, glm::vec4
     }
 
     return Mesh{core.allocate_gpu_mesh_buffers(model_indices, model_vertices),
-                static_cast<uint32_t>(model_indices.size()), static_cast<uint32_t>(model_vertices.size())};
+                static_cast<uint32_t>(model_indices.size()), static_cast<uint32_t>(model_vertices.size()), aabb};
 }
 
 // TODO: Generate uv and normals
-Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width, float spacing, glm::vec4 color)
+Mesh Mesh::flat_plane(const Core &core, uint32_t length, uint32_t width, float spacing, glm::vec4 color)
 {
     std::vector<Vertex> vertices;
     vertices.reserve((length + 1) * (width + 1));
     std::vector<uint32_t> indices;
+
+    AABB aabb = {std::max(AABB::minimum_value, int(width / 2) * spacing),
+                 std::min(-AABB::minimum_value, -int(width / 2) * spacing),
+                 AABB::minimum_value,
+                 -AABB::minimum_value,
+                 std::max(AABB::minimum_value, int(length / 2) * spacing),
+                 std::min(-AABB::minimum_value, -int(length / 2) * spacing)};
 
     for (int x = -int(width / 2); x <= int(width / 2); ++x)
     {
@@ -106,9 +128,9 @@ Mesh SimpleMesh::flat_plane(const Core &core, uint32_t length, uint32_t width, f
     assert(indices.size() == 6 * (width * length));
 
     return Mesh{core.allocate_gpu_mesh_buffers(indices, vertices), static_cast<uint32_t>(indices.size()),
-                static_cast<uint32_t>(vertices.size())};
+                static_cast<uint32_t>(vertices.size()), aabb};
 }
-Mesh SimpleMesh::quad(const Core &core, glm::vec4 color)
+Mesh Mesh::quad(const Core &core, glm::vec4 color)
 {
     std::array<uint32_t, 6> indices{0, 1, 2, 2, 3, 0};
     std::array<Vertex, 4> vertices{
@@ -122,7 +144,7 @@ Mesh SimpleMesh::quad(const Core &core, glm::vec4 color)
                 static_cast<uint32_t>(vertices.size())};
 }
 
-Mesh SimpleMesh::cube_interpolated_normals(const Core &core, std::array<glm::vec4, 8> vertex_colors)
+Mesh Mesh::cube_interpolated_normals(const Core &core, std::array<glm::vec4, 8> vertex_colors)
 {
     // clang-format off
     std::array<uint32_t, 36> indices{
@@ -152,7 +174,7 @@ Mesh SimpleMesh::cube_interpolated_normals(const Core &core, std::array<glm::vec
                 static_cast<uint32_t>(vertices.size())};
 }
 
-Mesh SimpleMesh::sphere(const Core &core, float radius, glm::vec4 color)
+Mesh Mesh::sphere(const Core &core, float radius, glm::vec4 color)
 {
 }
 RayTracedMesh SimpleMesh::cube_raytraced(const Core &core, vk::TransformMatrixKHR &transform,

@@ -68,7 +68,7 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
     m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 2, m_camera_info_buffer);
     m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 3, m_scene_data_buffer);
 
-    m_quad = SimpleMesh::quad(core, glm::vec4{0.1f, 0.1f, 0.1f, 1.0f});
+    m_quad = Mesh::quad(core, glm::vec4{0.1f, 0.1f, 0.1f, 1.0f});
     m_push_constants.vertex_buffer = m_quad.gpu_buffers.vertex_buffer_address;
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
