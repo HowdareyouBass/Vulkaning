@@ -69,19 +69,6 @@ void AABBRenderer::render(const RenderFrames::FrameInfo &frame, const Perspectiv
         m_push_constants.pvm_transform = camera.projection() * camera.view() * obj.transform.mat4();
         m_push_constants.aabb = obj.mesh.aabb;
 
-        // AABB aabb = obj.mesh.aabb;
-        // m_aabb_positions[0] = glm::vec4{aabb.min_x, aabb.min_y, aabb.min_z, 1.0f};
-        // m_aabb_positions[1] = glm::vec4{aabb.min_x, aabb.max_y, aabb.min_z, 1.0f};
-        // m_aabb_positions[2] = glm::vec4{aabb.max_x, aabb.max_y, aabb.min_z, 1.0f};
-        // m_aabb_positions[3] = glm::vec4{aabb.max_x, aabb.min_y, aabb.min_z, 1.0f};
-        //
-        // m_aabb_positions[4] = glm::vec4{aabb.min_x, aabb.min_y, aabb.max_z, 1.0f};
-        // m_aabb_positions[5] = glm::vec4{aabb.min_x, aabb.max_y, aabb.max_z, 1.0f};
-        // m_aabb_positions[6] = glm::vec4{aabb.max_x, aabb.max_y, aabb.max_z, 1.0f};
-        // m_aabb_positions[7] = glm::vec4{aabb.max_x, aabb.min_y, aabb.max_z, 1.0f};
-
-        // m_aabb_positions_buffer.set_memory(r_core.device(), m_aabb_positions.data(), sizeof(glm::vec4) * 8);
-
         cmd.pushConstants<PushConstants>(m_pipeline.layout.get(),
                                          vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                          m_push_constants);

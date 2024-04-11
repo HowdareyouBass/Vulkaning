@@ -3,10 +3,10 @@
 struct AABB
 {
     float max_x;
-    float min_x;
     float max_y;
-    float min_y;
     float max_z;
+    float min_x;
+    float min_y;
     float min_z;
 };
 

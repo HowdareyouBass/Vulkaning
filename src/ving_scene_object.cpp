@@ -92,10 +92,10 @@ Mesh Mesh::flat_plane(const Core &core, uint32_t length, uint32_t width, float s
     std::vector<uint32_t> indices;
 
     AABB aabb = {std::max(AABB::minimum_value, int(width / 2) * spacing),
-                 std::min(-AABB::minimum_value, -int(width / 2) * spacing),
                  AABB::minimum_value,
-                 -AABB::minimum_value,
                  std::max(AABB::minimum_value, int(length / 2) * spacing),
+                 std::min(-AABB::minimum_value, -int(width / 2) * spacing),
+                 -AABB::minimum_value,
                  std::min(-AABB::minimum_value, -int(length / 2) * spacing)};
 
     for (int x = -int(width / 2); x <= int(width / 2); ++x)

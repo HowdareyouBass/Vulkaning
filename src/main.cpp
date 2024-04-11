@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <imgui.h>
 
+#include "physics/ving_ray.hpp"
 #include "ving_aabb_renderer.hpp"
 #include "ving_camera.hpp"
 #include "ving_core.hpp"
@@ -38,10 +39,11 @@ void run_application()
 
     std::unordered_map<uint32_t, ving::Mesh> meshes;
 
-    ving::Mesh m = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
+    // ving::Mesh m = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
 
     meshes[0] = ving::Mesh::flat_plane(core, 100, 100, 0.05f, {});
     meshes[1] = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
+    meshes[2] = ving::Mesh::load_from_file(core, "assets/models/cube.obj");
 
     if constexpr (show_cameras_as_cubes)
     {
@@ -99,6 +101,8 @@ void run_application()
             //             scene.aabbs[i].max_y, scene.aabbs[i].min_z, scene.aabbs[i].max_z);
         }
     };
+
+    bool bul = false;
 
     // aabb_generator.generate(frames, scene);
     while (running)
@@ -171,6 +175,24 @@ void run_application()
             SDL_ShowCursor();
         }
 
+        // Object choosing
+        if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
+        {
+            float mouse_x_relative_to_center_reamapped = (mouse_x - halfwidth) / halfwidth;
+            float mouse_y_relative_to_center_reamapped = (mouse_y - halfheight) / halfheight;
+
+            auto hit = ving::raycast_scene(
+                camera_1.position,
+                glm::normalize(camera_1.forward() + glm::vec3{mouse_x_relative_to_center_reamapped,
+                                                              mouse_y_relative_to_center_reamapped, 0.0f}),
+                scene);
+
+            bul = hit.first;
+
+            scene.objects.push_back(
+                ving::SceneObject{meshes[2], ving::Transform{{}, glm::vec3{1.0f}, hit.second.position}});
+        }
+
         ving::PerspectiveCamera &camera = camera_1;
 
         ving::RenderFrames::FrameInfo frame = frames.begin_frame(profiler);
@@ -209,7 +231,8 @@ void run_application()
             aabb_renderer.render(frame, camera, scene);
 
             imgui_renderer.render(frame, profiler,
-                                  {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui});
+                                  {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui,
+                                   [bul]() { ImGui::Text("%b", bul); }});
 
             profile_recording.stop();
         }
