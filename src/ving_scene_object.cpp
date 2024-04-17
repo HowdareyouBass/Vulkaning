@@ -33,20 +33,20 @@ Mesh Mesh::load_from_file(const Core &core, std::string_view filepath, glm::vec4
         model_vertices.push_back(
             Vertex{{attrib.vertices[i + 0], attrib.vertices[i + 1], attrib.vertices[i + 2]}, 0, {}, 0, color});
 
-        aabb.max_x = std::max(aabb.max_x, model_vertices.back().position.x);
-        aabb.min_x = std::min(aabb.min_x, model_vertices.back().position.x);
-        aabb.max_y = std::max(aabb.max_y, model_vertices.back().position.y);
-        aabb.min_y = std::min(aabb.min_y, model_vertices.back().position.y);
-        aabb.max_z = std::max(aabb.max_z, model_vertices.back().position.z);
-        aabb.min_z = std::min(aabb.min_z, model_vertices.back().position.z);
+        aabb.max.x = std::max(aabb.max.x, model_vertices.back().position.x);
+        aabb.min.x = std::min(aabb.min.x, model_vertices.back().position.x);
+        aabb.max.y = std::max(aabb.max.y, model_vertices.back().position.y);
+        aabb.min.y = std::min(aabb.min.y, model_vertices.back().position.y);
+        aabb.max.z = std::max(aabb.max.z, model_vertices.back().position.z);
+        aabb.min.z = std::min(aabb.min.z, model_vertices.back().position.z);
     }
 
-    aabb.max_x = std::clamp(aabb.max_x, AABB::minimum_value, aabb.max_x);
-    aabb.min_x = std::clamp(aabb.min_x, -AABB::minimum_value, aabb.min_x);
-    aabb.max_y = std::clamp(aabb.max_y, AABB::minimum_value, aabb.max_y);
-    aabb.min_y = std::clamp(aabb.min_y, -AABB::minimum_value, aabb.min_y);
-    aabb.max_z = std::clamp(aabb.max_z, AABB::minimum_value, aabb.max_z);
-    aabb.min_z = std::clamp(aabb.min_z, -AABB::minimum_value, aabb.min_z);
+    aabb.max.x = std::clamp(aabb.max.x, AABB::minimum_value, aabb.max.x);
+    aabb.min.x = std::clamp(aabb.min.x, -AABB::minimum_value, aabb.min.x);
+    aabb.max.y = std::clamp(aabb.max.y, AABB::minimum_value, aabb.max.y);
+    aabb.min.y = std::clamp(aabb.min.y, -AABB::minimum_value, aabb.min.y);
+    aabb.max.z = std::clamp(aabb.max.z, AABB::minimum_value, aabb.max.z);
+    aabb.min.z = std::clamp(aabb.min.z, -AABB::minimum_value, aabb.min.z);
 
     size_t total_mesh_indices = 0;
     for (auto &&shape : shapes)
@@ -91,12 +91,10 @@ Mesh Mesh::flat_plane(const Core &core, uint32_t length, uint32_t width, float s
     vertices.reserve((length + 1) * (width + 1));
     std::vector<uint32_t> indices;
 
-    AABB aabb = {std::max(AABB::minimum_value, int(width / 2) * spacing),
-                 AABB::minimum_value,
-                 std::max(AABB::minimum_value, int(length / 2) * spacing),
-                 std::min(-AABB::minimum_value, -int(width / 2) * spacing),
-                 -AABB::minimum_value,
-                 std::min(-AABB::minimum_value, -int(length / 2) * spacing)};
+    AABB aabb = {{std::max(AABB::minimum_value, int(width / 2) * spacing), AABB::minimum_value,
+                  std::max(AABB::minimum_value, int(length / 2) * spacing)},
+                 {std::min(-AABB::minimum_value, -int(width / 2) * spacing), -AABB::minimum_value,
+                  std::min(-AABB::minimum_value, -int(length / 2) * spacing)}};
 
     for (int x = -int(width / 2); x <= int(width / 2); ++x)
     {

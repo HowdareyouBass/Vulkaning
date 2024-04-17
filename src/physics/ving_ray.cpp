@@ -20,17 +20,22 @@ std::pair<bool, RayHitInfo> raycast_scene(glm::vec3 origin, glm::vec3 direction,
 
     for (size_t i = 0; i < scene.objects.size(); ++i)
     {
-        const AABB &aabb = scene.objects[i].mesh.aabb;
-        const float *aabb_max = &aabb.max_x;
-        const float *aabb_min = aabb_max + 3;
+        // TODO: Maybe precalc the world space aabbs in the mesh constructing
+        AABB aabb_world_space = scene.objects[i].mesh.aabb;
+
+        glm::vec4 new_min = scene.objects[i].transform.mat4() * glm::vec4{aabb_world_space.min, 1.0f};
+        aabb_world_space.min = new_min / new_min.w;
+
+        glm::vec4 new_max = scene.objects[i].transform.mat4() * glm::vec4{aabb_world_space.max, 1.0f};
+        aabb_world_space.max = new_max / new_max.w;
 
         float tmin = 0.0f, tmax = std::numeric_limits<float>::infinity();
         float t1, t2;
 
         for (int d = 0; d < 3; ++d)
         {
-            t1 = (aabb_min[d] - origin[d]) * direction_inverse[d];
-            t2 = (aabb_max[d] - origin[d]) * direction_inverse[d];
+            t1 = (aabb_world_space.min[d] - origin[d]) * direction_inverse[d];
+            t2 = (aabb_world_space.max[d] - origin[d]) * direction_inverse[d];
 
             tmin = std::min(std::max(t1, tmin), std::max(t2, tmin));
             tmax = std::max(std::min(t1, tmax), std::min(t2, tmax));
@@ -49,8 +54,6 @@ std::pair<bool, RayHitInfo> raycast_scene_old(glm::vec3 origin, glm::vec3 direct
     for (size_t i = 0; i < scene.objects.size(); ++i)
     {
         const AABB &aabb = scene.objects[i].mesh.aabb;
-        const float *max = &aabb.max_x;
-        const float *min = max + 3;
 
         Quadrant quadrant[3];
 
@@ -59,16 +62,16 @@ std::pair<bool, RayHitInfo> raycast_scene_old(glm::vec3 origin, glm::vec3 direct
 
         for (int i = 0; i < 3; ++i)
         {
-            if (origin[i] < min[i])
+            if (origin[i] < aabb.min[i])
             {
                 quadrant[i] = Quadrant::Left;
-                candidate_plane[i] = min[i];
+                candidate_plane[i] = aabb.min[i];
                 inside = false;
             }
-            else if (origin[i] > max[i])
+            else if (origin[i] > aabb.max[i])
             {
                 quadrant[i] = Quadrant::Right;
-                candidate_plane[i] = max[i];
+                candidate_plane[i] = aabb.max[i];
                 inside = false;
             }
             else
@@ -101,8 +104,8 @@ std::pair<bool, RayHitInfo> raycast_scene_old(glm::vec3 origin, glm::vec3 direct
 
         glm::vec3 hit_pos = origin + max_t[which_plane] * direction;
 
-        if (hit_pos.x < aabb.min_x || hit_pos.x > aabb.max_x || hit_pos.y < aabb.min_y || hit_pos.y > aabb.max_y ||
-            hit_pos.z < aabb.min_z || hit_pos.z > aabb.max_z)
+        if (hit_pos.x < aabb.min.x || hit_pos.x > aabb.max.x || hit_pos.y < aabb.min.y || hit_pos.y > aabb.max.y ||
+            hit_pos.z < aabb.min.z || hit_pos.z > aabb.max.z)
         {
             continue;
         }

@@ -207,37 +207,33 @@ void run_application()
         }
 
         // Object choosing
-        if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
+        if ((mouse_buttons & SDL_BUTTON_LMASK) != 0 || keys[SDL_SCANCODE_R])
         {
-            float mouse_x_relative_to_center_reamapped = (mouse_x - halfwidth) / halfwidth;
-            float mouse_y_relative_to_center_reamapped = (mouse_y - halfheight) / halfheight;
+            float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) / halfwidth;
+            float mouse_y_relative_to_center_remapped = (mouse_y - halfheight) / halfheight;
+            mouse_y_relative_to_center_remapped *= -1;
 
             auto hit = ving::raycast_scene(
                 camera_1.position,
-                glm::normalize(camera_1.forward() + glm::vec3{mouse_x_relative_to_center_reamapped,
-                                                              mouse_y_relative_to_center_reamapped, 0.0f}),
-                scene);
-
-            bul = hit.first;
-        }
-
-        if (keys[SDL_SCANCODE_R])
-        {
-            float mouse_x_relative_to_center_reamapped = (mouse_x - halfwidth) / halfwidth;
-            float mouse_y_relative_to_center_reamapped = (mouse_y - halfheight) / halfheight;
-
-            auto hit = ving::raycast_scene(
-                camera_1.position,
-                glm::normalize(camera_1.forward() + glm::vec3{mouse_x_relative_to_center_reamapped,
-                                                              mouse_y_relative_to_center_reamapped, 0.0f}),
+                glm::normalize(camera_1.forward() + glm::vec3{mouse_x_relative_to_center_remapped,
+                                                              mouse_y_relative_to_center_remapped, 0.0f}),
                 scene);
 
             bul = hit.first;
 
-            if (bul)
+            if (bul && keys[SDL_SCANCODE_R])
                 scene.objects.push_back(
                     ving::SceneObject{meshes[2], ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
         }
+
+        // constexpr int num_steps = 4;
+        //
+        // for (int i = 0; i < num_steps; ++i)
+        // {
+        //     for (int j = 0; j < num_steps; ++j)
+        //     {
+        //     }
+        // }
 
         ving::PerspectiveCamera &camera = camera_1;
 
@@ -280,6 +276,14 @@ void run_application()
             imgui_renderer.render(frame, profiler,
                                   {
                                       render_aabbs_imgui,
+                                      // [mouse_x, halfwidth, mouse_y, halfheight]() {
+                                      //     float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) /
+                                      //     halfwidth; float mouse_y_relative_to_center_remapped = (mouse_y -
+                                      //     halfheight) / halfheight; mouse_y_relative_to_center_remapped *= -1;
+                                      //
+                                      //     ImGui::Text("%f, %f", mouse_x_relative_to_center_remapped,
+                                      //     mouse_y_relative_to_center_remapped);
+                                      // },
                                       [bul]() { ImGui::Text("%b", bul); },
                                       scene.get_imgui(),
                                       gi_renderer.get_imgui(),
