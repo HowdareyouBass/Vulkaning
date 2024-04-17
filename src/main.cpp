@@ -20,6 +20,34 @@ const Uint8 *keys;
 
 constexpr bool show_camera_vectors = false;
 constexpr bool show_cameras_as_cubes = false;
+constexpr int step = 4;
+
+void test_ray_intersection(const ving::Mesh &mesh, const ving::PerspectiveCamera &camera, const ving::Scene &scene,
+                           SDL_Window *window)
+{
+    for (int i = 0; i < 1080 / step; ++i)
+    {
+        for (int j = 0; j < 1080 / step; ++j)
+        {
+            SDL_WarpMouseInWindow(window, i * step, j * step);
+
+            float mouse_x_relative_to_center_reamapped = (i * step - 1080.0f / 2) / 1080 / 2;
+            float mouse_y_relative_to_center_reamapped = (j * step - 1080.0f / 2) / 1080 / 2;
+
+            auto hit = ving::raycast_scene(
+                camera.position,
+                glm::normalize(camera.forward() + glm::vec3{mouse_x_relative_to_center_reamapped,
+                                                            mouse_y_relative_to_center_reamapped, 0.0f}),
+                scene);
+
+            if (hit.first)
+            {
+                // scene.objects.push_back(
+                //     ving::SceneObject{mesh, ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
+            }
+        }
+    }
+}
 
 void run_application()
 {
@@ -73,6 +101,8 @@ void run_application()
 
     ving::Profiler profiler;
 
+    bool render_aabbs = true;
+
     ving::RenderFrames frames{core};
     ving::SkyboxRenderer skybox_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
@@ -101,6 +131,7 @@ void run_application()
             //             scene.aabbs[i].max_y, scene.aabbs[i].min_z, scene.aabbs[i].max_z);
         }
     };
+    auto render_aabbs_imgui = [&render_aabbs]() { ImGui::Checkbox("Render AABBs", &render_aabbs); };
 
     bool bul = false;
 
@@ -188,9 +219,24 @@ void run_application()
                 scene);
 
             bul = hit.first;
+        }
 
-            scene.objects.push_back(
-                ving::SceneObject{meshes[2], ving::Transform{{}, glm::vec3{1.0f}, hit.second.position}});
+        if (keys[SDL_SCANCODE_R])
+        {
+            float mouse_x_relative_to_center_reamapped = (mouse_x - halfwidth) / halfwidth;
+            float mouse_y_relative_to_center_reamapped = (mouse_y - halfheight) / halfheight;
+
+            auto hit = ving::raycast_scene(
+                camera_1.position,
+                glm::normalize(camera_1.forward() + glm::vec3{mouse_x_relative_to_center_reamapped,
+                                                              mouse_y_relative_to_center_reamapped, 0.0f}),
+                scene);
+
+            bul = hit.first;
+
+            if (bul)
+                scene.objects.push_back(
+                    ving::SceneObject{meshes[2], ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
         }
 
         ving::PerspectiveCamera &camera = camera_1;
@@ -228,11 +274,17 @@ void run_application()
             skybox_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);
             gizmo_renderer.render(frame, camera, scene.objects[0]);
-            aabb_renderer.render(frame, camera, scene);
+            if (render_aabbs)
+                aabb_renderer.render(frame, camera, scene);
 
             imgui_renderer.render(frame, profiler,
-                                  {scene.get_imgui(), gi_renderer.get_imgui(), moving_scene_objects_imgui,
-                                   [bul]() { ImGui::Text("%b", bul); }});
+                                  {
+                                      render_aabbs_imgui,
+                                      [bul]() { ImGui::Text("%b", bul); },
+                                      scene.get_imgui(),
+                                      gi_renderer.get_imgui(),
+                                      moving_scene_objects_imgui,
+                                  });
 
             profile_recording.stop();
         }
