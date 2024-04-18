@@ -17,6 +17,8 @@
 #include "ving_skybox_renderer.hpp"
 
 const Uint8 *keys;
+// HARD: Locking fov for now
+constexpr float fov = 60.0f;
 
 void run_application()
 {
@@ -55,7 +57,7 @@ void run_application()
 
     ving::PerspectiveCamera camera_1{static_cast<float>(core.get_window_extent().width) /
                                          static_cast<float>(core.get_window_extent().height),
-                                     1000.0f, 0.001f, glm::radians(60.0f)};
+                                     1000.0f, 0.001f, glm::radians(fov)};
 
     bool running = true;
     SDL_Event event;
@@ -101,7 +103,7 @@ void run_application()
     };
 
     // NOTE: Idk this is kind of magic number need to investigate but for now I'll do the gizmos
-    float aspect = 1.73f;
+    float aspect = glm::tan(glm::radians(fov));
 
     // NOTE: STUPID
     constexpr bool test_rays = false;
