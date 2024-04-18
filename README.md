@@ -3,7 +3,7 @@
 Some projects that i wanted to implement fully from scratch with vulkan hpp and sdl3. Those projects include:
 1. Slime simulation
 ![Slimey](https://github.com/HowdareyouBass/Vulkaning/assets/62214754/122f75d4-00ae-4310-87d2-92d8d0075826)
-2. Water simulation
+2. Water
 ![water_rendering](https://github.com/HowdareyouBass/Vulkaning/assets/62214754/8f1e136a-78b1-47a4-8010-b17c785d8f85)
 
 
