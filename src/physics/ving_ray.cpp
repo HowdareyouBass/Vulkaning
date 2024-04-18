@@ -2,19 +2,17 @@
 
 namespace ving
 {
-// https://github.com/erich666/GraphicsGems/blob/master/gems/RayBox.c
-//
-enum class Quadrant
-{
-    Left,
-    Right,
-    Middle
-};
 
 // Took this algorithm from https://tavinator.com/2022/ray_box_boundary.html
 // TODO: maybe use batching and sse instructions
 std::pair<bool, RayHitInfo> raycast_scene(glm::vec3 origin, glm::vec3 direction, const Scene &scene)
 {
+    bool hit = false;
+    struct
+    {
+        uint32_t id;
+        float t{std::numeric_limits<float>::max()};
+    } closest_hit;
 
     glm::vec3 direction_inverse = 1.0f / direction;
 
@@ -41,11 +39,24 @@ std::pair<bool, RayHitInfo> raycast_scene(glm::vec3 origin, glm::vec3 direction,
             tmax = std::max(std::min(t1, tmax), std::min(t2, tmax));
         }
 
-        if (tmin <= tmax)
-            return {true, RayHitInfo{i, origin + direction * tmin}};
+        if (tmin <= tmax && tmin < closest_hit.t)
+        {
+            hit = true;
+            closest_hit.id = i;
+            closest_hit.t = tmin;
+        }
     }
-    return {false, {}};
+    return {hit, RayHitInfo{closest_hit.id, origin + closest_hit.t * direction}};
 }
+
+// https://github.com/erich666/GraphicsGems/blob/master/gems/RayBox.c
+//
+enum class Quadrant
+{
+    Left,
+    Right,
+    Middle
+};
 std::pair<bool, RayHitInfo> raycast_scene_old(glm::vec3 origin, glm::vec3 direction, const Scene &scene)
 {
     // direction.y *= -1;
