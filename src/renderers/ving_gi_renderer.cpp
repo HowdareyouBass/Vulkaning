@@ -58,16 +58,16 @@ void GiRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveC
                            nullptr);
     set_default_viewport_and_scissor(cmd, img);
 
-    for (auto &&obj : scene.objects)
+    for (size_t i = 0; i < scene.objects.size(); ++i)
     {
-        m_push_constants.model_transform = obj.transform.mat4();
-        m_push_constants.vertex_buffer_address = obj.mesh.gpu_buffers.vertex_buffer_address;
+        m_push_constants.model_transform = scene.objects[i].transform.mat4();
+        m_push_constants.vertex_buffer_address = scene.objects[i].mesh.gpu_buffers.vertex_buffer_address;
 
         cmd.pushConstants<PushConstants>(m_pipelines.layout.get(),
                                          vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                          m_push_constants);
-        cmd.bindIndexBuffer(obj.mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
-        cmd.drawIndexed(obj.mesh.indices_count, 1, 0, 0, 0);
+        cmd.bindIndexBuffer(scene.objects[i].mesh.gpu_buffers.index_buffer.buffer(), 0, vk::IndexType::eUint32);
+        cmd.drawIndexed(scene.objects[i].mesh.indices_count, 1, 0, 0, 0);
     }
 
     cmd.endRendering();

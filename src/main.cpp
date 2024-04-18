@@ -101,8 +101,6 @@ void run_application()
 
     ving::Profiler profiler;
 
-    bool render_aabbs = true;
-
     ving::RenderFrames frames{core};
     ving::SkyboxRenderer skybox_renderer{core, scene};
     ving::GiRenderer gi_renderer{core};
@@ -131,9 +129,46 @@ void run_application()
             //             scene.aabbs[i].max_y, scene.aabbs[i].min_z, scene.aabbs[i].max_z);
         }
     };
+
+    bool render_aabbs = false;
     auto render_aabbs_imgui = [&render_aabbs]() { ImGui::Checkbox("Render AABBs", &render_aabbs); };
 
+    // TODO:
+    size_t current_object_count = scene.objects.size();
+    auto remove_hits_imgiu = [current_object_count, &scene]() {
+        if (ImGui::Button("Remove hits"))
+        {
+            // scene.objects.(scene.objects.begin(), scene.objects.begin() + current_object_count - 1);
+        }
+    };
+
+    // NOTE: Idk this is kind of magic number need to investigate but for now I'll do the gizmos
+    float aspect = 1.73f;
+    auto aspect_change_imgui = [&aspect]() { ImGui::DragFloat("aspect", &aspect, 0.01f, 1.0f, 4.0f); };
+
     bool bul = false;
+
+    // NOTE: STUPID
+    constexpr bool test_rays = false;
+    if constexpr (test_rays)
+    {
+        constexpr int num_steps = 50;
+        constexpr float scarcity = 4.0f;
+
+        for (int i = 0; i < num_steps; ++i)
+        {
+            for (int j = 0; j < num_steps; ++j)
+            {
+                scene.objects.push_back(
+                    ving::SceneObject{meshes[2],
+                                      {{},
+                                       glm::vec3{0.01f},
+                                       (camera_1.position + aspect * camera_1.forward() +
+                                        camera_1.right() * scarcity * (-1.0f + i * 2.0f / num_steps) +
+                                        camera_1.up() * scarcity * (-1.0f + j * 2.0f / num_steps))}});
+            }
+        }
+    }
 
     // aabb_generator.generate(frames, scene);
     while (running)
@@ -213,27 +248,18 @@ void run_application()
             float mouse_y_relative_to_center_remapped = (mouse_y - halfheight) / halfheight;
             mouse_y_relative_to_center_remapped *= -1;
 
-            auto hit = ving::raycast_scene(
-                camera_1.position,
-                glm::normalize(camera_1.forward() + glm::vec3{mouse_x_relative_to_center_remapped,
-                                                              mouse_y_relative_to_center_remapped, 0.0f}),
-                scene);
+            auto hit = ving::raycast_scene(camera_1.position,
+                                           glm::normalize(aspect * camera_1.forward() +
+                                                          mouse_x_relative_to_center_remapped * camera_1.right() +
+                                                          mouse_y_relative_to_center_remapped * camera_1.up()),
+                                           scene);
 
             bul = hit.first;
 
-            if (bul && keys[SDL_SCANCODE_R])
+            if (bul && keys[SDL_SCANCODE_R] && test_rays)
                 scene.objects.push_back(
                     ving::SceneObject{meshes[2], ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
         }
-
-        // constexpr int num_steps = 4;
-        //
-        // for (int i = 0; i < num_steps; ++i)
-        // {
-        //     for (int j = 0; j < num_steps; ++j)
-        //     {
-        //     }
-        // }
 
         ving::PerspectiveCamera &camera = camera_1;
 
@@ -273,22 +299,23 @@ void run_application()
             if (render_aabbs)
                 aabb_renderer.render(frame, camera, scene);
 
-            imgui_renderer.render(frame, profiler,
-                                  {
-                                      render_aabbs_imgui,
-                                      // [mouse_x, halfwidth, mouse_y, halfheight]() {
-                                      //     float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) /
-                                      //     halfwidth; float mouse_y_relative_to_center_remapped = (mouse_y -
-                                      //     halfheight) / halfheight; mouse_y_relative_to_center_remapped *= -1;
-                                      //
-                                      //     ImGui::Text("%f, %f", mouse_x_relative_to_center_remapped,
-                                      //     mouse_y_relative_to_center_remapped);
-                                      // },
-                                      [bul]() { ImGui::Text("%b", bul); },
-                                      scene.get_imgui(),
-                                      gi_renderer.get_imgui(),
-                                      moving_scene_objects_imgui,
-                                  });
+            imgui_renderer.render(
+                frame, profiler,
+                {
+                    render_aabbs_imgui,
+                    aspect_change_imgui,
+                    [mouse_x, halfwidth, mouse_y, halfheight]() {
+                        float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) / halfwidth;
+                        float mouse_y_relative_to_center_remapped = (mouse_y - halfheight) / halfheight;
+                        mouse_y_relative_to_center_remapped *= -1;
+
+                        ImGui::Text("%f, %f", mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped);
+                    },
+                    [bul]() { ImGui::Text("%b", bul); },
+                    scene.get_imgui(),
+                    gi_renderer.get_imgui(),
+                    moving_scene_objects_imgui,
+                });
 
             profile_recording.stop();
         }
