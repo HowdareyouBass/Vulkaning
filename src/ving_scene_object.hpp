@@ -38,7 +38,7 @@ struct AABB
     //     min_z{std::numeric_limits<float>::max()};
     // float max_x{}, max_y{}, max_z{};
     // float min_x{}, min_y{}, min_z{};
-    glm::vec3 min, max;
+    glm::vec3 min{std::numeric_limits<float>::infinity()}, max{-std::numeric_limits<float>::infinity()};
 };
 
 struct Mesh

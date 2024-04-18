@@ -18,37 +18,6 @@
 
 const Uint8 *keys;
 
-constexpr bool show_camera_vectors = false;
-constexpr bool show_cameras_as_cubes = false;
-constexpr int step = 4;
-
-void test_ray_intersection(const ving::Mesh &mesh, const ving::PerspectiveCamera &camera, const ving::Scene &scene,
-                           SDL_Window *window)
-{
-    for (int i = 0; i < 1080 / step; ++i)
-    {
-        for (int j = 0; j < 1080 / step; ++j)
-        {
-            SDL_WarpMouseInWindow(window, i * step, j * step);
-
-            float mouse_x_relative_to_center_reamapped = (i * step - 1080.0f / 2) / 1080 / 2;
-            float mouse_y_relative_to_center_reamapped = (j * step - 1080.0f / 2) / 1080 / 2;
-
-            auto hit = ving::raycast_scene(
-                camera.position,
-                glm::normalize(camera.forward() + glm::vec3{mouse_x_relative_to_center_reamapped,
-                                                            mouse_y_relative_to_center_reamapped, 0.0f}),
-                scene);
-
-            if (hit.first)
-            {
-                // scene.objects.push_back(
-                //     ving::SceneObject{mesh, ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
-            }
-        }
-    }
-}
-
 void run_application()
 {
     if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
@@ -67,34 +36,9 @@ void run_application()
 
     std::unordered_map<uint32_t, ving::Mesh> meshes;
 
-    // ving::Mesh m = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
-
     meshes[0] = ving::Mesh::flat_plane(core, 100, 100, 0.05f, {});
     meshes[1] = ving::Mesh::load_from_file(core, "assets/models/smooth_vase.obj");
     meshes[2] = ving::Mesh::load_from_file(core, "assets/models/cube.obj");
-
-    if constexpr (show_cameras_as_cubes)
-    {
-        scene.objects.push_back(
-            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.5f, 0.5f, 0.5f, 1.0f}),
-                              {{}, glm::vec3{0.1f}, {}}});
-        scene.objects.push_back(
-            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.9f, 0.9f, 0.9f, 1.0f}),
-                              {{}, glm::vec3{0.1f}, {}}});
-    }
-
-    if constexpr (show_camera_vectors)
-    {
-        scene.objects.push_back(
-            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {1.0f, 0.0f, 0.0f, 1.0f}),
-                              {{}, glm::vec3{0.03f}, {}}});
-        scene.objects.push_back(
-            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.0f, 1.0f, 0.0f, 1.0f}),
-                              {{}, glm::vec3{0.03f}, {}}});
-        scene.objects.push_back(
-            ving::SceneObject{ving::Mesh::load_from_file(core, "assets/models/cube.obj", {0.0f, 0.0f, 1.0f, 1.0f}),
-                              {{}, glm::vec3{0.03f}, {}}});
-    }
 
     scene.objects.push_back(ving::SceneObject{meshes[1], {}});
     scene.objects.push_back(ving::SceneObject{meshes[0], {}});
@@ -133,6 +77,20 @@ void run_application()
     bool render_aabbs = false;
     auto render_aabbs_imgui = [&render_aabbs]() { ImGui::Checkbox("Render AABBs", &render_aabbs); };
 
+    auto show_mouse_pos = [&core]() {
+        float mouse_x = 0, mouse_y = 0;
+        Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+
+        float halfwidth = static_cast<float>(core.get_window_extent().width) / 2.0f;
+        float halfheight = static_cast<float>(core.get_window_extent().height) / 2.0f;
+
+        float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) / halfwidth;
+        float mouse_y_relative_to_center_remapped = (mouse_y - halfheight) / halfheight;
+        mouse_y_relative_to_center_remapped *= -1;
+
+        ImGui::Text("%f, %f", mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped);
+    };
+
     // TODO:
     size_t current_object_count = scene.objects.size();
     auto remove_hits_imgiu = [current_object_count, &scene]() {
@@ -144,9 +102,6 @@ void run_application()
 
     // NOTE: Idk this is kind of magic number need to investigate but for now I'll do the gizmos
     float aspect = 1.73f;
-    auto aspect_change_imgui = [&aspect]() { ImGui::DragFloat("aspect", &aspect, 0.01f, 1.0f, 4.0f); };
-
-    bool bul = false;
 
     // NOTE: STUPID
     constexpr bool test_rays = false;
@@ -169,7 +124,7 @@ void run_application()
             }
         }
     }
-
+    uint32_t hit_id = 0;
     // aabb_generator.generate(frames, scene);
     while (running)
     {
@@ -242,7 +197,7 @@ void run_application()
         }
 
         // Object choosing
-        if ((mouse_buttons & SDL_BUTTON_LMASK) != 0 || keys[SDL_SCANCODE_R])
+        if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
         {
             float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) / halfwidth;
             float mouse_y_relative_to_center_remapped = (mouse_y - halfheight) / halfheight;
@@ -253,12 +208,15 @@ void run_application()
                                                           mouse_x_relative_to_center_remapped * camera_1.right() +
                                                           mouse_y_relative_to_center_remapped * camera_1.up()),
                                            scene);
-
-            bul = hit.first;
-
-            if (bul && keys[SDL_SCANCODE_R] && test_rays)
-                scene.objects.push_back(
-                    ving::SceneObject{meshes[2], ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
+            if (hit.first)
+            {
+                hit_id = hit.second.object_id;
+                if constexpr (test_rays)
+                {
+                    scene.objects.push_back(
+                        ving::SceneObject{meshes[2], ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
+                }
+            }
         }
 
         ving::PerspectiveCamera &camera = camera_1;
@@ -279,43 +237,24 @@ void run_application()
                 camera.rotation.y = glm::mod(camera.rotation.y, glm::two_pi<float>());
             }
             camera.update();
-            if constexpr (show_cameras_as_cubes)
-            {
-                scene.objects[0].transform.translation = camera_1.position;
-                scene.objects[0].transform.rotation = camera_1.rotation;
-            }
-
-            if constexpr (show_camera_vectors)
-            {
-                scene.objects[2].transform.translation = camera_1.position + camera_1.right();
-                scene.objects[3].transform.translation = camera_1.position + camera_1.up();
-                scene.objects[4].transform.translation = camera_1.position + camera_1.forward();
-            }
 
             ving::Task profile_recording{profiler, "Recording"};
             skybox_renderer.render(frame, camera, scene);
             gi_renderer.render(frame, camera, scene);
             gizmo_renderer.render(frame, camera, scene.objects[0]);
             if (render_aabbs)
-                aabb_renderer.render(frame, camera, scene);
+                aabb_renderer.render_all(frame, camera, scene);
+            else
+                aabb_renderer.render_single(frame, camera, scene, hit_id);
 
-            imgui_renderer.render(
-                frame, profiler,
-                {
-                    render_aabbs_imgui,
-                    aspect_change_imgui,
-                    [mouse_x, halfwidth, mouse_y, halfheight]() {
-                        float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) / halfwidth;
-                        float mouse_y_relative_to_center_remapped = (mouse_y - halfheight) / halfheight;
-                        mouse_y_relative_to_center_remapped *= -1;
-
-                        ImGui::Text("%f, %f", mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped);
-                    },
-                    [bul]() { ImGui::Text("%b", bul); },
-                    scene.get_imgui(),
-                    gi_renderer.get_imgui(),
-                    moving_scene_objects_imgui,
-                });
+            imgui_renderer.render(frame, profiler,
+                                  {
+                                      render_aabbs_imgui,
+                                      show_mouse_pos,
+                                      scene.get_imgui(),
+                                      gi_renderer.get_imgui(),
+                                      moving_scene_objects_imgui,
+                                  });
 
             profile_recording.stop();
         }

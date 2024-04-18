@@ -48,7 +48,7 @@ AABBRenderer::AABBRenderer(const Core &core) : r_core{core}
     // m_aabb_positions[7] = {-0.5f, 0.5f, 0.5f, 1.0f};
 }
 
-void AABBRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene)
+void AABBRenderer::render_all(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene)
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
@@ -80,6 +80,36 @@ void AABBRenderer::render(const RenderFrames::FrameInfo &frame, const Perspectiv
     cmd.endRendering();
 }
 
+void AABBRenderer::render_single(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
+                                 const Scene &scene, uint32_t id)
+{
+    vk::CommandBuffer cmd = frame.cmd;
+    Image2D &img = frame.draw_image;
+
+    img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
+
+    start_rendering2d(cmd, img, vk::AttachmentLoadOp::eLoad);
+
+    cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline.pipeline.get());
+    // cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipeline.layout.get(), 0, m_resources.descriptors(),
+    //                        nullptr);
+    set_default_viewport_and_scissor(cmd, img);
+
+    // m_push_constants.pvm_transform = camera.projection() * camera.view() * scene.objects[0].transform.mat4();
+
+    const SceneObject &obj = scene.objects[id];
+    m_push_constants.pvm_transform = camera.projection() * camera.view() * obj.transform.mat4();
+    m_push_constants.aabb = obj.mesh.aabb;
+
+    cmd.pushConstants<PushConstants>(m_pipeline.layout.get(),
+                                     vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
+                                     m_push_constants);
+
+    cmd.bindIndexBuffer(m_aabb_indices.buffer(), 0, vk::IndexType::eUint32);
+    cmd.drawIndexed(m_aabb_indices.size() / sizeof(uint32_t), 1, 0, 0, 0);
+
+    cmd.endRendering();
+}
 std::function<void()> AABBRenderer::get_imgui()
 {
     return [this]() {

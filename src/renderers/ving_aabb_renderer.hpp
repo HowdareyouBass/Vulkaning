@@ -19,7 +19,9 @@ class AABBRenderer : public BaseRenderer
   public:
     AABBRenderer(const Core &core);
 
-    void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene);
+    void render_all(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene);
+    void render_single(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene,
+                       uint32_t id);
 
     std::function<void()> get_imgui();
 
