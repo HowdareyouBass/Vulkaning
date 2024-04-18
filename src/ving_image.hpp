@@ -10,7 +10,7 @@ class Image2D
     Image2D() = default;
     Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_mem_props, vk::Extent3D extent,
             vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout layout, uint32_t mip_levels_count = 1,
-            uint32_t layers_count = 1, vk::ImageCreateFlags flags = {});
+            uint32_t layers_count = 1, vk::ImageCreateFlags flags = {}, vk::UniqueSampler sampler = {});
 
     void transition_layout(vk::CommandBuffer cmd, vk::ImageLayout new_layout);
     void copy_to(vk::CommandBuffer cmd, const Image2D &image) const;
@@ -21,6 +21,7 @@ class Image2D
     [[nodiscard]] vk::ImageView view() const noexcept { return m_view.get(); }
     [[nodiscard]] vk::Format format() const noexcept { return m_format; }
     [[nodiscard]] uint32_t mip_levels() const noexcept { return m_mip_count; }
+    [[nodiscard]] vk::Sampler sampler() const noexcept { return m_sampler.get(); }
 
   private:
     vk::UniqueImage m_image;
@@ -28,6 +29,8 @@ class Image2D
     vk::ImageLayout m_layout;
     vk::Extent3D m_extent;
     vk::Format m_format;
+
+    vk::UniqueSampler m_sampler;
 
     uint32_t m_mip_count;
     uint32_t m_layer_count;

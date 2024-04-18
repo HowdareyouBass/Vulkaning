@@ -46,7 +46,8 @@ WaterRenderer::WaterRenderer(const Core &core, const Scene &scene) : r_core{core
 
     // Write skybox
     m_resources.get_resource(ResourceIds::Skybox)
-        .write_image(core.device(), 0, scene.skybox_cubemap, scene.skybox_cubemap.layout(), scene.skybox_sampler.get());
+        .write_image(core.device(), 0, scene.skybox_cubemap, scene.skybox_cubemap.layout(),
+                     scene.skybox_cubemap.sampler());
 
     m_pipelines = core.create_graphics_render_pipelines<PushConstants>(
         "shaders/water.vert.spv", "shaders/water.frag.spv", m_resources.layouts(), vk::Format::eR16G16B16A16Sfloat,

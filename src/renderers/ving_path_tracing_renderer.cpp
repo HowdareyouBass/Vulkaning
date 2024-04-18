@@ -64,7 +64,7 @@ PathTracingRenderer::PathTracingRenderer(const Core &core, const Scene &scene)
     m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 0, m_sphere_buffer);
     m_resources.get_resource(RenderResourceIds::PathTracing)
         .write_image(core.device(), 1, scene.skybox_cubemap, vk::ImageLayout::eShaderReadOnlyOptimal,
-                     scene.skybox_sampler.get());
+                     scene.skybox_cubemap.sampler());
     m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 2, m_camera_info_buffer);
     m_resources.get_resource(RenderResourceIds::PathTracing).write_buffer(core.device(), 3, m_scene_data_buffer);
 

@@ -83,6 +83,10 @@ class Core
         return m_device->acquireNextImageKHR(swapchain, std::numeric_limits<uint64_t>::max(), semaphore).value;
     }
 
+    float get_aspect() const noexcept
+    {
+        return static_cast<float>(m_window_extent.width) / static_cast<float>(m_window_extent.height);
+    }
     vk::Queue get_present_queue() const noexcept { return m_device->getQueue(m_queue_info.present_family, 0); }
     vk::Queue get_graphics_queue() const noexcept { return m_device->getQueue(m_queue_info.graphics_family, 0); }
     vk::Extent2D get_window_extent() const noexcept { return m_window_extent; }

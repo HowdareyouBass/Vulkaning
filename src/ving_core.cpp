@@ -140,7 +140,7 @@ ImGui_ImplVulkan_InitInfo Core::create_imgui_init_info(vk::DescriptorPool pool,
 Image2D Core::create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout layout,
                              uint32_t mip, uint32_t layers, vk::ImageCreateFlags flags) const
 {
-    return Image2D{*m_device, memory_properties, size, format, usage, layout, mip, layers, flags};
+    return Image2D{*m_device, memory_properties, size, format, usage, layout, mip, layers, flags, create_sampler(mip)};
 }
 vk::UniqueSampler Core::create_sampler(uint32_t mip_levels) const
 {

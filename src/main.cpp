@@ -1,19 +1,28 @@
 #include <iostream>
 
+#include <SDL3/SDL.h>
 #include <vulkan/vulkan.hpp>
 
 #include "ving_application.hpp"
-
-const Uint8 *keys;
-// HARD: Locking fov for now
-constexpr float fov = 60.0f;
 
 int main()
 {
     try
     {
-        ving::Application app{};
+        if (SDL_Init(SDL_InitFlags::SDL_INIT_VIDEO) < 0)
+            throw std::runtime_error(std::format("Couldn't initialize SDL: {}", SDL_GetError()));
+
+        SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1080, 1080, SDL_WINDOW_VULKAN);
+        // SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1280, 720, SDL_WINDOW_VULKAN);
+        if (!window)
+            throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
+
+        ving::Application app{window};
         app.run();
+        while (app.running())
+        {
+            app.update();
+        }
     }
     catch (vk::SystemError &e)
     {

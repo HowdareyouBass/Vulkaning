@@ -6,7 +6,7 @@ namespace ving
 {
 Image2D::Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_mem_props, vk::Extent3D extent,
                  vk::Format format, vk::ImageUsageFlags usage, vk::ImageLayout layout, uint32_t mip_levels_count,
-                 uint32_t layers_count, vk::ImageCreateFlags flags)
+                 uint32_t layers_count, vk::ImageCreateFlags flags, vk::UniqueSampler sampler)
 {
     // Image
     auto info = vk::ImageCreateInfo{}
@@ -63,6 +63,7 @@ Image2D::Image2D(vk::Device device, vk::PhysicalDeviceMemoryProperties device_me
     m_extent = extent;
     m_mip_count = mip_levels_count;
     m_layer_count = layers_count;
+    m_sampler = std::move(sampler);
 }
 
 void Image2D::transition_layout(vk::CommandBuffer cmd, vk::ImageLayout new_layout)
