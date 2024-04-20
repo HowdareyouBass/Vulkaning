@@ -86,10 +86,6 @@ void Application::run()
             }
         }
     }
-    uint32_t hit_id = 0;
-    // aabb_generator.generate(frames, m_scene);
-
-    m_core.wait_idle();
     m_running = true;
 }
 
@@ -165,7 +161,6 @@ void Application::update()
         SDL_ShowCursor();
     }
 
-    uint32_t hit_id = 0;
     // Object choosing
     if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
     {
@@ -174,13 +169,13 @@ void Application::update()
         mouse_y_relative_to_center_remapped *= -1;
 
         auto hit = ving::raycast_scene(m_camera.position,
-                                       glm::normalize(glm::tan(fov) * m_camera.forward() +
+                                       glm::normalize(glm::tan(glm::radians(fov)) * m_camera.forward() +
                                                       mouse_x_relative_to_center_remapped * m_camera.right() +
                                                       mouse_y_relative_to_center_remapped * m_camera.up()),
                                        m_scene);
         if (hit.first)
         {
-            hit_id = hit.second.object_id;
+            m_hit_id = hit.second.object_id;
             if constexpr (test_rays)
             {
                 m_scene.objects.push_back(
@@ -212,8 +207,8 @@ void Application::update()
         if (m_render_aabbs)
             m_aabb_renderer.render_all(frame, m_camera, m_scene);
         else
-            m_aabb_renderer.render_single(frame, m_camera, m_scene, hit_id);
-        m_gizmo_renderer.render(frame, m_camera, m_scene.objects[hit_id]);
+            m_aabb_renderer.render_single(frame, m_camera, m_scene, m_hit_id);
+        m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_hit_id]);
 
         m_imgui_renderer.render(frame, m_profiler,
                                 {
@@ -227,5 +222,9 @@ void Application::update()
         profile_recording.stop();
     }
     m_frames.end_frame(m_profiler);
+}
+void Application::stop()
+{
+    m_core.wait_idle();
 }
 } // namespace ving

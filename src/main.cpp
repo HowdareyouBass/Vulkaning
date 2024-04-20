@@ -23,6 +23,8 @@ int main()
         {
             app.update();
         }
+        // FIXME: Looks bad why then i did the class if it's not self destructing
+        app.stop();
     }
     catch (vk::SystemError &e)
     {

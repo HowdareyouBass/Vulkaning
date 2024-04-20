@@ -25,6 +25,7 @@ class Application
 
     void run();
     void update();
+    void stop();
 
   private:
     const Uint8 *keys;
@@ -50,5 +51,8 @@ class Application
     std::function<void()> m_render_aabbs_checkbox_imgui;
     std::function<void()> m_moving_scene_objects_imgui;
     std::function<void()> m_show_mouse_pos;
+
+    // NOTE: TEmporary
+    uint32_t m_hit_id{0};
 };
 } // namespace ving
