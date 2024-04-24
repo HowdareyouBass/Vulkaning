@@ -48,7 +48,8 @@ AABBRenderer::AABBRenderer(const Core &core) : r_core{core}
     // m_aabb_positions[7] = {-0.5f, 0.5f, 0.5f, 1.0f};
 }
 
-void AABBRenderer::render_all(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera, const Scene &scene)
+void AABBRenderer::render_scene(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
+                                const Scene &scene)
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
@@ -80,8 +81,8 @@ void AABBRenderer::render_all(const RenderFrames::FrameInfo &frame, const Perspe
     cmd.endRendering();
 }
 
-void AABBRenderer::render_single(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
-                                 const Scene &scene, uint32_t id)
+void AABBRenderer::render_object_aabb(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
+                                      const SceneObject &object)
 {
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;
@@ -97,9 +98,8 @@ void AABBRenderer::render_single(const RenderFrames::FrameInfo &frame, const Per
 
     // m_push_constants.pvm_transform = camera.projection() * camera.view() * scene.objects[0].transform.mat4();
 
-    const SceneObject &obj = scene.objects[id];
-    m_push_constants.pvm_transform = camera.projection() * camera.view() * obj.transform.mat4();
-    m_push_constants.aabb = obj.mesh.aabb;
+    m_push_constants.pvm_transform = camera.projection() * camera.view() * object.transform.mat4();
+    m_push_constants.aabb = object.mesh.aabb;
 
     cmd.pushConstants<PushConstants>(m_pipeline.layout.get(),
                                      vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
@@ -107,6 +107,49 @@ void AABBRenderer::render_single(const RenderFrames::FrameInfo &frame, const Per
 
     cmd.bindIndexBuffer(m_aabb_indices.buffer(), 0, vk::IndexType::eUint32);
     cmd.drawIndexed(m_aabb_indices.size() / sizeof(uint32_t), 1, 0, 0, 0);
+
+    cmd.endRendering();
+}
+void AABBRenderer::render_gizmo_aabb(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
+                                     const SceneObject &object)
+{
+    vk::CommandBuffer cmd = frame.cmd;
+    Image2D &img = frame.draw_image;
+
+    img.transition_layout(cmd, vk::ImageLayout::eColorAttachmentOptimal);
+
+    start_rendering2d(cmd, img, vk::AttachmentLoadOp::eLoad);
+
+    cmd.bindPipeline(vk::PipelineBindPoint::eGraphics, m_pipeline.pipeline.get());
+    // cmd.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, m_pipeline.layout.get(), 0, m_resources.descriptors(),
+    //                        nullptr);
+    set_default_viewport_and_scissor(cmd, img);
+
+    constexpr float gizmo_aabb_offset = 0.05f;
+    constexpr float gizmo_length = 0.5f;
+
+    // m_push_constants.pvm_transform = camera.projection() * camera.view() * scene.objects[0].transform.mat4();
+    AABB gizmo_aabbs[3]{
+        // X
+        {{0.0f, -gizmo_aabb_offset, -gizmo_aabb_offset}, {gizmo_length, gizmo_aabb_offset, gizmo_aabb_offset}},
+        // Y
+        {{-gizmo_aabb_offset, 0.0f, -gizmo_aabb_offset}, {gizmo_aabb_offset, gizmo_length, gizmo_aabb_offset}},
+        // Z
+        {{-gizmo_aabb_offset, -gizmo_aabb_offset, 0.0f}, {gizmo_aabb_offset, gizmo_aabb_offset, gizmo_length}},
+    };
+
+    for (uint32_t i = 0; i < 3; ++i)
+    {
+        m_push_constants.pvm_transform = camera.projection() * camera.view() * object.transform.mat4();
+        m_push_constants.aabb = gizmo_aabbs[i];
+
+        cmd.pushConstants<PushConstants>(m_pipeline.layout.get(),
+                                         vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
+                                         m_push_constants);
+
+        cmd.bindIndexBuffer(m_aabb_indices.buffer(), 0, vk::IndexType::eUint32);
+        cmd.drawIndexed(m_aabb_indices.size() / sizeof(uint32_t), 1, 0, 0, 0);
+    }
 
     cmd.endRendering();
 }

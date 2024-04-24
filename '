@@ -1,67 +1,50 @@
 #include "ving_ray.hpp"
 
-#include <SDL3/SDL_log.h>
-
 namespace ving
 {
-struct RayHit
-{
-    bool hit;
-    float t{std::numeric_limits<float>::max()};
-};
 
 // Took this algorithm from https://tavinator.com/2022/ray_box_boundary.html
-RayHit raycast_aabb(glm::vec3 origin, glm::vec3 direction, const AABB &aabb)
-{
-    glm::vec3 direction_inverse = 1.0f / direction;
-
-    float tmin = 0.0f, tmax = std::numeric_limits<float>::infinity();
-    float t1, t2;
-
-    for (int d = 0; d < 3; ++d)
-    {
-        t1 = (aabb.min[d] - origin[d]) * direction_inverse[d];
-        t2 = (aabb.max[d] - origin[d]) * direction_inverse[d];
-
-        tmin = std::min(std::max(t1, tmin), std::max(t2, tmin));
-        tmax = std::max(std::min(t1, tmax), std::min(t2, tmax));
-    }
-    return {tmin <= tmax, tmin};
-}
-
-// TODO: use batching and sse instructions
+// TODO: maybe use batching and sse instructions
 std::pair<bool, RayHitInfo> raycast_scene(glm::vec3 origin, glm::vec3 direction, const Scene &scene)
 {
     bool hit = false;
-
     struct
     {
-        uint32_t id{0};
-        float t{std::numeric_limits<float>::infinity()};
+        uint32_t id;
+        float t{std::numeric_limits<float>::max()};
     } closest_hit;
+
+    glm::vec3 direction_inverse = 1.0f / direction;
 
     for (size_t i = 0; i < scene.objects.size(); ++i)
     {
         AABB aabb_world_space = AABB::to_world_space(scene.objects[i].transform.mat4(), scene.objects[i].mesh.aabb);
 
-        RayHit aabb_hit = raycast_aabb(origin, direction, aabb_world_space);
+        float tmin = 0.0f, tmax = std::numeric_limits<float>::infinity();
+        float t1, t2;
 
-        if (aabb_hit.hit && aabb_hit.t < closest_hit.t)
+        for (int d = 0; d < 3; ++d)
+        {
+            t1 = (aabb_world_space.min[d] - origin[d]) * direction_inverse[d];
+            t2 = (aabb_world_space.max[d] - origin[d]) * direction_inverse[d];
+
+            tmin = std::min(std::max(t1, tmin), std::max(t2, tmin));
+            tmax = std::max(std::min(t1, tmax), std::min(t2, tmax));
+        }
+
+        if (tmin <= tmax && tmin < closest_hit.t)
         {
             hit = true;
             closest_hit.id = i;
-            closest_hit.t = aabb_hit.t;
+            closest_hit.t = tmin;
         }
     }
     return {hit, RayHitInfo{closest_hit.id, origin + closest_hit.t * direction}};
 }
-// TODO: Merge with raycast_scene
-std::pair<bool, GizmoType> raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const SceneObject &object)
-{
-    bool hit = false;
-    GizmoType type;
 
-    constexpr float gizmo_aabb_offset = 0.05f;
+std::pair<bool, GizmoType> raycast_gizmos(const SceneObject &object)
+{
+    constexpr float gizmo_aabb_offset = 0.1f;
     constexpr float gizmo_length = 0.5f;
 
     glm::vec3 object_position = object.transform.translation;
@@ -71,33 +54,13 @@ std::pair<bool, GizmoType> raycast_gizmos(glm::vec3 origin, glm::vec3 direction,
         // Y
         {{-gizmo_aabb_offset, 0.0f, -gizmo_aabb_offset}, {gizmo_aabb_offset, gizmo_length, gizmo_aabb_offset}},
         // Z
-        {{-gizmo_aabb_offset, -gizmo_aabb_offset, 0.0f}, {gizmo_aabb_offset, gizmo_aabb_offset, gizmo_length}},
+        {{-gizmo_aabb_offset, -gizmo_aabb_offset, 0.0f},
+         {gizmo_aabb_offset, object_position.y + gizmo_aabb_offset, object_position.z + gizmo_length}},
     };
 
     for (uint32_t i = 0; i < 3; ++i)
     {
-        AABB aabb_world_space = AABB::to_world_space(object.transform.mat4(), gizmo_aabbs[i]);
-        RayHit aabb_hit = raycast_aabb(origin, direction, aabb_world_space);
-
-        if (aabb_hit.hit)
-        {
-            hit = true;
-            type = static_cast<GizmoType>(i);
-            break;
-        }
     }
-
-    return {hit, type};
-}
-std::pair<bool, GizmoType> raycast_gizmos(glm::vec2 mouse_position, const PerspectiveCamera &camera,
-                                          const SceneObject &object)
-{
-
-    // FIXME: It's not tan of fov
-    return raycast_gizmos(camera.position,
-                          glm::normalize(glm::tan(camera.fov()) * camera.forward() + mouse_position.x * camera.right() +
-                                         mouse_position.y * camera.up()),
-                          object);
 }
 
 // https://github.com/erich666/GraphicsGems/blob/master/gems/RayBox.c

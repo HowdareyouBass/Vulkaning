@@ -45,14 +45,8 @@ Application::Application(SDL_Window *window)
 
         ImGui::Text("%f, %f", mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped);
     };
-    // TODO:
-    size_t current_object_count = m_scene.objects.size();
-    auto remove_hits_imgui = [current_object_count, this]() {
-        if (ImGui::Button("Remove hits"))
-        {
-            // m_scene.objects.(scene.objects.begin(), scene.objects.begin() + current_object_count - 1);
-        }
-    };
+
+    m_show_debug_bool = [this]() { ImGui::Text("%b", m_debug_bool); };
 }
 void Application::run()
 {
@@ -67,22 +61,23 @@ void Application::run()
 
     // NOTE: STUPID
     constexpr bool test_rays = false;
+    constexpr int num_steps = 50;
+    constexpr float scarcity = 4.0f;
+
     if constexpr (test_rays)
     {
-        constexpr int num_steps = 50;
-        constexpr float scarcity = 4.0f;
 
         for (int i = 0; i < num_steps; ++i)
         {
             for (int j = 0; j < num_steps; ++j)
             {
-                m_scene.objects.push_back(
-                    ving::SceneObject{m_meshes[2],
-                                      {{},
-                                       glm::vec3{0.01f},
-                                       (m_camera.position + glm::tan(fov) * m_camera.forward() +
-                                        m_camera.right() * scarcity * (-1.0f + i * 2.0f / num_steps) +
-                                        m_camera.up() * scarcity * (-1.0f + j * 2.0f / num_steps))}});
+                m_scene.objects.push_back(ving::SceneObject{
+                    m_meshes[2],
+                    {{},
+                     glm::vec3{0.01f},
+                     glm::normalize(m_camera.position + glm::tan(glm::radians(fov)) * m_camera.forward() +
+                                    m_camera.right() * scarcity * (-1.0f + i * 2.0f / num_steps) +
+                                    m_camera.up() * scarcity * (-1.0f + j * 2.0f / num_steps))}});
             }
         }
     }
@@ -134,6 +129,7 @@ void Application::update()
     if (keys[SDL_SCANCODE_LEFT])
         camera_rotate_dir.y -= 1.0f;
 
+    // Camera rotation
     // NOTE: This method freaks out if you have too much fps
     // Because if you have too much fps mouse moves very little every frame
     // And SDL doesn't have precision to calculate that
@@ -165,32 +161,45 @@ void Application::update()
     if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
     {
         float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) / halfwidth;
-        float mouse_y_relative_to_center_remapped = (mouse_y - halfheight) / halfheight;
-        mouse_y_relative_to_center_remapped *= -1;
+        float mouse_y_relative_to_center_remapped = -(mouse_y - halfheight) / halfheight;
 
-        auto hit = ving::raycast_scene(m_camera.position,
-                                       glm::normalize(glm::tan(glm::radians(fov)) * m_camera.forward() +
-                                                      mouse_x_relative_to_center_remapped * m_camera.right() +
-                                                      mouse_y_relative_to_center_remapped * m_camera.up()),
-                                       m_scene);
-        if (hit.first)
+        auto gizmo_hit =
+            ving::raycast_gizmos({mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped}, m_camera,
+                                 m_scene.objects[m_hit_id]);
+
+        if (gizmo_hit.first)
         {
-            m_hit_id = hit.second.object_id;
-            if constexpr (test_rays)
+            m_debug_bool = true;
+        }
+        else
+        {
+            m_debug_bool = false;
+            auto hit = ving::raycast_scene(m_camera.position,
+                                           glm::normalize(glm::tan(glm::radians(fov)) * m_camera.forward() +
+                                                          mouse_x_relative_to_center_remapped * m_camera.right() +
+                                                          mouse_y_relative_to_center_remapped * m_camera.up()),
+                                           m_scene);
+
+            if (hit.first)
             {
-                m_scene.objects.push_back(
-                    ving::SceneObject{m_meshes[2], ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
+                m_hit_id = hit.second.object_id;
+                if constexpr (test_rays)
+                {
+                    m_scene.objects.push_back(
+                        ving::SceneObject{m_meshes[2], ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
+                }
             }
         }
     }
 
     ving::RenderFrames::FrameInfo frame = m_frames.begin_frame(m_profiler);
     {
+        // Moving the camera
         m_camera.position += m_camera.right() * camera_direction.x * frame.delta_time * m_camera.move_speed;
-        // NOTE: Camera Position is in vulkan space
         m_camera.position += m_camera.up() * camera_direction.y * frame.delta_time * m_camera.move_speed;
         m_camera.position += m_camera.forward() * camera_direction.z * frame.delta_time * m_camera.move_speed;
 
+        // Rotating the camera
         if (glm::dot(camera_rotate_dir, camera_rotate_dir) > std::numeric_limits<float>::epsilon())
         {
             m_camera.rotation +=
@@ -204,15 +213,20 @@ void Application::update()
         ving::Task profile_recording{m_profiler, "Recording"};
         m_skybox_renderer.render(frame, m_camera, m_scene);
         m_gi_renderer.render(frame, m_camera, m_scene);
+
         if (m_render_aabbs)
-            m_aabb_renderer.render_all(frame, m_camera, m_scene);
+            m_aabb_renderer.render_scene(frame, m_camera, m_scene);
         else
-            m_aabb_renderer.render_single(frame, m_camera, m_scene, m_hit_id);
+            m_aabb_renderer.render_object_aabb(frame, m_camera, m_scene.objects[m_hit_id]);
+
+        m_aabb_renderer.render_gizmo_aabb(frame, m_camera, m_scene.objects[m_hit_id]);
+
         m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_hit_id]);
 
         m_imgui_renderer.render(frame, m_profiler,
                                 {
                                     m_render_aabbs_checkbox_imgui,
+                                    m_show_debug_bool,
                                     m_show_mouse_pos,
                                     m_scene.get_imgui(),
                                     m_gi_renderer.get_imgui(),

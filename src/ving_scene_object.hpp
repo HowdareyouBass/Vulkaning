@@ -32,12 +32,8 @@ struct AABB
 {
     constexpr static float minimum_value = 0.03f;
 
-    // float max_x{std::numeric_limits<float>::min()}, max_y{std::numeric_limits<float>::min()},
-    //     max_z{std::numeric_limits<float>::min()};
-    // float min_x{std::numeric_limits<float>::max()}, min_y{std::numeric_limits<float>::max()},
-    //     min_z{std::numeric_limits<float>::max()};
-    // float max_x{}, max_y{}, max_z{};
-    // float min_x{}, min_y{}, min_z{};
+    static AABB to_world_space(const glm::mat4 &pvm_matrix, AABB aabb);
+
     glm::vec3 min{std::numeric_limits<float>::infinity()}, max{-std::numeric_limits<float>::infinity()};
 };
 

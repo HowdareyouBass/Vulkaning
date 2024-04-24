@@ -13,7 +13,6 @@ int main()
             throw std::runtime_error(std::format("Couldn't initialize SDL: {}", SDL_GetError()));
 
         SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1080, 1080, SDL_WINDOW_VULKAN);
-        // SDL_Window *window = SDL_CreateWindow("No title in dwm :(", 1280, 720, SDL_WINDOW_VULKAN);
         if (!window)
             throw std::runtime_error(std::format("Failed to create SDL window: {}", SDL_GetError()));
 

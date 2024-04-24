@@ -51,8 +51,10 @@ class Application
     std::function<void()> m_render_aabbs_checkbox_imgui;
     std::function<void()> m_moving_scene_objects_imgui;
     std::function<void()> m_show_mouse_pos;
+    std::function<void()> m_show_debug_bool;
 
     // NOTE: TEmporary
     uint32_t m_hit_id{0};
+    bool m_debug_bool{false};
 };
 } // namespace ving

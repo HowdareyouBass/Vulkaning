@@ -25,7 +25,7 @@ void main()
 {
     gl_Position = pc.perspective_view_transform * vec4(pc.object_position + offsets[gl_VertexIndex] * line_length, 1.0);
 
-    floor(gl_VertexIndex / 2.0);
+    // floor(gl_VertexIndex / 2.0);
 
     out_gizmo_direction = uint(floor(gl_VertexIndex / 2.0));
 }
