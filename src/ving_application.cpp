@@ -141,11 +141,14 @@ void Application::update()
     float halfwidth = static_cast<float>(m_core.get_window_extent().width) / 2.0f;
     float halfheight = static_cast<float>(m_core.get_window_extent().height) / 2.0f;
 
+    float mouse_x_relative_to_center = mouse_x - halfwidth;
+    float mouse_y_relative_to_center = mouse_y - halfheight;
+
+    float mouse_x_relative_to_center_remapped = mouse_x_relative_to_center / halfwidth;
+    float mouse_y_relative_to_center_remapped = -mouse_y_relative_to_center / halfheight;
+
     if ((mouse_buttons & SDL_BUTTON_RMASK) != 0)
     {
-        float mouse_x_relative_to_center = mouse_x - halfwidth;
-        float mouse_y_relative_to_center = mouse_y - halfheight;
-
         camera_rotate_dir.y += mouse_x_relative_to_center;
         camera_rotate_dir.x += mouse_y_relative_to_center;
 
@@ -157,23 +160,31 @@ void Application::update()
         SDL_ShowCursor();
     }
 
-    // Object choosing
+    // Object choosing and gizmos
     if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
     {
-        float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) / halfwidth;
-        float mouse_y_relative_to_center_remapped = -(mouse_y - halfheight) / halfheight;
 
-        auto gizmo_hit =
-            ving::raycast_gizmos({mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped}, m_camera,
-                                 m_scene.objects[m_hit_id]);
+        auto gizmo_hit = ving::raycast_gizmos(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped,
+                                              m_camera, m_scene.objects[m_hit_id]);
 
         if (gizmo_hit.first)
         {
-            m_debug_bool = true;
+            if (m_first_hit)
+            {
+                m_first_hit = false;
+                m_first_hit_mouse_pos = {mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped};
+            }
+            else
+            {
+                glm::vec3 object_move_direction{0.0f};
+
+                object_move_direction[static_cast<uint32_t>(gizmo_hit.second)] = 1.0f;
+
+                m_scene.objects[m_hit_id].transform.translation += 0.05f * object_move_direction;
+            }
         }
         else
         {
-            m_debug_bool = false;
             auto hit = ving::raycast_scene(m_camera.position,
                                            glm::normalize(glm::tan(glm::radians(fov)) * m_camera.forward() +
                                                           mouse_x_relative_to_center_remapped * m_camera.right() +
@@ -190,6 +201,10 @@ void Application::update()
                 }
             }
         }
+    }
+    else
+    {
+        m_first_hit = true;
     }
 
     ving::RenderFrames::FrameInfo frame = m_frames.begin_frame(m_profiler);
@@ -219,7 +234,7 @@ void Application::update()
         else
             m_aabb_renderer.render_object_aabb(frame, m_camera, m_scene.objects[m_hit_id]);
 
-        m_aabb_renderer.render_gizmo_aabb(frame, m_camera, m_scene.objects[m_hit_id]);
+        // m_aabb_renderer.render_gizmo_aabb(frame, m_camera, m_scene.objects[m_hit_id]);
 
         m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_hit_id]);
 

@@ -56,22 +56,21 @@ std::pair<bool, RayHitInfo> raycast_scene(glm::vec3 origin, glm::vec3 direction,
     return {hit, RayHitInfo{closest_hit.id, origin + closest_hit.t * direction}};
 }
 // TODO: Merge with raycast_scene
-std::pair<bool, GizmoType> raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const SceneObject &object)
+std::pair<bool, editor::Gizmo::Type> raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const SceneObject &object)
 {
     bool hit = false;
-    GizmoType type;
+    editor::Gizmo::Type type;
 
     constexpr float gizmo_aabb_offset = 0.05f;
-    constexpr float gizmo_length = 0.5f;
 
     glm::vec3 object_position = object.transform.translation;
     AABB gizmo_aabbs[3]{
         // X
-        {{0.0f, -gizmo_aabb_offset, -gizmo_aabb_offset}, {gizmo_length, gizmo_aabb_offset, gizmo_aabb_offset}},
+        {{0.0f, -gizmo_aabb_offset, -gizmo_aabb_offset}, {editor::Gizmo::length, gizmo_aabb_offset, gizmo_aabb_offset}},
         // Y
-        {{-gizmo_aabb_offset, 0.0f, -gizmo_aabb_offset}, {gizmo_aabb_offset, gizmo_length, gizmo_aabb_offset}},
+        {{-gizmo_aabb_offset, 0.0f, -gizmo_aabb_offset}, {gizmo_aabb_offset, editor::Gizmo::length, gizmo_aabb_offset}},
         // Z
-        {{-gizmo_aabb_offset, -gizmo_aabb_offset, 0.0f}, {gizmo_aabb_offset, gizmo_aabb_offset, gizmo_length}},
+        {{-gizmo_aabb_offset, -gizmo_aabb_offset, 0.0f}, {gizmo_aabb_offset, gizmo_aabb_offset, editor::Gizmo::length}},
     };
 
     for (uint32_t i = 0; i < 3; ++i)
@@ -82,21 +81,21 @@ std::pair<bool, GizmoType> raycast_gizmos(glm::vec3 origin, glm::vec3 direction,
         if (aabb_hit.hit)
         {
             hit = true;
-            type = static_cast<GizmoType>(i);
+            type = static_cast<editor::Gizmo::Type>(i);
             break;
         }
     }
 
     return {hit, type};
 }
-std::pair<bool, GizmoType> raycast_gizmos(glm::vec2 mouse_position, const PerspectiveCamera &camera,
-                                          const SceneObject &object)
+std::pair<bool, editor::Gizmo::Type> raycast_gizmos(float mouse_position_x, float mouse_position_y,
+                                                    const PerspectiveCamera &camera, const SceneObject &object)
 {
 
     // FIXME: It's not tan of fov
     return raycast_gizmos(camera.position,
-                          glm::normalize(glm::tan(camera.fov()) * camera.forward() + mouse_position.x * camera.right() +
-                                         mouse_position.y * camera.up()),
+                          glm::normalize(glm::tan(camera.fov()) * camera.forward() + mouse_position_x * camera.right() +
+                                         mouse_position_y * camera.up()),
                           object);
 }
 

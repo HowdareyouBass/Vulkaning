@@ -15,3 +15,4 @@ target_precompile_headers(${PROJECT_NAME} INTERFACE <vulkan/vulkan.hpp>)
 
 target_include_directories(${PROJECT_NAME} PRIVATE "renderers")
 target_include_directories(${PROJECT_NAME} PRIVATE ".")
+target_include_directories(${PROJECT_NAME} PRIVATE "editor")

@@ -56,5 +56,7 @@ class Application
     // NOTE: TEmporary
     uint32_t m_hit_id{0};
     bool m_debug_bool{false};
+    bool m_first_hit{true};
+    glm::vec2 m_first_hit_mouse_pos{0.0f, 0.0f};
 };
 } // namespace ving

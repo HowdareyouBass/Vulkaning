@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ving_camera.hpp"
+#include "ving_gizmos.hpp"
 #include "ving_scene.hpp"
 
 #include <glm/vec3.hpp>
@@ -14,17 +15,10 @@ struct RayHitInfo
     glm::vec3 position;
 };
 
-enum GizmoType
-{
-    X,
-    Y,
-    Z
-};
-
 // NOTE: Might be bad to use pairs
 std::pair<bool, RayHitInfo> raycast_scene(glm::vec3 origin, glm::vec3 direction, const Scene &scene);
-std::pair<bool, GizmoType> raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const SceneObject &object);
-std::pair<bool, GizmoType> raycast_gizmos(glm::vec2 mouse_position, const PerspectiveCamera &camera,
-                                          const SceneObject &object);
+std::pair<bool, editor::Gizmo::Type> raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const SceneObject &object);
+std::pair<bool, editor::Gizmo::Type> raycast_gizmos(float mouse_position_x, float mouse_position_y,
+                                                    const PerspectiveCamera &camera, const SceneObject &object);
 
 } // namespace ving
