@@ -91,12 +91,29 @@ std::pair<bool, editor::Gizmo::Type> raycast_gizmos(glm::vec3 origin, glm::vec3 
 std::pair<bool, editor::Gizmo::Type> raycast_gizmos(float mouse_position_x, float mouse_position_y,
                                                     const PerspectiveCamera &camera, const SceneObject &object)
 {
+#if 0
+    glm::vec4 origin{0.0f, 0.0f, 0.0f, 1.0f};
+
+    origin = origin * camera.projection() * camera.view();
+
+    glm::vec4 direction{0.0f};
+
+    return raycast_gizmos(origin, direction, object);
+#endif
 
     // FIXME: It's not tan of fov
     return raycast_gizmos(camera.position,
-                          glm::normalize(glm::tan(camera.fov()) * camera.forward() + mouse_position_x * camera.right() +
-                                         mouse_position_y * camera.up()),
+                          glm::normalize(glm::tan(camera.fov() / 2.0f) * camera.forward() +
+                                         mouse_position_x * camera.right() + mouse_position_y * camera.up()),
                           object);
+}
+std::pair<bool, RayHitInfo> raycast_scene(float mouse_position_x, float mouse_position_y,
+                                          const PerspectiveCamera &camera, const Scene &scene)
+{
+    return raycast_scene(camera.position,
+                         glm::normalize(glm::tan(camera.fov() / 2.0f) * camera.forward() +
+                                        mouse_position_x * camera.right() + mouse_position_y * camera.up()),
+                         scene);
 }
 
 // https://github.com/erich666/GraphicsGems/blob/master/gems/RayBox.c

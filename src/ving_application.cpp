@@ -34,7 +34,7 @@ Application::Application(SDL_Window *window)
     };
     m_show_mouse_pos = [this]() {
         float mouse_x = 0, mouse_y = 0;
-        Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
+        // Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
         float halfwidth = static_cast<float>(m_core.get_window_extent().width) / 2.0f;
         float halfheight = static_cast<float>(m_core.get_window_extent().height) / 2.0f;
@@ -59,28 +59,6 @@ void Application::run()
 
     keys = SDL_GetKeyboardState(NULL);
 
-    // NOTE: STUPID
-    constexpr bool test_rays = false;
-    constexpr int num_steps = 50;
-    constexpr float scarcity = 4.0f;
-
-    if constexpr (test_rays)
-    {
-
-        for (int i = 0; i < num_steps; ++i)
-        {
-            for (int j = 0; j < num_steps; ++j)
-            {
-                m_scene.objects.push_back(ving::SceneObject{
-                    m_meshes[2],
-                    {{},
-                     glm::vec3{0.01f},
-                     glm::normalize(m_camera.position + glm::tan(glm::radians(fov)) * m_camera.forward() +
-                                    m_camera.right() * scarcity * (-1.0f + i * 2.0f / num_steps) +
-                                    m_camera.up() * scarcity * (-1.0f + j * 2.0f / num_steps))}});
-            }
-        }
-    }
     m_running = true;
 }
 
@@ -163,7 +141,6 @@ void Application::update()
     // Object choosing and gizmos
     if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
     {
-
         auto gizmo_hit = ving::raycast_gizmos(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped,
                                               m_camera, m_scene.objects[m_hit_id]);
 
@@ -177,19 +154,20 @@ void Application::update()
             else
             {
                 glm::vec3 object_move_direction{0.0f};
-
                 object_move_direction[static_cast<uint32_t>(gizmo_hit.second)] = 1.0f;
-
                 m_scene.objects[m_hit_id].transform.translation += 0.05f * object_move_direction;
             }
         }
         else
         {
-            auto hit = ving::raycast_scene(m_camera.position,
-                                           glm::normalize(glm::tan(glm::radians(fov)) * m_camera.forward() +
-                                                          mouse_x_relative_to_center_remapped * m_camera.right() +
-                                                          mouse_y_relative_to_center_remapped * m_camera.up()),
-                                           m_scene);
+            // auto hit = ving::raycast_scene(m_camera.position,
+            //                                glm::normalize(glm::tan(glm::radians(fov)) * m_camera.forward() +
+            //                                               mouse_x_relative_to_center_remapped * m_camera.right() +
+            //                                               mouse_y_relative_to_center_remapped * m_camera.up()),
+            //                                m_scene);
+
+            auto hit = ving::raycast_scene(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped,
+                                           m_camera, m_scene);
 
             if (hit.first)
             {
