@@ -30,7 +30,7 @@ RayHit raycast_aabb(glm::vec3 origin, glm::vec3 direction, const AABB &aabb)
 }
 
 // TODO: use batching and sse instructions
-std::pair<bool, RayHitInfo> raycast_scene(glm::vec3 origin, glm::vec3 direction, const Scene &scene)
+SceneRaycastInfo raycast_scene(glm::vec3 origin, glm::vec3 direction, const Scene &scene)
 {
     bool hit = false;
 
@@ -53,25 +53,15 @@ std::pair<bool, RayHitInfo> raycast_scene(glm::vec3 origin, glm::vec3 direction,
             closest_hit.t = aabb_hit.t;
         }
     }
-    return {hit, RayHitInfo{closest_hit.id, origin + closest_hit.t * direction}};
+    return {hit, closest_hit.id, origin + closest_hit.t * direction};
 }
 // TODO: Merge with raycast_scene
-std::pair<bool, editor::Gizmo::Type> raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const SceneObject &object)
+GizmoRaycastInfo raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const SceneObject &object)
 {
     bool hit = false;
     editor::Gizmo::Type type;
 
-    constexpr float gizmo_aabb_offset = 0.05f;
-
-    glm::vec3 object_position = object.transform.translation;
-    AABB gizmo_aabbs[3]{
-        // X
-        {{0.0f, -gizmo_aabb_offset, -gizmo_aabb_offset}, {editor::Gizmo::length, gizmo_aabb_offset, gizmo_aabb_offset}},
-        // Y
-        {{-gizmo_aabb_offset, 0.0f, -gizmo_aabb_offset}, {gizmo_aabb_offset, editor::Gizmo::length, gizmo_aabb_offset}},
-        // Z
-        {{-gizmo_aabb_offset, -gizmo_aabb_offset, 0.0f}, {gizmo_aabb_offset, gizmo_aabb_offset, editor::Gizmo::length}},
-    };
+    std::array<AABB, 3> gizmo_aabbs = editor::Gizmo::make_gizmo_aabbs(object);
 
     for (uint32_t i = 0; i < 3; ++i)
     {
@@ -88,27 +78,16 @@ std::pair<bool, editor::Gizmo::Type> raycast_gizmos(glm::vec3 origin, glm::vec3 
 
     return {hit, type};
 }
-std::pair<bool, editor::Gizmo::Type> raycast_gizmos(float mouse_position_x, float mouse_position_y,
-                                                    const PerspectiveCamera &camera, const SceneObject &object)
+GizmoRaycastInfo raycast_gizmos(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
+                                const SceneObject &object)
 {
-#if 0
-    glm::vec4 origin{0.0f, 0.0f, 0.0f, 1.0f};
-
-    origin = origin * camera.projection() * camera.view();
-
-    glm::vec4 direction{0.0f};
-
-    return raycast_gizmos(origin, direction, object);
-#endif
-
-    // FIXME: It's not tan of fov
     return raycast_gizmos(camera.position,
                           glm::normalize(glm::tan(camera.fov() / 2.0f) * camera.forward() +
                                          mouse_position_x * camera.right() + mouse_position_y * camera.up()),
                           object);
 }
-std::pair<bool, RayHitInfo> raycast_scene(float mouse_position_x, float mouse_position_y,
-                                          const PerspectiveCamera &camera, const Scene &scene)
+SceneRaycastInfo raycast_scene(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
+                               const Scene &scene)
 {
     return raycast_scene(camera.position,
                          glm::normalize(glm::tan(camera.fov() / 2.0f) * camera.forward() +
@@ -124,6 +103,7 @@ enum class Quadrant
     Right,
     Middle
 };
+#if 0
 std::pair<bool, RayHitInfo> raycast_scene_old(glm::vec3 origin, glm::vec3 direction, const Scene &scene)
 {
     // direction.y *= -1;
@@ -192,4 +172,5 @@ std::pair<bool, RayHitInfo> raycast_scene_old(glm::vec3 origin, glm::vec3 direct
     }
     return {false, {}};
 }
+#endif
 } // namespace ving

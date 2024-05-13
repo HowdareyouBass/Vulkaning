@@ -141,10 +141,11 @@ void Application::update()
     // Object choosing and gizmos
     if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
     {
-        auto gizmo_hit = ving::raycast_gizmos(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped,
-                                              m_camera, m_scene.objects[m_hit_id]);
+        GizmoRaycastInfo gizmo_raycast =
+            ving::raycast_gizmos(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera,
+                                 m_scene.objects[m_hit_id]);
 
-        if (gizmo_hit.first)
+        if (gizmo_raycast.hit)
         {
             if (m_first_hit)
             {
@@ -154,28 +155,22 @@ void Application::update()
             else
             {
                 glm::vec3 object_move_direction{0.0f};
-                object_move_direction[static_cast<uint32_t>(gizmo_hit.second)] = 1.0f;
+                object_move_direction[static_cast<uint32_t>(gizmo_raycast.type)] = 1.0f;
                 m_scene.objects[m_hit_id].transform.translation += 0.05f * object_move_direction;
             }
         }
         else
         {
-            // auto hit = ving::raycast_scene(m_camera.position,
-            //                                glm::normalize(glm::tan(glm::radians(fov)) * m_camera.forward() +
-            //                                               mouse_x_relative_to_center_remapped * m_camera.right() +
-            //                                               mouse_y_relative_to_center_remapped * m_camera.up()),
-            //                                m_scene);
+            SceneRaycastInfo scene_raycast = ving::raycast_scene(
+                mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera, m_scene);
 
-            auto hit = ving::raycast_scene(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped,
-                                           m_camera, m_scene);
-
-            if (hit.first)
+            if (scene_raycast.hit)
             {
-                m_hit_id = hit.second.object_id;
+                m_hit_id = scene_raycast.object_id;
                 if constexpr (test_rays)
                 {
                     m_scene.objects.push_back(
-                        ving::SceneObject{m_meshes[2], ving::Transform{{}, glm::vec3{0.01f}, hit.second.position}});
+                        ving::SceneObject{m_meshes[2], ving::Transform{{}, glm::vec3{0.01f}, scene_raycast.position}});
                 }
             }
         }

@@ -9,18 +9,24 @@
 
 namespace ving
 {
-struct RayHitInfo
+struct SceneRaycastInfo
 {
+    bool hit;
     uint64_t object_id;
     glm::vec3 position;
 };
+struct GizmoRaycastInfo
+{
+    bool hit;
+    editor::Gizmo::Type type;
+};
 
 // NOTE: Might be bad to use pairs
-std::pair<bool, RayHitInfo> raycast_scene(glm::vec3 origin, glm::vec3 direction, const Scene &scene);
-std::pair<bool, RayHitInfo> raycast_scene(float mouse_position_x, float mouse_position_y,
-                                          const PerspectiveCamera &camera, const Scene &scene);
-std::pair<bool, editor::Gizmo::Type> raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const SceneObject &object);
-std::pair<bool, editor::Gizmo::Type> raycast_gizmos(float mouse_position_x, float mouse_position_y,
-                                                    const PerspectiveCamera &camera, const SceneObject &object);
+SceneRaycastInfo raycast_scene(glm::vec3 origin, glm::vec3 direction, const Scene &scene);
+SceneRaycastInfo raycast_scene(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
+                               const Scene &scene);
+GizmoRaycastInfo raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const SceneObject &object);
+GizmoRaycastInfo raycast_gizmos(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
+                                const SceneObject &object);
 
 } // namespace ving
