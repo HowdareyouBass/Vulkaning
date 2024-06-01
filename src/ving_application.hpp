@@ -15,7 +15,7 @@ namespace ving
 class Application
 {
   public:
-    static constexpr float fov = 90.0f;
+    static constexpr float fov = 60.0f;
     static constexpr bool test_rays = false;
 
   public:
