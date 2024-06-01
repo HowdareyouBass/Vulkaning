@@ -10,9 +10,9 @@ struct Gizmo
 {
     enum Type
     {
-        X,
-        Y,
-        Z
+        X = 0,
+        Y = 1,
+        Z = 2
     };
     static constexpr float gizmo_aabb_offset = 0.05f;
 
