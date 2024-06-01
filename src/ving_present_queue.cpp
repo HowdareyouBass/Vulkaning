@@ -24,7 +24,7 @@ void PresentQueue::present_image(vk::Semaphore wait_semaphore, uint64_t frame_nu
                             .setWaitSemaphores(wait_semaphore)
                             .setImageIndices(frame_index);
 
-    vk::resultCheck(m_present.presentKHR(&present_info), "Present image failed");
+    vk::detail::resultCheck(m_present.presentKHR(&present_info), "Present image failed");
 }
 
 // FIXME: These functions are called one after another only

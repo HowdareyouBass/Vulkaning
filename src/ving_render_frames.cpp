@@ -49,7 +49,7 @@ RenderFrames::FrameInfo RenderFrames::begin_frame(Profiler &profiler)
     cmd.reset();
 
     auto begin_info = vk::CommandBufferBeginInfo{}.setFlags(vk::CommandBufferUsageFlagBits::eOneTimeSubmit);
-    vk::resultCheck(cmd.begin(&begin_info), "Command buffer begin failed");
+    vk::detail::resultCheck(cmd.begin(&begin_info), "Command buffer begin failed");
 
     return FrameInfo{cmd, m_draw_image, m_frame_number, m_delta_time, m_time};
 }

@@ -74,7 +74,7 @@ class Core
 
     void wait_for_fence(vk::Fence fence) const
     {
-        vk::resultCheck(m_device->waitForFences(fence, true, 1000000000), "Wait for fences failed");
+        vk::detail::resultCheck(m_device->waitForFences(fence, true, 1000000000), "Wait for fences failed");
     }
     void wait_idle() const { m_device->waitIdle(); }
     void reset_fence(vk::Fence fence) const { m_device->resetFences(fence); }
@@ -236,7 +236,7 @@ class Core
                                  .setPNext(&render_info);
 
         auto pipeline_res = m_device->createGraphicsPipelineUnique({}, pipeline_info);
-        vk::resultCheck(pipeline_res.result, "Failed to create graphics pipeline");
+        vk::detail::resultCheck(pipeline_res.result, "Failed to create graphics pipeline");
 
         return Pipelines{std::move(pipeline_res.value), std::move(layout)};
     }

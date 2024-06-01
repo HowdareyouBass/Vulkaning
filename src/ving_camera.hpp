@@ -32,6 +32,7 @@ class PerspectiveCamera
 
     void update();
 
+    [[nodiscard]] float aspect() const noexcept { return m_aspect; }
     [[nodiscard]] float fov() const noexcept { return m_fov; }
 
     [[nodiscard]] glm::mat4 projection() const noexcept { return m_projection; }

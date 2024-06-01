@@ -253,7 +253,7 @@ void Core::immediate_transfer(std::function<void(vk::CommandBuffer)> &&function)
 
     m_transfer_queue.submit2(submit, *m_transfer_fence);
 
-    vk::resultCheck(m_device->waitForFences(*m_transfer_fence, true, std::numeric_limits<uint64_t>::max()),
+    vk::detail::resultCheck(m_device->waitForFences(*m_transfer_fence, true, std::numeric_limits<uint64_t>::max()),
                     "Failed to wait for immediate transfer");
 }
 } // namespace ving

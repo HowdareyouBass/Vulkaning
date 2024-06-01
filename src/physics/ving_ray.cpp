@@ -81,18 +81,20 @@ GizmoRaycastInfo raycast_gizmos(glm::vec3 origin, glm::vec3 direction, const Sce
 GizmoRaycastInfo raycast_gizmos(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
                                 const SceneObject &object)
 {
-    return raycast_gizmos(camera.position,
-                          glm::normalize(glm::tan(camera.fov() / 2.0f) * camera.forward() +
-                                         mouse_position_x * camera.right() + mouse_position_y * camera.up()),
-                          object);
+    glm::vec3 ray_dir = glm::normalize(mouse_position_x * camera.aspect() * camera.right() +
+                                       mouse_position_y * (1.0f / camera.aspect()) * camera.up() +
+                                       camera.forward() * (1.0f / glm::tan(camera.fov() / 2.0f)));
+
+    return raycast_gizmos(camera.position, ray_dir, object);
 }
 SceneRaycastInfo raycast_scene(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
                                const Scene &scene)
 {
-    return raycast_scene(camera.position,
-                         glm::normalize(glm::tan(camera.fov() / 2.0f) * camera.forward() +
-                                        mouse_position_x * camera.right() + mouse_position_y * camera.up()),
-                         scene);
+    glm::vec3 ray_dir = glm::normalize(mouse_position_x * camera.aspect() * camera.right() +
+                                       mouse_position_y * (1.0f / camera.aspect()) * camera.up() +
+                                       camera.forward() * (1.0f / glm::tan(camera.fov() / 2.0f)));
+
+    return raycast_scene(camera.position, ray_dir, scene);
 }
 
 // https://github.com/erich666/GraphicsGems/blob/master/gems/RayBox.c
