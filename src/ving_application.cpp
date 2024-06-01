@@ -143,20 +143,48 @@ void Application::update()
     {
         GizmoRaycastInfo gizmo_raycast =
             ving::raycast_gizmos(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera,
-                                 m_scene.objects[m_hit_id]);
+                                 m_scene.objects[m_focused_object]);
 
         if (gizmo_raycast.hit)
         {
-            if (m_first_hit)
+            // glm::vec3 object_move_direction{0.0f};
+            // object_move_direction[static_cast<uint32_t>(gizmo_raycast.type)] = 1.0f;
+            // m_scene.objects[m_hit_id].transform.translation += 0.05f * object_move_direction;
+            switch (gizmo_raycast.type)
             {
-                m_first_hit = false;
-                m_first_hit_mouse_pos = {mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped};
+            case ving::editor::Gizmo::X: {
+                ving::RaycastInfo raycast =
+                    ving::raycast_plane(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped,
+                                        m_camera, {0.0f, 1.0f, 0.0f}, 0.0f);
+                if (raycast.hit)
+                {
+                    m_scene.objects[m_focused_object].transform.translation.x =
+                        raycast.position.x - ving::editor::Gizmo::length / 2.0f;
+                }
+                break;
             }
-            else
-            {
-                glm::vec3 object_move_direction{0.0f};
-                object_move_direction[static_cast<uint32_t>(gizmo_raycast.type)] = 1.0f;
-                m_scene.objects[m_hit_id].transform.translation += 0.05f * object_move_direction;
+            case ving::editor::Gizmo::Y: {
+                ving::RaycastInfo raycast =
+                    ving::raycast_plane(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped,
+                                        m_camera, {0.0f, 0.0f, 1.0f}, 0.0f);
+                if (raycast.hit)
+                {
+                    m_scene.objects[m_focused_object].transform.translation.y =
+                        raycast.position.y - ving::editor::Gizmo::length / 2.0f;
+                }
+                break;
+            }
+            case ving::editor::Gizmo::Z: {
+                ving::RaycastInfo raycast =
+                    ving::raycast_plane(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped,
+                                        m_camera, {1.0f, 0.0f, 0.0f}, 0.0f);
+                if (raycast.hit)
+                {
+                    m_scene.objects[m_focused_object].transform.translation.z =
+                        raycast.position.z - ving::editor::Gizmo::length / 2.0f;
+                }
+                break;
+            }
             }
         }
         else
@@ -166,7 +194,7 @@ void Application::update()
 
             if (scene_raycast.hit)
             {
-                m_hit_id = scene_raycast.object_id;
+                m_focused_object = scene_raycast.object_id;
                 if constexpr (test_rays)
                 {
                     m_scene.objects.push_back(
@@ -198,18 +226,18 @@ void Application::update()
         }
         m_camera.update();
 
-        ving::Task profile_recording{m_profiler, "Recording"};
+        ving::Task profile_recording{m_profiler, "Recording Command Buffers"};
         m_skybox_renderer.render(frame, m_camera, m_scene);
         m_gi_renderer.render(frame, m_camera, m_scene);
 
         if (m_render_aabbs)
             m_aabb_renderer.render_scene(frame, m_camera, m_scene);
         else
-            m_aabb_renderer.render_object_aabb(frame, m_camera, m_scene.objects[m_hit_id]);
+            m_aabb_renderer.render_object_aabb(frame, m_camera, m_scene.objects[m_focused_object]);
 
         // m_aabb_renderer.render_gizmo_aabb(frame, m_camera, m_scene.objects[m_hit_id]);
 
-        m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_hit_id]);
+        m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_focused_object]);
 
         m_imgui_renderer.render(frame, m_profiler,
                                 {
