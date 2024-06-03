@@ -11,8 +11,9 @@ namespace ving
 {
 struct RaycastInfo
 {
-    bool hit;
-    glm::vec3 position;
+    bool hit{false};
+    float distance_from_origin;
+    glm::vec3 position{};
 };
 struct SceneRaycastInfo
 {

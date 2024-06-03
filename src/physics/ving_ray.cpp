@@ -6,7 +6,7 @@ namespace ving
 {
 struct RayHit
 {
-    bool hit;
+    bool hit{false};
     float t{std::numeric_limits<float>::max()};
 };
 RaycastInfo raycast_plane(glm::vec3 ray_origin, glm::vec3 ray_direction, glm::vec3 plane_normal,
@@ -14,13 +14,13 @@ RaycastInfo raycast_plane(glm::vec3 ray_origin, glm::vec3 ray_direction, glm::ve
 {
     float delim = glm::dot(plane_normal, ray_direction);
 
-    if (delim > glm::epsilon<float>())
+    if (glm::abs(delim) > glm::epsilon<float>())
     {
         float normal_length_sq = glm::dot(plane_normal, plane_normal);
         float t = (plane_normal_scalar * normal_length_sq - glm::dot(plane_normal, ray_origin)) / delim;
-        return {true, {ray_origin + ray_direction * t}};
+        return {t > 0, t, {ray_origin + ray_direction * t}};
     }
-    return {false, {}};
+    return {false, std::numeric_limits<float>::infinity(), {}};
 }
 
 RaycastInfo raycast_plane(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,

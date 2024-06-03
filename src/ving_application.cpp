@@ -47,12 +47,13 @@ Application::Application(SDL_Window *window)
     };
 
     m_show_debug_bool = [this]() { ImGui::Text("%b", m_debug_bool); };
+    m_show_log_string = [this]() { ImGui::Text("%s", m_log_string.c_str()); };
 }
 void Application::run()
 {
-    m_meshes[0] = ving::Mesh::flat_plane(m_core, 100, 100, 0.05f, {});
-    m_meshes[1] = ving::Mesh::load_from_file(m_core, "assets/models/smooth_vase.obj");
-    m_meshes[2] = ving::Mesh::load_from_file(m_core, "assets/models/cube.obj");
+    m_meshes[MeshType::Plane] = ving::Mesh::flat_plane(m_core, 100, 100, 0.05f, {});
+    m_meshes[MeshType::SmoothVase] = ving::Mesh::load_from_file(m_core, "assets/models/smooth_vase.obj");
+    m_meshes[MeshType::Cube] = ving::Mesh::load_from_file(m_core, "assets/models/cube.obj");
 
     m_scene.objects.push_back(ving::SceneObject{m_meshes[1], {}});
     m_scene.objects.push_back(ving::SceneObject{m_meshes[0], {}});
@@ -139,21 +140,50 @@ void Application::update()
     }
 
     // Object choosing and gizmos
+    // static glm::vec3 plane_normal{};
     static glm::vec3 plane_normal{};
+
     if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
     {
         GizmoRaycastInfo gizmo_raycast =
             raycast_gizmos(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera,
                            m_scene.objects[m_focused_object]);
+
         static editor::Gizmo::Type locked_gizmo_type;
+
+        static uint32_t plane_normal_index;
+        static uint32_t gizmo_type_index;
 
         if (gizmo_raycast.hit && !m_locked)
         {
             locked_gizmo_type = gizmo_raycast.type;
+
+            gizmo_type_index = static_cast<uint32_t>(locked_gizmo_type);
+
+            // NOTE: We need to chose from 2 normals because sometimes one of them is almost the same as forward vector
+            // which gives us artefacts
+
+            uint32_t normal_index_1 = (gizmo_type_index + 1) % 3, normal_index_2 = (gizmo_type_index + 2) % 3;
+
+            glm::vec3 normal_1{}, normal_2{};
+            normal_1[normal_index_1] = 1.0f;
+            normal_2[normal_index_2] = 1.0f;
+
+            plane_normal *= 0.0f;
+
+            if (glm::abs(glm::dot(m_camera.forward(), normal_1)) > glm::abs(glm::dot(m_camera.forward(), normal_2)))
+            {
+                plane_normal = normal_1;
+                plane_normal_index = normal_index_1;
+            }
+            else
+            {
+                plane_normal = normal_2;
+                plane_normal_index = normal_index_2;
+            }
+            // plane_normal.y = -plane_normal.y;
+
             m_locked = true;
-            plane_normal = {0.0f, 0.0f, 0.0f};
-            plane_normal[(static_cast<uint32_t>(locked_gizmo_type) + 1) % 3] = 1.0f;
-            plane_normal.y *= -1.0f;
         }
         else if (!m_locked)
         {
@@ -163,29 +193,24 @@ void Application::update()
             if (scene_raycast.hit)
             {
                 m_focused_object = scene_raycast.object_id;
-                if constexpr (test_rays)
-                {
-                    m_scene.objects.push_back(
-                        ving::SceneObject{m_meshes[2], ving::Transform{{}, glm::vec3{0.01f}, scene_raycast.position}});
-                }
             }
         }
 
         if (m_locked)
         {
             ving::RaycastInfo raycast = ving::raycast_plane(
-                mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera, plane_normal, 0.0f);
+                mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera, plane_normal,
+                m_scene.objects[m_focused_object].transform.translation[plane_normal_index]);
 
-            m_debug_bool = raycast.hit;
+            // m_debug_bool = raycast.hit;
 
             if (raycast.hit)
             {
-                if (locked_gizmo_type == editor::Gizmo::Type::X)
-                {
-                    // assert(false);
-                }
-                m_scene.objects[m_focused_object].transform.translation[static_cast<uint32_t>(locked_gizmo_type)] =
-                    raycast.position[static_cast<uint32_t>(locked_gizmo_type)] - ving::editor::Gizmo::length / 2.0f;
+                m_scene.objects[m_focused_object].transform.translation[gizmo_type_index] =
+                    raycast.position[gizmo_type_index] - ving::editor::Gizmo::length / 2.0f;
+
+                m_scene.objects.push_back(
+                    SceneObject{m_meshes[MeshType::Cube], Transform{{}, glm::vec3{0.02f}, raycast.position}});
             }
         }
     }
@@ -226,20 +251,24 @@ void Application::update()
 
         m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_focused_object]);
 
-        m_imgui_renderer.render(frame, m_profiler,
-                                {
-                                    m_render_aabbs_checkbox_imgui,
-                                    m_show_debug_bool,
-                                    m_show_mouse_pos,
-                                    []() { ImGui::Text("%f %f %f", plane_normal.x, plane_normal.y, plane_normal.z); },
-                                    m_scene.get_imgui(),
-                                    m_gi_renderer.get_imgui(),
-                                    m_moving_scene_objects_imgui,
-                                });
+        m_imgui_renderer.render(
+            frame, m_profiler,
+            {
+                m_render_aabbs_checkbox_imgui,
+                m_show_debug_bool,
+                m_show_mouse_pos,
+                m_show_log_string,
+                // []() { ImGui::Text("%f %f %f", plane_normal.x, plane_normal.y, plane_normal.z); },
+                m_scene.get_imgui(),
+                m_gi_renderer.get_imgui(),
+                m_moving_scene_objects_imgui,
+            });
 
         profile_recording.stop();
     }
     m_frames.end_frame(m_profiler);
+
+    m_log_string.clear();
 }
 void Application::stop()
 {

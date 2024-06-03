@@ -16,7 +16,6 @@ class Application
 {
   public:
     static constexpr float fov = 60.0f;
-    static constexpr bool test_rays = false;
 
   public:
     Application(SDL_Window *window);
@@ -52,12 +51,21 @@ class Application
     std::function<void()> m_moving_scene_objects_imgui;
     std::function<void()> m_show_mouse_pos;
     std::function<void()> m_show_debug_bool;
+    std::function<void()> m_show_log_string;
 
     uint32_t m_focused_object{0};
     bool m_locked{false};
     // NOTE: TEmporary
     bool m_debug_bool{false};
     bool m_first_hit{true};
+    std::string m_log_string{};
     glm::vec2 m_first_hit_mouse_pos{0.0f, 0.0f};
+
+    enum MeshType
+    {
+        Plane = 0,
+        SmoothVase,
+        Cube,
+    };
 };
 } // namespace ving
