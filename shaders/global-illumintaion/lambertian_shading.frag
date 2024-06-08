@@ -80,6 +80,7 @@ void main()
     }
 
     // out_color = unlit(in_normal, view) + (directional+point) * frag_color;
-    out_color = model_color_percentage * frag_color + (1.0 - model_color_percentage) * point_lights_color;
+
+    out_color = directional * frag_color + (1.0 - model_color_percentage) * point_lights_color;
     // out_color = vec4(0.5 * normalize(in_normal) + 0.5, 1.0);
 }

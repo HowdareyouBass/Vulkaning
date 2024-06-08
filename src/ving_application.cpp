@@ -208,9 +208,6 @@ void Application::update()
             {
                 m_scene.objects[m_focused_object].transform.translation[gizmo_type_index] =
                     raycast.position[gizmo_type_index] - ving::editor::Gizmo::length / 2.0f;
-
-                m_scene.objects.push_back(
-                    SceneObject{m_meshes[MeshType::Cube], Transform{{}, glm::vec3{0.02f}, raycast.position}});
             }
         }
     }
@@ -242,10 +239,10 @@ void Application::update()
         m_skybox_renderer.render(frame, m_camera, m_scene);
         m_gi_renderer.render(frame, m_camera, m_scene);
 
-        if (m_render_aabbs)
-            m_aabb_renderer.render_scene(frame, m_camera, m_scene);
-        else
-            m_aabb_renderer.render_object_aabb(frame, m_camera, m_scene.objects[m_focused_object]);
+        // if (m_render_aabbs)
+        //     m_aabb_renderer.render_scene(frame, m_camera, m_scene);
+        // else
+        //     m_aabb_renderer.render_object_aabb(frame, m_camera, m_scene.objects[m_focused_object]);
 
         // m_aabb_renderer.render_gizmo_aabb(frame, m_camera, m_scene.objects[m_hit_id]);
 

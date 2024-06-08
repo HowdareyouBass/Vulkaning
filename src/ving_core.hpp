@@ -52,9 +52,6 @@ class Core
     Image2D create_image2d(vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
                            vk::ImageLayout layout = vk::ImageLayout::eUndefined, uint32_t mip = 1, uint32_t layers = 1,
                            vk::ImageCreateFlags flags = {}) const;
-    // TODO:
-    // Image2D load_image2d(std::string_view filepath, vk::Extent3D size, vk::Format format, vk::ImageUsageFlags usage,
-    //                      vk::ImageLayout layout, uint32_t mip, uint32_t layers, vk::ImageCreateFlags flags) const;
     vk::UniqueSampler create_sampler(uint32_t mip_levels) const;
 
     GPUBuffer create_gpu_buffer(void *data, uint64_t size, vk::BufferUsageFlags usage) const;

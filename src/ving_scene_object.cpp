@@ -1,6 +1,7 @@
 #include "ving_scene_object.hpp"
 #include "ving_color.hpp"
 #include "ving_core.hpp"
+#include "ving_logger.hpp"
 
 #include <iostream>
 #include <tiny_obj_loader.h>
@@ -56,6 +57,8 @@ Mesh Mesh::load_from_file(const Core &core, std::string_view filepath, glm::vec4
     assert(total_mesh_indices > 0);
     model_indices.reserve(total_mesh_indices);
 
+    bool contains_normals = false, contains_uvs = false;
+
     for (auto &&shape : shapes)
     {
         for (auto &&index : shape.mesh.indices)
@@ -65,26 +68,31 @@ Mesh Mesh::load_from_file(const Core &core, std::string_view filepath, glm::vec4
 
             model_indices.push_back(index.vertex_index);
 
-            // TODO: Log Warning if model doesn't conatin normals or texcoords
             if (index.normal_index >= 0)
             {
                 model_vertices[index.vertex_index].normal = {attrib.normals[3 * index.normal_index + 0],
                                                              attrib.normals[3 * index.normal_index + 1],
                                                              attrib.normals[3 * index.normal_index + 2]};
+                contains_normals = true;
             }
             if (index.texcoord_index >= 0)
             {
                 model_vertices[index.vertex_index].uv_x = attrib.texcoords[3 * index.texcoord_index + 0];
                 model_vertices[index.vertex_index].uv_y = attrib.texcoords[3 * index.texcoord_index + 1];
+                contains_uvs = true;
             }
         }
     }
+
+    if (!contains_normals)
+        Logger::Log(std::format("{}Mesh doesn't contain normals", filepath), LogType::Warning);
+    if (!contains_uvs)
+        Logger::Log(std::format("{}Mesh doesn't contain normals", filepath), LogType::Info);
 
     return Mesh{core.allocate_gpu_mesh_buffers(model_indices, model_vertices),
                 static_cast<uint32_t>(model_indices.size()), static_cast<uint32_t>(model_vertices.size()), aabb};
 }
 
-// TODO: Generate uv and normals
 Mesh Mesh::flat_plane(const Core &core, uint32_t length, uint32_t width, float spacing, glm::vec4 color)
 {
     std::vector<Vertex> vertices;
@@ -100,7 +108,8 @@ Mesh Mesh::flat_plane(const Core &core, uint32_t length, uint32_t width, float s
     {
         for (int z = -int(length / 2); z <= int(length / 2); ++z)
         {
-            vertices.push_back(Vertex{{x * spacing, 0.0f, z * spacing}, 0, {0.0f, 1.0f, 0.0f}, 0, color});
+            vertices.push_back(Vertex{
+                {x * spacing, 0.0f, z * spacing}, x + width / 2.0f, {0.0f, 1.0f, 0.0f}, z + length / 2.0f, color});
         }
     }
     assert(vertices.size() == (length + 1) * (width + 1));

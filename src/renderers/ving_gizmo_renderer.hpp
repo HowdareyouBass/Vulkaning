@@ -22,10 +22,6 @@ class GizmoRenderer : public BaseRenderer
     void render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
                 const SceneObject &target_object);
 
-  public:
-    // TODO:
-    int32_t highlight_gizmo_index = -1;
-
   private:
     PushConstant m_push_constants;
 
