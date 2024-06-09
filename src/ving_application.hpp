@@ -27,6 +27,7 @@ class Application
     void stop();
 
   private:
+  private:
     const Uint8 *keys;
 
     bool m_running{false};

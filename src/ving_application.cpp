@@ -27,6 +27,16 @@ Application::Application(SDL_Window *window)
             ImGui::Text("Obj #%zu", i);
             ImGui::DragFloat3(std::format("Position ##obj{}: ", i).data(),
                               reinterpret_cast<float *>(&m_scene.objects[i].transform.translation), 0.01f);
+            ImGui::DragFloat3(std::format("Rotation ##obj{}: ", i).data(),
+                              reinterpret_cast<float *>(&m_scene.objects[i].transform.rotation), 0.01f);
+
+            // NOTE: To show world space object aabb
+            //
+            // AABB world_space_aabbs = m_scene.objects[i].get_world_space_aabb();
+            //
+            // ImGui::Text("Min: %f %f %f", world_space_aabbs.min.x, world_space_aabbs.min.y, world_space_aabbs.min.z);
+            // ImGui::Text("Max: %f %f %f", world_space_aabbs.max.x, world_space_aabbs.max.y, world_space_aabbs.max.z);
+
             // ImGui::Text("X:%f %f\n Y:%f %f\n Z:%f %f", m_scene.aabbs[i].min_x, scene.aabbs[i].max_x,
             // m_scene.aabbs[i].min_y,
             //             m_scene.aabbs[i].max_y, scene.aabbs[i].min_z, scene.aabbs[i].max_z);
@@ -72,15 +82,8 @@ void Application::update()
 
     while (SDL_PollEvent(&event))
     {
-        switch (event.type)
-        {
-        case SDL_EVENT_QUIT: {
+        if (event.type == SDL_EVENT_QUIT)
             m_running = false;
-            break;
-        }
-        default:
-            break;
-        }
         m_imgui_renderer.process_sdl_event(event);
     }
 
@@ -108,12 +111,6 @@ void Application::update()
     if (keys[SDL_SCANCODE_LEFT])
         camera_rotate_dir.y -= 1.0f;
 
-    // Camera rotation
-    // NOTE: This method freaks out if you have too much fps
-    // Because if you have too much fps mouse moves very little every frame
-    // And SDL doesn't have precision to calculate that
-    // FIXME: Fix it later
-
     float mouse_x = 0, mouse_y = 0;
     Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
 
@@ -125,6 +122,12 @@ void Application::update()
 
     float mouse_x_relative_to_center_remapped = mouse_x_relative_to_center / halfwidth;
     float mouse_y_relative_to_center_remapped = -mouse_y_relative_to_center / halfheight;
+
+    // Camera rotation
+    // NOTE: This method freaks out if you have too much fps
+    // Because if you have too much fps mouse moves very little every frame
+    // And SDL doesn't have precision to calculate that
+    // FIXME: Fix it later
 
     if ((mouse_buttons & SDL_BUTTON_RMASK) != 0)
     {
@@ -140,7 +143,7 @@ void Application::update()
     }
 
     // Object choosing and gizmos
-    // static glm::vec3 plane_normal{};
+    // FIXME: Refactor later
     static glm::vec3 plane_normal{};
 
     if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
@@ -149,19 +152,15 @@ void Application::update()
             raycast_gizmos(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera,
                            m_scene.objects[m_focused_object]);
 
-        static editor::Gizmo::Type locked_gizmo_type;
-
         static uint32_t plane_normal_index;
         static uint32_t gizmo_type_index;
 
         if (gizmo_raycast.hit && !m_locked)
         {
-            locked_gizmo_type = gizmo_raycast.type;
+            gizmo_type_index = static_cast<uint32_t>(gizmo_raycast.type);
 
-            gizmo_type_index = static_cast<uint32_t>(locked_gizmo_type);
-
-            // NOTE: We need to chose from 2 normals because sometimes one of them is almost the same as forward vector
-            // which gives us artefacts
+            // NOTE: We need to chose from 2 normals because sometimes one of them is almost the same as camera forward
+            // vector which gives artefacts
 
             uint32_t normal_index_1 = (gizmo_type_index + 1) % 3, normal_index_2 = (gizmo_type_index + 2) % 3;
 
@@ -181,7 +180,6 @@ void Application::update()
                 plane_normal = normal_2;
                 plane_normal_index = normal_index_2;
             }
-            // plane_normal.y = -plane_normal.y;
 
             m_locked = true;
         }
@@ -201,8 +199,6 @@ void Application::update()
             ving::RaycastInfo raycast = ving::raycast_plane(
                 mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera, plane_normal,
                 m_scene.objects[m_focused_object].transform.translation[plane_normal_index]);
-
-            // m_debug_bool = raycast.hit;
 
             if (raycast.hit)
             {
@@ -239,27 +235,24 @@ void Application::update()
         m_skybox_renderer.render(frame, m_camera, m_scene);
         m_gi_renderer.render(frame, m_camera, m_scene);
 
-        // if (m_render_aabbs)
-        //     m_aabb_renderer.render_scene(frame, m_camera, m_scene);
+        // NOTE: Shows focused object aabb
+        if (m_render_aabbs)
+            m_aabb_renderer.render_scene(frame, m_camera, m_scene);
         // else
         //     m_aabb_renderer.render_object_aabb(frame, m_camera, m_scene.objects[m_focused_object]);
 
-        // m_aabb_renderer.render_gizmo_aabb(frame, m_camera, m_scene.objects[m_hit_id]);
-
         m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_focused_object]);
 
-        m_imgui_renderer.render(
-            frame, m_profiler,
-            {
-                m_render_aabbs_checkbox_imgui,
-                m_show_debug_bool,
-                m_show_mouse_pos,
-                m_show_log_string,
-                // []() { ImGui::Text("%f %f %f", plane_normal.x, plane_normal.y, plane_normal.z); },
-                m_scene.get_imgui(),
-                m_gi_renderer.get_imgui(),
-                m_moving_scene_objects_imgui,
-            });
+        m_imgui_renderer.render(frame, m_profiler,
+                                {
+                                    m_render_aabbs_checkbox_imgui,
+                                    m_show_debug_bool,
+                                    m_show_mouse_pos,
+                                    m_show_log_string,
+                                    m_scene.get_imgui(),
+                                    m_gi_renderer.get_imgui(),
+                                    m_moving_scene_objects_imgui,
+                                });
 
         profile_recording.stop();
     }

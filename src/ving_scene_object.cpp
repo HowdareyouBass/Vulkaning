@@ -108,8 +108,11 @@ Mesh Mesh::flat_plane(const Core &core, uint32_t length, uint32_t width, float s
     {
         for (int z = -int(length / 2); z <= int(length / 2); ++z)
         {
-            vertices.push_back(Vertex{
-                {x * spacing, 0.0f, z * spacing}, x + width / 2.0f, {0.0f, 1.0f, 0.0f}, z + length / 2.0f, color});
+            vertices.push_back(Vertex{{x * spacing, 0.0f, z * spacing},
+                                      (x + width / 2.0f) / width,
+                                      {0.0f, 1.0f, 0.0f},
+                                      (z + length / 2.0f) / length,
+                                      color});
         }
     }
     assert(vertices.size() == (length + 1) * (width + 1));
@@ -239,5 +242,9 @@ glm::mat4 Transform::mat4() const noexcept
     mtx = glm::rotate(mtx, rotation.z, {0.0f, 0.0f, 1.0f});
 
     return mtx;
+}
+AABB SceneObject::get_world_space_aabb()
+{
+    return AABB::to_world_space(transform.mat4(), mesh.aabb);
 }
 } // namespace ving

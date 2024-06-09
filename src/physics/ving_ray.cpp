@@ -1,5 +1,6 @@
 #include "ving_ray.hpp"
 
+#include "ving_obb.hpp"
 #include <SDL3/SDL_log.h>
 
 namespace ving
@@ -52,7 +53,44 @@ RayHit raycast_aabb(glm::vec3 ray_origin, glm::vec3 ray_direction, const AABB &a
     return {tmin <= tmax, tmin};
 }
 
-// TODO: use batching and sse instructions
+// Heavily inspired by chapter 22 of Realtime Rendering
+RayHit raycast_obb(glm::vec3 ray_origin, glm::vec3 ray_direction, const OBB &obb)
+{
+    float tmin = -std::numeric_limits<float>::infinity();
+    float tmax = std::numeric_limits<float>::infinity();
+    glm::vec3 p = obb.center - ray_origin;
+
+    for (uint32_t i = 0; i < 3; ++i)
+    {
+        float e = glm::dot(obb.normals[i], p);
+        float f = glm::dot(obb.normals[i], ray_direction);
+
+        if (glm::abs(f) > glm::epsilon<float>())
+        {
+            float t1 = (e + obb.h[i]) / f;
+            float t2 = (e - obb.h[i]) / f;
+
+            if (t1 > t2)
+                std::swap(t1, t2);
+            if (t1 > tmin)
+                tmin = t1;
+            if (t2 < tmax)
+                tmax = t2;
+            if (tmin > tmax)
+                return {false, 0};
+            if (tmax < 0)
+                return {false, 0};
+        }
+        else if (-e - obb.h[i] > 0 || -e + obb.h[i] < 0)
+            return {false, 0};
+    }
+    if (tmin > 0)
+        return {true, tmin};
+    else
+        return {true, tmax};
+}
+
+// TODO: Maybe use batching and sse instructions
 SceneRaycastInfo raycast_scene(glm::vec3 ray_origin, glm::vec3 ray_direction, const Scene &scene)
 {
     bool hit = false;
@@ -65,15 +103,24 @@ SceneRaycastInfo raycast_scene(glm::vec3 ray_origin, glm::vec3 ray_direction, co
 
     for (size_t i = 0; i < scene.objects.size(); ++i)
     {
-        AABB aabb_world_space = AABB::to_world_space(scene.objects[i].transform.mat4(), scene.objects[i].mesh.aabb);
+        // AABB aabb_world_space = AABB::to_world_space(scene.objects[i].transform.mat4(), scene.objects[i].mesh.aabb);
 
-        RayHit aabb_hit = raycast_aabb(ray_origin, ray_direction, aabb_world_space);
+        // RayHit aabb_hit = raycast_aabb(ray_origin, ray_direction, aabb_world_space);
+        // if (aabb_hit.hit && aabb_hit.t < closest_hit.t)
+        // {
+        //     hit = true;
+        //     closest_hit.id = i;
+        //     closest_hit.t = aabb_hit.t;
+        // }
 
-        if (aabb_hit.hit && aabb_hit.t < closest_hit.t)
+        OBB obb{scene.objects[i].mesh.aabb, scene.objects[i].transform.mat4()};
+        RayHit obb_hit = raycast_obb(ray_origin, ray_direction, obb);
+
+        if (obb_hit.hit && obb_hit.t < closest_hit.t)
         {
             hit = true;
             closest_hit.id = i;
-            closest_hit.t = aabb_hit.t;
+            closest_hit.t = obb_hit.t;
         }
     }
     return {hit, closest_hit.id, ray_origin + closest_hit.t * ray_direction};

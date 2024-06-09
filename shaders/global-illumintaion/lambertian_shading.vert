@@ -69,7 +69,7 @@ void main()
     Vertex v = pc.vertex_buffer.vertices[gl_VertexIndex]; 
 
     gl_Position = ubo.camera_info.perspective_view_transform * pc.model_transform * vec4(v.position, 1.0);
-    out_normal = v.normal;
+    out_normal = mat3(pc.model_transform) * v.normal;
     out_uv = vec2(v.uv_x, v.uv_y);
     out_color = v.color;
     // out_vpos = vec3(vec4(v.position, 1.0) * pc.model_transform);

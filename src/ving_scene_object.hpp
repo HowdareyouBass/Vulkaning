@@ -74,5 +74,7 @@ struct SceneObject
 {
     const Mesh &mesh;
     Transform transform;
+
+    AABB get_world_space_aabb();
 };
 } // namespace ving
