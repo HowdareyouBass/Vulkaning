@@ -129,7 +129,7 @@ SceneRaycastInfo raycast_scene(glm::vec3 ray_origin, glm::vec3 ray_direction, co
 GizmoRaycastInfo raycast_gizmos(glm::vec3 ray_origin, glm::vec3 ray_direction, const SceneObject &object)
 {
     bool hit = false;
-    editor::Gizmo::Type type;
+    editor::Gizmo::Type type{};
 
     std::array<AABB, 3> gizmo_aabbs = editor::Gizmo::make_gizmo_aabbs(object);
 
