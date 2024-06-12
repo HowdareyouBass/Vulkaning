@@ -17,6 +17,19 @@ class Application
   public:
     static constexpr float fov = 60.0f;
 
+    struct MouseInfo
+    {
+        Uint32 buttons;
+        glm::vec2 pixel_coord;
+        glm::vec2 pixel_relative_to_center_coord;
+        glm::vec2 remapped_relative_to_center_coord;
+    };
+    struct WindowInfo
+    {
+        float width;
+        float height;
+    };
+
   public:
     Application(SDL_Window *window);
 
@@ -27,6 +40,10 @@ class Application
     void stop();
 
   private:
+    void update_mouse_info();
+    void update_gizmo();
+    void select_scene_object();
+
   private:
     const Uint8 *keys;
 
@@ -47,6 +64,9 @@ class Application
     GiRenderer m_gi_renderer;
     GizmoRenderer m_gizmo_renderer;
     AABBRenderer m_aabb_renderer;
+
+    MouseInfo m_mouse_info;
+    WindowInfo m_window_info;
 
     std::function<void()> m_render_aabbs_checkbox_imgui;
     std::function<void()> m_moving_scene_objects_imgui;

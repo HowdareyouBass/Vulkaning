@@ -20,6 +20,9 @@ Application::Application(SDL_Window *window)
       m_imgui_renderer{m_core, m_window}, m_skybox_renderer{m_core, m_scene}, m_gi_renderer{m_core},
       m_gizmo_renderer{m_core}, m_aabb_renderer{m_core}
 {
+    m_window_info.width = m_core.get_window_extent().width;
+    m_window_info.height = m_core.get_window_extent().height;
+
     m_render_aabbs_checkbox_imgui = [this]() { ImGui::Checkbox("Render AABBs", &m_render_aabbs); };
     m_moving_scene_objects_imgui = [this]() {
         for (size_t i = 0; i < m_scene.objects.size(); ++i)
@@ -66,7 +69,8 @@ void Application::run()
     m_meshes[MeshType::Cube] = ving::Mesh::load_from_file(m_core, "assets/models/cube.obj");
 
     m_scene.objects.push_back(ving::SceneObject{m_meshes[1], {}});
-    m_scene.objects.push_back(ving::SceneObject{m_meshes[0], {}});
+    m_scene.objects.push_back(
+        ving::SceneObject{m_meshes[0], {glm::vec3{0.0f}, glm::vec3{1.0f}, glm::vec3{0.0f, 1.0f, 0.0f}}});
 
     keys = SDL_GetKeyboardState(NULL);
 
@@ -111,17 +115,7 @@ void Application::update()
     if (keys[SDL_SCANCODE_LEFT])
         camera_rotate_dir.y -= 1.0f;
 
-    float mouse_x = 0, mouse_y = 0;
-    Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
-
-    float halfwidth = static_cast<float>(m_core.get_window_extent().width) / 2.0f;
-    float halfheight = static_cast<float>(m_core.get_window_extent().height) / 2.0f;
-
-    float mouse_x_relative_to_center = mouse_x - halfwidth;
-    float mouse_y_relative_to_center = mouse_y - halfheight;
-
-    float mouse_x_relative_to_center_remapped = mouse_x_relative_to_center / halfwidth;
-    float mouse_y_relative_to_center_remapped = -mouse_y_relative_to_center / halfheight;
+    update_mouse_info();
 
     // Camera rotation
     // NOTE: This method freaks out if you have too much fps
@@ -129,12 +123,12 @@ void Application::update()
     // And SDL doesn't have precision to calculate that
     // FIXME: Fix it later
 
-    if ((mouse_buttons & SDL_BUTTON_RMASK) != 0)
+    if ((m_mouse_info.buttons & SDL_BUTTON_RMASK) != 0)
     {
-        camera_rotate_dir.y += mouse_x_relative_to_center;
-        camera_rotate_dir.x += mouse_y_relative_to_center;
+        camera_rotate_dir.y += m_mouse_info.pixel_relative_to_center_coord.x;
+        camera_rotate_dir.x += m_mouse_info.pixel_relative_to_center_coord.y;
 
-        SDL_WarpMouseInWindow(m_window, halfwidth, halfheight);
+        SDL_WarpMouseInWindow(m_window, m_window_info.width / 2.0f, m_window_info.height / 2.0f);
         SDL_HideCursor();
     }
     else
@@ -144,68 +138,11 @@ void Application::update()
 
     // Object choosing and gizmos
     // FIXME: Refactor later
-    static glm::vec3 plane_normal{};
 
-    if ((mouse_buttons & SDL_BUTTON_LMASK) != 0)
+    if ((m_mouse_info.buttons & SDL_BUTTON_LMASK) != 0)
     {
-        GizmoRaycastInfo gizmo_raycast =
-            raycast_gizmos(mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera,
-                           m_scene.objects[m_focused_object]);
-
-        static uint32_t plane_normal_index;
-        static uint32_t gizmo_type_index;
-
-        if (gizmo_raycast.hit && !m_locked)
-        {
-            gizmo_type_index = static_cast<uint32_t>(gizmo_raycast.type);
-
-            // NOTE: We need to chose from 2 normals because sometimes one of them is almost the same as camera forward
-            // vector which gives artefacts
-
-            uint32_t normal_index_1 = (gizmo_type_index + 1) % 3, normal_index_2 = (gizmo_type_index + 2) % 3;
-
-            glm::vec3 normal_1{}, normal_2{};
-            normal_1[normal_index_1] = 1.0f;
-            normal_2[normal_index_2] = 1.0f;
-
-            plane_normal *= 0.0f;
-
-            if (glm::abs(glm::dot(m_camera.forward(), normal_1)) > glm::abs(glm::dot(m_camera.forward(), normal_2)))
-            {
-                plane_normal = normal_1;
-                plane_normal_index = normal_index_1;
-            }
-            else
-            {
-                plane_normal = normal_2;
-                plane_normal_index = normal_index_2;
-            }
-
-            m_locked = true;
-        }
-        else if (!m_locked)
-        {
-            SceneRaycastInfo scene_raycast = ving::raycast_scene(
-                mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera, m_scene);
-
-            if (scene_raycast.hit)
-            {
-                m_focused_object = scene_raycast.object_id;
-            }
-        }
-
-        if (m_locked)
-        {
-            ving::RaycastInfo raycast = ving::raycast_plane(
-                mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped, m_camera, plane_normal,
-                m_scene.objects[m_focused_object].transform.translation[plane_normal_index]);
-
-            if (raycast.hit)
-            {
-                m_scene.objects[m_focused_object].transform.translation[gizmo_type_index] =
-                    raycast.position[gizmo_type_index] - ving::editor::Gizmo::length / 2.0f;
-            }
-        }
+        update_gizmo();
+        select_scene_object();
     }
     else
     {
@@ -223,9 +160,9 @@ void Application::update()
         // Rotating the camera
         if (glm::dot(camera_rotate_dir, camera_rotate_dir) > std::numeric_limits<float>::epsilon())
         {
-            m_camera.rotation +=
-                camera_rotate_dir * frame.delta_time *
-                (((mouse_buttons & SDL_BUTTON_RMASK) != 0) ? m_camera.mouse_look_speed : m_camera.arrows_look_speed);
+            m_camera.rotation += camera_rotate_dir * frame.delta_time *
+                                 (((m_mouse_info.buttons & SDL_BUTTON_RMASK) != 0) ? m_camera.mouse_look_speed
+                                                                                   : m_camera.arrows_look_speed);
             m_camera.rotation.x = glm::clamp(m_camera.rotation.x, -1.5f, 1.5f);
             m_camera.rotation.y = glm::mod(m_camera.rotation.y, glm::two_pi<float>());
         }
@@ -263,5 +200,84 @@ void Application::update()
 void Application::stop()
 {
     m_core.wait_idle();
+}
+
+void Application::update_mouse_info()
+{
+    m_mouse_info.buttons = SDL_GetMouseState(&m_mouse_info.pixel_coord.x, &m_mouse_info.pixel_coord.y);
+
+    m_mouse_info.pixel_relative_to_center_coord.x = m_mouse_info.pixel_coord.x - m_window_info.width / 2.0f;
+    m_mouse_info.pixel_relative_to_center_coord.y = m_mouse_info.pixel_coord.y - m_window_info.height / 2.0f;
+
+    m_mouse_info.remapped_relative_to_center_coord.x =
+        m_mouse_info.pixel_relative_to_center_coord.x / m_window_info.width * 2.0f;
+    m_mouse_info.remapped_relative_to_center_coord.y =
+        -m_mouse_info.pixel_relative_to_center_coord.y / m_window_info.height * 2.0f;
+}
+
+static glm::vec3 plane_normal{};
+static uint32_t plane_normal_index;
+static uint32_t gizmo_type_index;
+
+void Application::update_gizmo()
+{
+    GizmoRaycastInfo gizmo_raycast =
+        raycast_gizmos(m_mouse_info.remapped_relative_to_center_coord.x,
+                       m_mouse_info.remapped_relative_to_center_coord.y, m_camera, m_scene.objects[m_focused_object]);
+
+    if (gizmo_raycast.hit && !m_locked)
+    {
+        gizmo_type_index = static_cast<uint32_t>(gizmo_raycast.type);
+
+        // NOTE: We need to chose from 2 normals because sometimes one of them is almost the same as camera forward
+        // vector which gives artefacts
+
+        uint32_t normal_index_1 = (gizmo_type_index + 1) % 3, normal_index_2 = (gizmo_type_index + 2) % 3;
+
+        glm::vec3 normal_1{}, normal_2{};
+        normal_1[normal_index_1] = 1.0f;
+        normal_2[normal_index_2] = 1.0f;
+
+        plane_normal *= 0.0f;
+
+        if (glm::abs(glm::dot(m_camera.forward(), normal_1)) > glm::abs(glm::dot(m_camera.forward(), normal_2)))
+        {
+            plane_normal = normal_1;
+            plane_normal_index = normal_index_1;
+        }
+        else
+        {
+            plane_normal = normal_2;
+            plane_normal_index = normal_index_2;
+        }
+
+        m_locked = true;
+    }
+    if (m_locked)
+    {
+        ving::RaycastInfo raycast = ving::raycast_plane(
+            m_mouse_info.remapped_relative_to_center_coord.x, m_mouse_info.remapped_relative_to_center_coord.y,
+            m_camera, plane_normal, m_scene.objects[m_focused_object].transform.translation[plane_normal_index]);
+
+        if (raycast.hit)
+        {
+            m_scene.objects[m_focused_object].transform.translation[gizmo_type_index] =
+                raycast.position[gizmo_type_index] - ving::editor::Gizmo::length / 2.0f;
+        }
+    }
+}
+void Application::select_scene_object()
+{
+    if (!m_locked)
+    {
+        SceneRaycastInfo scene_raycast =
+            ving::raycast_scene(m_mouse_info.remapped_relative_to_center_coord.x,
+                                m_mouse_info.remapped_relative_to_center_coord.y, m_camera, m_scene);
+
+        if (scene_raycast.hit)
+        {
+            m_focused_object = scene_raycast.object_id;
+        }
+    }
 }
 } // namespace ving
