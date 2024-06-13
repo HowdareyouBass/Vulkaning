@@ -7,6 +7,7 @@ add_subdirectory(VulkanMemoryAllocator)
 add_subdirectory(glm)
 add_subdirectory(KTX-Software)
 add_subdirectory(json)
+add_subdirectory(tinygltf)
 
 add_library(imgui STATIC)
 

@@ -1,12 +1,14 @@
-#include "ving_simple_cube_renderer.hpp"
-#include "ving_camera.hpp"
+#include <iostream>
 
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/transform.hpp>
-#include <iostream>
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+
+#include "ving_camera.hpp"
+#include "ving_simple_cube_renderer.hpp"
+#include "ving_vertex.hpp"
 
 namespace ving
 {

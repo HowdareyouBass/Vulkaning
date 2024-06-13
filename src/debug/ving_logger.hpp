@@ -7,11 +7,12 @@ namespace ving
 enum LogType
 {
     Info,
-    Warning
+    Warning,
+    Error
 };
 class Logger
 {
   public:
-    static void Log(std::string_view string, LogType type);
+    static void log(std::string_view string, LogType type);
 };
 } // namespace ving

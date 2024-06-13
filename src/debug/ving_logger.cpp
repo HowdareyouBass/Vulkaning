@@ -4,7 +4,7 @@
 
 namespace ving
 {
-void Logger::Log(std::string_view string, LogType type)
+void Logger::log(std::string_view string, LogType type)
 {
     std::string prefix;
     switch (type)
@@ -15,6 +15,10 @@ void Logger::Log(std::string_view string, LogType type)
     }
     case LogType::Info: {
         prefix = "INFO: ";
+        break;
+    }
+    case LogType::Error: {
+        prefix = "ERROR: ";
         break;
     }
     }

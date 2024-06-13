@@ -1,5 +1,7 @@
 #include "ving_vulkan_raytracer.hpp"
 
+#include "ving_vertex.hpp"
+
 namespace ving
 {
 VulkanRaytracer::VulkanRaytracer(const Core &core, RenderFrames &render_frames) : r_core{core}

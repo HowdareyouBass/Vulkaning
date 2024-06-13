@@ -7,6 +7,7 @@
 #include "ving_descriptors.hpp"
 #include "ving_scene_object.hpp"
 #include "ving_utils.hpp"
+#include "ving_vertex.hpp"
 
 namespace ving
 {
@@ -254,6 +255,6 @@ void Core::immediate_transfer(std::function<void(vk::CommandBuffer)> &&function)
     m_transfer_queue.submit2(submit, *m_transfer_fence);
 
     vk::detail::resultCheck(m_device->waitForFences(*m_transfer_fence, true, std::numeric_limits<uint64_t>::max()),
-                    "Failed to wait for immediate transfer");
+                            "Failed to wait for immediate transfer");
 }
 } // namespace ving

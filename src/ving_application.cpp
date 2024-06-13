@@ -68,9 +68,9 @@ void Application::run()
     m_meshes[MeshType::SmoothVase] = ving::Mesh::load_from_file(m_core, "assets/models/smooth_vase.obj");
     m_meshes[MeshType::Cube] = ving::Mesh::load_from_file(m_core, "assets/models/cube.obj");
 
-    m_scene.objects.push_back(ving::SceneObject{m_meshes[1], {}});
+    m_scene.objects.push_back(ving::SceneObject{m_meshes[MeshType::SmoothVase], {}});
     m_scene.objects.push_back(
-        ving::SceneObject{m_meshes[0], {glm::vec3{0.0f}, glm::vec3{1.0f}, glm::vec3{0.0f, 1.0f, 0.0f}}});
+        ving::SceneObject{m_meshes[MeshType::Plane], {glm::vec3{0.0f}, glm::vec3{1.0f}, glm::vec3{0.0f, 1.0f, 0.0f}}});
 
     keys = SDL_GetKeyboardState(NULL);
 
