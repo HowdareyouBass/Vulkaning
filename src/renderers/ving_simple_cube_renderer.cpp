@@ -3,7 +3,6 @@
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/transform.hpp>
 
-#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
 
 #include "ving_camera.hpp"
@@ -14,9 +13,11 @@ namespace ving
 {
 // FIXME: Mesh refactor boke it
 SimpleCubeRenderer::SimpleCubeRenderer(const Core &core)
+    : m_depth_img{core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eD32Sfloat,
+                                      vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined)}
 {
-    m_depth_img = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eD32Sfloat,
-                                      vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);
+    /*m_depth_img = core.create_image2d(vk::Extent3D{core.get_window_extent(), 1}, vk::Format::eD32Sfloat,*/
+    /*                                  vk::ImageUsageFlagBits::eDepthStencilAttachment, vk::ImageLayout::eUndefined);*/
 
     auto resource_infos = std::vector<RenderResourceCreateInfo>{
         RenderResourceCreateInfo{ResourceIds::Global, {{0, vk::DescriptorType::eStorageBuffer}}},

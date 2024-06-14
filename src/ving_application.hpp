@@ -31,7 +31,7 @@ class Application
     };
 
   public:
-    Application(SDL_Window *window);
+    explicit Application(SDL_Window *window);
 
     bool running() const { return m_running; }
 
@@ -45,12 +45,12 @@ class Application
     void select_scene_object();
 
   private:
-    const Uint8 *keys;
+    const Uint8 *keys = nullptr;
 
     bool m_running{false};
     bool m_render_aabbs{false};
 
-    SDL_Window *m_window;
+    SDL_Window *m_window = nullptr;
 
     Core m_core;
     Scene m_scene;
@@ -87,6 +87,7 @@ class Application
         Plane = 0,
         SmoothVase,
         Cube,
+        Dragon,
     };
 };
 } // namespace ving

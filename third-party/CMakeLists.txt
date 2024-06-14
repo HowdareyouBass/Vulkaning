@@ -7,6 +7,10 @@ add_subdirectory(VulkanMemoryAllocator)
 add_subdirectory(glm)
 add_subdirectory(KTX-Software)
 add_subdirectory(json)
+
+set(TINYGLTF_HEADER_ONLY ON CACHE INTERNAL "" FORCE)
+set(TINYGLTF_INSTALL OFF CACHE INTERNAL "" FORCE)
+
 add_subdirectory(tinygltf)
 
 add_library(imgui STATIC)
@@ -29,4 +33,4 @@ target_include_directories(tinyobjloader INTERFACE tinyobjloader)
 
 target_link_libraries(imgui PUBLIC Vulkan::Vulkan SDL3::SDL3)
 
-target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui glm tinyobjloader ktx nlohmann_json)
+target_link_libraries(third-party INTERFACE Vulkan::Vulkan SDL3::SDL3 imgui glm tinyobjloader ktx nlohmann_json tinygltf)

@@ -67,10 +67,12 @@ void Application::run()
     m_meshes[MeshType::Plane] = ving::Mesh::flat_plane(m_core, 100, 100, 0.05f, {});
     m_meshes[MeshType::SmoothVase] = ving::Mesh::load_from_file(m_core, "assets/models/smooth_vase.obj");
     m_meshes[MeshType::Cube] = ving::Mesh::load_from_file(m_core, "assets/models/cube.obj");
+    m_meshes[MeshType::Dragon] = ving::Mesh::load_from_file(m_core, "assets/models/DragonAttenuation.glb");
 
     m_scene.objects.push_back(ving::SceneObject{m_meshes[MeshType::SmoothVase], {}});
     m_scene.objects.push_back(
         ving::SceneObject{m_meshes[MeshType::Plane], {glm::vec3{0.0f}, glm::vec3{1.0f}, glm::vec3{0.0f, 1.0f, 0.0f}}});
+    m_scene.objects.push_back(ving::SceneObject{m_meshes[MeshType::Dragon], {}});
 
     keys = SDL_GetKeyboardState(NULL);
 

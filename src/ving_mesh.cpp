@@ -1,6 +1,12 @@
 #include <iostream>
 
+#define TINYOBJLOADER_IMPLEMENTATION
 #include <tiny_obj_loader.h>
+
+#define TINYGLTF_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "tiny_gltf.h"
 
 #include "debug/ving_logger.hpp"
 #include "ving_core.hpp"
@@ -42,14 +48,7 @@ Mesh load_from_file_obj(const Core &core, std::string_view filepath, glm::vec4 c
         aabb.max.z = std::max(aabb.max.z, model_vertices.back().position.z);
         aabb.min.z = std::min(aabb.min.z, model_vertices.back().position.z);
     }
-
-    aabb.max.x = std::clamp(aabb.max.x, AABB::minimum_value, aabb.max.x);
-    aabb.min.x = std::clamp(aabb.min.x, -AABB::minimum_value, aabb.min.x);
-    aabb.max.y = std::clamp(aabb.max.y, AABB::minimum_value, aabb.max.y);
-    aabb.min.y = std::clamp(aabb.min.y, -AABB::minimum_value, aabb.min.y);
-    aabb.max.z = std::clamp(aabb.max.z, AABB::minimum_value, aabb.max.z);
-    aabb.min.z = std::clamp(aabb.min.z, -AABB::minimum_value, aabb.min.z);
-
+    aabb.clamp();
     size_t total_mesh_indices = 0;
     for (auto &&shape : shapes)
     {
@@ -93,8 +92,148 @@ Mesh load_from_file_obj(const Core &core, std::string_view filepath, glm::vec4 c
     return Mesh{core.allocate_gpu_mesh_buffers(model_indices, model_vertices),
                 static_cast<uint32_t>(model_indices.size()), static_cast<uint32_t>(model_vertices.size()), aabb};
 }
-Mesh load_from_file_gltf(const Core &core, std::string_view filpath, glm::vec4 color)
+Mesh load_from_file_gltf(const Core &core, const std::string &filepath, glm::vec4 color)
 {
+    tinygltf::TinyGLTF loader;
+    tinygltf::Model model;
+    std::string err;
+    std::string warn;
+
+    bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, filepath);
+
+    if (!warn.empty())
+        Logger::log(warn, LogType::Warning);
+    if (!err.empty())
+        Logger::log(err, LogType::Error);
+
+    if (!ret)
+    {
+        Logger::log(std::format("Failed to parse glTF: {}", filepath), LogType::Error);
+        return {};
+    }
+
+    const tinygltf::Node &first_node = model.nodes[1];
+
+    std::vector<uint32_t> indices{};
+    std::vector<Vertex> vertices{};
+    AABB aabb{};
+
+    if (first_node.mesh > -1)
+    {
+        const tinygltf::Mesh mesh = model.meshes[first_node.mesh];
+        const tinygltf::Primitive &primitive = mesh.primitives[0];
+
+        uint32_t first_index = static_cast<uint32_t>(indices.size());
+        uint32_t vertex_start = static_cast<uint32_t>(vertices.size());
+
+        uint32_t index_count = 0;
+
+        // Vertices
+        {
+            const float *position_buffer = nullptr;
+            const float *normals_buffer = nullptr;
+            const float *tex_coords_buffer = nullptr;
+            size_t vertex_count = 0;
+
+            // TODO: Else warn the user
+            if (primitive.attributes.find("POSITION") != primitive.attributes.end())
+            {
+                const tinygltf::Accessor &accessor = model.accessors[primitive.attributes.find("POSITION")->second];
+                const tinygltf::BufferView &buffer_view = model.bufferViews[accessor.bufferView];
+
+                position_buffer = reinterpret_cast<const float *>(
+                    &(model.buffers[buffer_view.buffer].data[accessor.byteOffset + buffer_view.byteOffset]));
+                vertex_count = accessor.count;
+            }
+            if (primitive.attributes.find("NORMAL") != primitive.attributes.end())
+            {
+                const tinygltf::Accessor &accessor = model.accessors[primitive.attributes.find("NORMAL")->second];
+                const tinygltf::BufferView &buffer_view = model.bufferViews[accessor.bufferView];
+                normals_buffer = reinterpret_cast<const float *>(
+                    &(model.buffers[buffer_view.buffer].data[accessor.byteOffset + buffer_view.byteOffset]));
+            }
+            if (primitive.attributes.find("TEXCOORD_0") != primitive.attributes.end())
+            {
+                const tinygltf::Accessor &accessor = model.accessors[primitive.attributes.find("TEXCOORD_0")->second];
+                const tinygltf::BufferView &buffer_view = model.bufferViews[accessor.bufferView];
+                tex_coords_buffer = reinterpret_cast<const float *>(
+                    &(model.buffers[buffer_view.buffer].data[accessor.byteOffset + buffer_view.byteOffset]));
+            }
+
+            for (size_t v = 0; v < vertex_count; ++v)
+            {
+                Vertex vertex{glm::vec3{
+                                  position_buffer[v * 3 + 0],
+                                  position_buffer[v * 3 + 1],
+                                  position_buffer[v * 3 + 2],
+                              },
+                              tex_coords_buffer[v * 2 + 0],
+                              glm::vec3{
+                                  normals_buffer[v * 3 + 0],
+                                  normals_buffer[v * 3 + 1],
+                                  normals_buffer[v * 3 + 2],
+                              },
+                              tex_coords_buffer[v * 2 + 1], glm::vec4{1.0f}};
+
+                aabb.min.x = std::min(aabb.min.x, vertex.position.x);
+                aabb.min.y = std::min(aabb.min.y, vertex.position.y);
+                aabb.min.z = std::min(aabb.min.z, vertex.position.z);
+
+                aabb.max.x = std::max(aabb.max.x, vertex.position.x);
+                aabb.max.y = std::max(aabb.max.y, vertex.position.y);
+                aabb.max.z = std::max(aabb.max.z, vertex.position.z);
+
+                vertices.push_back(vertex);
+            }
+        }
+        aabb.clamp();
+
+        // Indices
+        {
+            const tinygltf::Accessor &accessor = model.accessors[primitive.indices];
+            const tinygltf::BufferView &buffer_view = model.bufferViews[accessor.bufferView];
+            const tinygltf::Buffer &buffer = model.buffers[buffer_view.buffer];
+
+            index_count += static_cast<uint32_t>(accessor.count);
+
+            switch (accessor.componentType)
+            {
+            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_INT: {
+                const uint32_t *buf =
+                    reinterpret_cast<const uint32_t *>(&buffer.data[accessor.byteOffset + buffer_view.byteOffset]);
+                for (size_t index = 0; index < accessor.count; ++index)
+                {
+                    indices.push_back(buf[index] + vertex_start);
+                }
+                break;
+            }
+            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_SHORT: {
+                const uint16_t *buf =
+                    reinterpret_cast<const uint16_t *>(&buffer.data[accessor.byteOffset + buffer_view.byteOffset]);
+                for (size_t index = 0; index < accessor.count; ++index)
+                {
+                    indices.push_back(buf[index] + vertex_start);
+                }
+                break;
+            }
+            case TINYGLTF_PARAMETER_TYPE_UNSIGNED_BYTE: {
+                const uint8_t *buf =
+                    reinterpret_cast<const uint8_t *>(&buffer.data[accessor.byteOffset + buffer_view.byteOffset]);
+                for (size_t index = 0; index < accessor.count; ++index)
+                {
+                    indices.push_back(buf[index] + vertex_start);
+                }
+                break;
+            }
+            default:
+                Logger::log(std::format("Index component type {}", accessor.componentType), LogType::Error);
+                return {};
+            }
+        }
+    }
+
+    return {core.allocate_gpu_mesh_buffers(indices, vertices), static_cast<uint32_t>(indices.size()),
+            static_cast<uint32_t>(vertices.size()), aabb};
 }
 
 Mesh Mesh::load_from_file(const Core &core, std::filesystem::path filepath, glm::vec4 color)
