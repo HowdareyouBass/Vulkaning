@@ -7,6 +7,8 @@ layout (push_constant) uniform Constants
 {
     mat4 perspective_view_transform;
     vec3 object_position;
+	float gizmo_length;
+	int highlight_index;
 } pc;
 
 const vec3 offsets[6] =
@@ -19,13 +21,16 @@ const vec3 offsets[6] =
     vec3(0, 0, 1) 
 };
 
-const float line_length = 0.5;
-
 void main()
 {
-    gl_Position = pc.perspective_view_transform * vec4(pc.object_position + offsets[gl_VertexIndex] * line_length, 1.0);
+    gl_Position = pc.perspective_view_transform * vec4(pc.object_position + offsets[gl_VertexIndex] * pc.gizmo_length, 1.0);
 
-    // floor(gl_VertexIndex / 2.0);
+	uint gizmo_idx = uint(floor(gl_VertexIndex / 2.0));
 
-    out_gizmo_direction = uint(floor(gl_VertexIndex / 2.0));
+	if (gizmo_idx == pc.highlight_index)
+	{
+		gizmo_idx = 3;
+	}
+
+    out_gizmo_direction = gizmo_idx;
 }

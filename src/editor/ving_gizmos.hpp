@@ -10,6 +10,12 @@ struct Gizmo
 {
     enum Type
     {
+        Pos,
+        Rotate,
+        Scale,
+    };
+    enum Coordinate
+    {
         X = 0,
         Y = 1,
         Z = 2

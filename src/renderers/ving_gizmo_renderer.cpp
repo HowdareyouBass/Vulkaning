@@ -12,10 +12,13 @@ GizmoRenderer::GizmoRenderer(const Core &core)
 }
 
 void GizmoRenderer::render(const RenderFrames::FrameInfo &frame, const PerspectiveCamera &camera,
-                           const SceneObject &target_object)
+                           const SceneObject &target_object, editor::Gizmo::Type gizmo_type,
+                           int32_t highlight_gizmo_index)
 {
     m_push_constants.perspective_view_transform = camera.projection() * camera.view();
     m_push_constants.object_position = target_object.transform.translation;
+    m_push_constants.gizmo_length = 0.5f;
+    m_push_constants.highlight_gizmo_index = highlight_gizmo_index;
 
     vk::CommandBuffer cmd = frame.cmd;
     Image2D &img = frame.draw_image;

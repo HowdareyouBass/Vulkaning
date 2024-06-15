@@ -5,6 +5,7 @@
 #include "ving_aabb_renderer.hpp"
 #include "ving_gi_renderer.hpp"
 #include "ving_gizmo_renderer.hpp"
+#include "ving_gizmos.hpp"
 #include "ving_imgui_renderer.hpp"
 #include "ving_profilers.hpp"
 #include "ving_scene.hpp"
@@ -54,6 +55,7 @@ class Application
 
     Core m_core;
     Scene m_scene;
+    // Maybe should use shared_ptr because if this destroys anything using the meshes will segfault
     std::unordered_map<uint32_t, ving::Mesh> m_meshes;
     Profiler m_profiler;
     PerspectiveCamera m_camera;
@@ -70,6 +72,7 @@ class Application
 
     std::function<void()> m_render_aabbs_checkbox_imgui;
     std::function<void()> m_moving_scene_objects_imgui;
+    std::function<void()> m_focused_object_info;
     std::function<void()> m_show_mouse_pos;
     std::function<void()> m_show_debug_bool;
     std::function<void()> m_show_log_string;
@@ -77,10 +80,12 @@ class Application
     uint32_t m_focused_object{0};
     bool m_locked{false};
     // NOTE: TEmporary
+    ving::editor::Gizmo::Type m_gizmo_type;
     bool m_debug_bool{false};
     bool m_first_hit{true};
     std::string m_log_string{};
     glm::vec2 m_first_hit_mouse_pos{0.0f, 0.0f};
+    uint32_t m_gizmo_type_index;
 
     enum MeshType
     {

@@ -103,16 +103,6 @@ SceneRaycastInfo raycast_scene(glm::vec3 ray_origin, glm::vec3 ray_direction, co
 
     for (size_t i = 0; i < scene.objects.size(); ++i)
     {
-        // AABB aabb_world_space = AABB::to_world_space(scene.objects[i].transform.mat4(), scene.objects[i].mesh.aabb);
-
-        // RayHit aabb_hit = raycast_aabb(ray_origin, ray_direction, aabb_world_space);
-        // if (aabb_hit.hit && aabb_hit.t < closest_hit.t)
-        // {
-        //     hit = true;
-        //     closest_hit.id = i;
-        //     closest_hit.t = aabb_hit.t;
-        // }
-
         OBB obb{scene.objects[i].mesh.aabb, scene.objects[i].transform.mat4()};
         RayHit obb_hit = raycast_obb(ray_origin, ray_direction, obb);
 
@@ -129,7 +119,7 @@ SceneRaycastInfo raycast_scene(glm::vec3 ray_origin, glm::vec3 ray_direction, co
 GizmoRaycastInfo raycast_gizmos(glm::vec3 ray_origin, glm::vec3 ray_direction, const SceneObject &object)
 {
     bool hit = false;
-    editor::Gizmo::Type type{};
+    editor::Gizmo::Coordinate coordinate{};
 
     std::array<AABB, 3> gizmo_aabbs = editor::Gizmo::make_gizmo_aabbs(object);
 
@@ -141,12 +131,12 @@ GizmoRaycastInfo raycast_gizmos(glm::vec3 ray_origin, glm::vec3 ray_direction, c
         if (aabb_hit.hit)
         {
             hit = true;
-            type = static_cast<editor::Gizmo::Type>(i);
+            coordinate = static_cast<editor::Gizmo::Coordinate>(i);
             break;
         }
     }
 
-    return {hit, type};
+    return {hit, coordinate};
 }
 GizmoRaycastInfo raycast_gizmos(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
                                 const SceneObject &object)

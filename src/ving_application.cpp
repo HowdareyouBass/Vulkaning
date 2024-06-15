@@ -32,31 +32,19 @@ Application::Application(SDL_Window *window)
                               reinterpret_cast<float *>(&m_scene.objects[i].transform.translation), 0.01f);
             ImGui::DragFloat3(std::format("Rotation ##obj{}: ", i).data(),
                               reinterpret_cast<float *>(&m_scene.objects[i].transform.rotation), 0.01f);
-
-            // NOTE: To show world space object aabb
-            //
-            // AABB world_space_aabbs = m_scene.objects[i].get_world_space_aabb();
-            //
-            // ImGui::Text("Min: %f %f %f", world_space_aabbs.min.x, world_space_aabbs.min.y, world_space_aabbs.min.z);
-            // ImGui::Text("Max: %f %f %f", world_space_aabbs.max.x, world_space_aabbs.max.y, world_space_aabbs.max.z);
-
-            // ImGui::Text("X:%f %f\n Y:%f %f\n Z:%f %f", m_scene.aabbs[i].min_x, scene.aabbs[i].max_x,
-            // m_scene.aabbs[i].min_y,
-            //             m_scene.aabbs[i].max_y, scene.aabbs[i].min_z, scene.aabbs[i].max_z);
         }
     };
+    m_focused_object_info = [this]() {
+        ImGui::DragFloat3("Position",
+                          reinterpret_cast<float *>(&m_scene.objects[m_focused_object].transform.translation), 0.01f);
+        ImGui::DragFloat3("Rotation", reinterpret_cast<float *>(&m_scene.objects[m_focused_object].transform.rotation),
+                          0.01f);
+        ImGui::DragFloat3("Scale", reinterpret_cast<float *>(&m_scene.objects[m_focused_object].transform.scale), 0.01f,
+                          0.0f, std::numeric_limits<float>::max());
+    };
     m_show_mouse_pos = [this]() {
-        float mouse_x = 0, mouse_y = 0;
-        // Uint32 mouse_buttons = SDL_GetMouseState(&mouse_x, &mouse_y);
-
-        float halfwidth = static_cast<float>(m_core.get_window_extent().width) / 2.0f;
-        float halfheight = static_cast<float>(m_core.get_window_extent().height) / 2.0f;
-
-        float mouse_x_relative_to_center_remapped = (mouse_x - halfwidth) / halfwidth;
-        float mouse_y_relative_to_center_remapped = (mouse_y - halfheight) / halfheight;
-        mouse_y_relative_to_center_remapped *= -1;
-
-        ImGui::Text("%f, %f", mouse_x_relative_to_center_remapped, mouse_y_relative_to_center_remapped);
+        ImGui::Text("%f, %f", m_mouse_info.remapped_relative_to_center_coord.x,
+                    m_mouse_info.remapped_relative_to_center_coord.y);
     };
 
     m_show_debug_bool = [this]() { ImGui::Text("%b", m_debug_bool); };
@@ -92,6 +80,13 @@ void Application::update()
             m_running = false;
         m_imgui_renderer.process_sdl_event(event);
     }
+
+    if (keys[SDL_SCANCODE_Q])
+        m_gizmo_type = editor::Gizmo::Type::Pos;
+    if (keys[SDL_SCANCODE_W])
+        m_gizmo_type = editor::Gizmo::Type::Rotate;
+    if (keys[SDL_SCANCODE_E])
+        m_gizmo_type = editor::Gizmo::Type::Scale;
 
     // Camera Movement controls
     if (keys[SDL_SCANCODE_W])
@@ -138,9 +133,6 @@ void Application::update()
         SDL_ShowCursor();
     }
 
-    // Object choosing and gizmos
-    // FIXME: Refactor later
-
     if ((m_mouse_info.buttons & SDL_BUTTON_LMASK) != 0)
     {
         update_gizmo();
@@ -179,8 +171,19 @@ void Application::update()
             m_aabb_renderer.render_scene(frame, m_camera, m_scene);
         // else
         //     m_aabb_renderer.render_object_aabb(frame, m_camera, m_scene.objects[m_focused_object]);
-
-        m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_focused_object]);
+        GizmoRaycastInfo gizmo_raycast = raycast_gizmos(m_mouse_info.remapped_relative_to_center_coord.x,
+                                                        m_mouse_info.remapped_relative_to_center_coord.y, m_camera,
+                                                        m_scene.objects[m_focused_object]);
+        if (!m_locked)
+        {
+            m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_focused_object], m_gizmo_type,
+                                    gizmo_raycast.hit ? static_cast<uint32_t>(gizmo_raycast.coordinate) : -1);
+        }
+        else
+        {
+            m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_focused_object], m_gizmo_type,
+                                    m_gizmo_type_index);
+        }
 
         m_imgui_renderer.render(frame, m_profiler,
                                 {
@@ -190,7 +193,7 @@ void Application::update()
                                     m_show_log_string,
                                     m_scene.get_imgui(),
                                     m_gi_renderer.get_imgui(),
-                                    m_moving_scene_objects_imgui,
+                                    m_focused_object_info,
                                 });
 
         profile_recording.stop();
@@ -219,7 +222,6 @@ void Application::update_mouse_info()
 
 static glm::vec3 plane_normal{};
 static uint32_t plane_normal_index;
-static uint32_t gizmo_type_index;
 
 void Application::update_gizmo()
 {
@@ -229,12 +231,12 @@ void Application::update_gizmo()
 
     if (gizmo_raycast.hit && !m_locked)
     {
-        gizmo_type_index = static_cast<uint32_t>(gizmo_raycast.type);
+        m_gizmo_type_index = static_cast<uint32_t>(gizmo_raycast.coordinate);
 
         // NOTE: We need to chose from 2 normals because sometimes one of them is almost the same as camera forward
         // vector which gives artefacts
 
-        uint32_t normal_index_1 = (gizmo_type_index + 1) % 3, normal_index_2 = (gizmo_type_index + 2) % 3;
+        uint32_t normal_index_1 = (m_gizmo_type_index + 1) % 3, normal_index_2 = (m_gizmo_type_index + 2) % 3;
 
         glm::vec3 normal_1{}, normal_2{};
         normal_1[normal_index_1] = 1.0f;
@@ -263,8 +265,8 @@ void Application::update_gizmo()
 
         if (raycast.hit)
         {
-            m_scene.objects[m_focused_object].transform.translation[gizmo_type_index] =
-                raycast.position[gizmo_type_index] - ving::editor::Gizmo::length / 2.0f;
+            m_scene.objects[m_focused_object].transform.translation[m_gizmo_type_index] =
+                raycast.position[m_gizmo_type_index] - ving::editor::Gizmo::length / 2.0f;
         }
     }
 }

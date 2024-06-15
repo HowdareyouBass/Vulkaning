@@ -24,7 +24,7 @@ struct SceneRaycastInfo
 struct GizmoRaycastInfo
 {
     bool hit;
-    editor::Gizmo::Type type;
+    editor::Gizmo::Coordinate coordinate;
 };
 
 // NOTE: Might be bad to use pairs
