@@ -4,7 +4,7 @@ namespace ving
 {
 namespace editor
 {
-std::array<AABB, 3> Gizmo::make_gizmo_aabbs(const SceneObject &scene_object)
+std::array<AABB, 3> Gizmo::make_gizmo_aabbs(float length)
 {
     return {
         // X

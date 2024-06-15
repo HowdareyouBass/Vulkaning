@@ -44,6 +44,7 @@ class Application
     void update_mouse_info();
     void update_gizmo();
     void select_scene_object();
+    float get_gizmo_length();
 
   private:
     const Uint8 *keys = nullptr;

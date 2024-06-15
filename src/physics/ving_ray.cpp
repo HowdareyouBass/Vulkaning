@@ -116,12 +116,14 @@ SceneRaycastInfo raycast_scene(glm::vec3 ray_origin, glm::vec3 ray_direction, co
     return {hit, closest_hit.id, ray_origin + closest_hit.t * ray_direction};
 }
 // TODO: Merge with raycast_scene
-GizmoRaycastInfo raycast_gizmos(glm::vec3 ray_origin, glm::vec3 ray_direction, const SceneObject &object)
+GizmoRaycastInfo raycast_gizmos(glm::vec3 ray_origin, glm::vec3 ray_direction, float gizmo_length,
+                                const SceneObject &object)
 {
     bool hit = false;
     editor::Gizmo::Coordinate coordinate{};
+    float offset = 0.0f;
 
-    std::array<AABB, 3> gizmo_aabbs = editor::Gizmo::make_gizmo_aabbs(object);
+    std::array<AABB, 3> gizmo_aabbs = editor::Gizmo::make_gizmo_aabbs(gizmo_length);
 
     for (uint32_t i = 0; i < 3; ++i)
     {
@@ -132,20 +134,23 @@ GizmoRaycastInfo raycast_gizmos(glm::vec3 ray_origin, glm::vec3 ray_direction, c
         {
             hit = true;
             coordinate = static_cast<editor::Gizmo::Coordinate>(i);
+            glm::vec3 hit_dir = ((ray_origin + aabb_hit.t * ray_direction) - object.transform.translation);
+            offset = hit_dir[i];
+            /*assert(offset >= -std::numeric_limits<float>::epsilon());*/
             break;
         }
     }
 
-    return {hit, coordinate};
+    return {hit, coordinate, offset};
 }
-GizmoRaycastInfo raycast_gizmos(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
-                                const SceneObject &object)
+GizmoRaycastInfo raycast_gizmos(float mouse_position_x, float mouse_position_y, float gizmo_length,
+                                const PerspectiveCamera &camera, const SceneObject &object)
 {
     glm::vec3 ray_dir = glm::normalize(mouse_position_x * camera.aspect() * camera.right() +
                                        mouse_position_y * (1.0f / camera.aspect()) * camera.up() +
                                        camera.forward() * (1.0f / glm::tan(camera.fov() / 2.0f)));
 
-    return raycast_gizmos(camera.position, ray_dir, object);
+    return raycast_gizmos(camera.position, ray_dir, gizmo_length, object);
 }
 SceneRaycastInfo raycast_scene(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
                                const Scene &scene)

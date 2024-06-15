@@ -171,9 +171,9 @@ void Application::update()
             m_aabb_renderer.render_scene(frame, m_camera, m_scene);
         // else
         //     m_aabb_renderer.render_object_aabb(frame, m_camera, m_scene.objects[m_focused_object]);
-        GizmoRaycastInfo gizmo_raycast = raycast_gizmos(m_mouse_info.remapped_relative_to_center_coord.x,
-                                                        m_mouse_info.remapped_relative_to_center_coord.y, m_camera,
-                                                        m_scene.objects[m_focused_object]);
+        GizmoRaycastInfo gizmo_raycast = raycast_gizmos(
+            m_mouse_info.remapped_relative_to_center_coord.x, m_mouse_info.remapped_relative_to_center_coord.y,
+            get_gizmo_length(), m_camera, m_scene.objects[m_focused_object]);
         if (!m_locked)
         {
             m_gizmo_renderer.render(frame, m_camera, m_scene.objects[m_focused_object], m_gizmo_type,
@@ -222,16 +222,18 @@ void Application::update_mouse_info()
 
 static glm::vec3 plane_normal{};
 static uint32_t plane_normal_index;
+static float gizmo_locked_offset;
 
 void Application::update_gizmo()
 {
-    GizmoRaycastInfo gizmo_raycast =
-        raycast_gizmos(m_mouse_info.remapped_relative_to_center_coord.x,
-                       m_mouse_info.remapped_relative_to_center_coord.y, m_camera, m_scene.objects[m_focused_object]);
+    GizmoRaycastInfo gizmo_raycast = raycast_gizmos(m_mouse_info.remapped_relative_to_center_coord.x,
+                                                    m_mouse_info.remapped_relative_to_center_coord.y,
+                                                    get_gizmo_length(), m_camera, m_scene.objects[m_focused_object]);
 
     if (gizmo_raycast.hit && !m_locked)
     {
         m_gizmo_type_index = static_cast<uint32_t>(gizmo_raycast.coordinate);
+        gizmo_locked_offset = gizmo_raycast.offset;
 
         // NOTE: We need to chose from 2 normals because sometimes one of them is almost the same as camera forward
         // vector which gives artefacts
@@ -266,7 +268,7 @@ void Application::update_gizmo()
         if (raycast.hit)
         {
             m_scene.objects[m_focused_object].transform.translation[m_gizmo_type_index] =
-                raycast.position[m_gizmo_type_index] - ving::editor::Gizmo::length / 2.0f;
+                raycast.position[m_gizmo_type_index] - gizmo_locked_offset;
         }
     }
 }
@@ -283,5 +285,12 @@ void Application::select_scene_object()
             m_focused_object = scene_raycast.object_id;
         }
     }
+}
+float Application::get_gizmo_length()
+{
+    /*glm::vec3 cam_obj_vec = m_scene.objects[m_focused_object].transform.translation - m_camera.position;*/
+    /*float dist_sqrt = glm::dot(cam_obj_vec, cam_obj_vec);*/
+
+    return 0.5f;
 }
 } // namespace ving

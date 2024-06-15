@@ -5,7 +5,6 @@
 #include "ving_scene.hpp"
 
 #include <glm/vec3.hpp>
-#include <utility>
 
 namespace ving
 {
@@ -25,6 +24,7 @@ struct GizmoRaycastInfo
 {
     bool hit;
     editor::Gizmo::Coordinate coordinate;
+    float offset;
 };
 
 // NOTE: Might be bad to use pairs
@@ -37,8 +37,9 @@ SceneRaycastInfo raycast_scene(glm::vec3 ray_origin, glm::vec3 ray_direction, co
 SceneRaycastInfo raycast_scene(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
                                const Scene &scene);
 
-GizmoRaycastInfo raycast_gizmos(glm::vec3 ray_origin, glm::vec3 ray_direction, const SceneObject &object);
-GizmoRaycastInfo raycast_gizmos(float mouse_position_x, float mouse_position_y, const PerspectiveCamera &camera,
+GizmoRaycastInfo raycast_gizmos(glm::vec3 ray_origin, glm::vec3 ray_direction, float gizmo_length,
                                 const SceneObject &object);
+GizmoRaycastInfo raycast_gizmos(float mouse_position_x, float mouse_position_y, float gizmo_length,
+                                const PerspectiveCamera &camera, const SceneObject &object);
 
 } // namespace ving
