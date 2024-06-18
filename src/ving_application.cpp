@@ -34,11 +34,11 @@ Application::Application(SDL_Window *window)
                               reinterpret_cast<float *>(&m_scene.objects[i].transform.rotation), 0.01f);
         }
     };
-    m_focused_object_info = [this]() {
+    m_focused_object_transform = [this]() {
         ImGui::DragFloat3("Position",
                           reinterpret_cast<float *>(&m_scene.objects[m_focused_object].transform.translation), 0.01f);
         ImGui::DragFloat3("Rotation", reinterpret_cast<float *>(&m_scene.objects[m_focused_object].transform.rotation),
-                          0.01f);
+                          0.01f, 0.0f, glm::two_pi<float>());
         ImGui::DragFloat3("Scale", reinterpret_cast<float *>(&m_scene.objects[m_focused_object].transform.scale), 0.01f,
                           0.0f, std::numeric_limits<float>::max());
     };
@@ -193,7 +193,7 @@ void Application::update()
                                     m_show_log_string,
                                     m_scene.get_imgui(),
                                     m_gi_renderer.get_imgui(),
-                                    m_focused_object_info,
+                                    m_focused_object_transform,
                                 });
 
         profile_recording.stop();
@@ -288,8 +288,8 @@ void Application::select_scene_object()
 }
 float Application::get_gizmo_length()
 {
-    /*glm::vec3 cam_obj_vec = m_scene.objects[m_focused_object].transform.translation - m_camera.position;*/
-    /*float dist_sqrt = glm::dot(cam_obj_vec, cam_obj_vec);*/
+    glm::vec3 cam_obj_vec = m_scene.objects[m_focused_object].transform.translation - m_camera.position;
+    float dist_sq = glm::dot(cam_obj_vec, cam_obj_vec);
 
     return 0.5f;
 }
